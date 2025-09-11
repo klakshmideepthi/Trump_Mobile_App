@@ -4,6 +4,7 @@ struct BillingInfoView: View {
     @ObservedObject var viewModel: UserRegistrationViewModel
     var onNext: () -> Void
     var onBack: (() -> Void)? = nil
+    var onCancel: (() -> Void)? = nil
     
     var body: some View {
         FixedBottomNavigationView(
@@ -13,8 +14,19 @@ struct BillingInfoView: View {
                     onBack()
                 }
             },
-            nextAction: onNext,
+            nextAction: {
+                // Save billing info to orders collection
+                viewModel.saveBillingInfo { success in
+                    if success {
+                        // Continue to next step only if save was successful
+                        onNext()
+                    } else {
+                        print("Failed to save billing information")
+                    }
+                }
+            },
             isNextDisabled: viewModel.creditCardNumber.isEmpty || viewModel.billingDetails.isEmpty,
+            cancelAction: onCancel,
             nextButtonText: "Complete Order"
         ) {
             VStack(spacing: 16) {

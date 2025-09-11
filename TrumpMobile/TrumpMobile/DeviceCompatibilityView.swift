@@ -2,30 +2,40 @@ import SwiftUI
 
 struct DeviceCompatibilityView: View {
     @ObservedObject var viewModel: UserRegistrationViewModel
+    // Create a local state to track selection before committing to viewModel
+    @State private var selectedBrand: String?
+    @State private var selectedModel: String?
+    
     var onNext: () -> Void
     var onBack: (() -> Void)? = nil
+    var onCancel: (() -> Void)? = nil
     
     var body: some View {
-        // Sample data for brands and models
-        let brands = ["Apple", "Samsung", "Google", "OnePlus"]
-        let modelsByBrand: [String: [String]] = [
-            "Apple": ["iPhone 15", "iPhone 14", "iPhone 13"],
-            "Samsung": ["Galaxy S24", "Galaxy S23", "Galaxy Note 20"],
-            "Google": ["Pixel 8", "Pixel 7", "Pixel 6"],
-            "OnePlus": ["OnePlus 12", "OnePlus 11", "OnePlus 10"]
-        ]
+        // Use PhoneCatalog for brands and models
+        let brands = PhoneBrand.allCases
+        let phoneCatalog = PhoneCatalog.shared
 
         return StepNavigationContainer(
             currentStep: 2,
             totalSteps: 6,
             nextButtonText: "Next Step",
-            nextButtonDisabled: viewModel.deviceBrand.isEmpty || viewModel.deviceModel.isEmpty,
-            nextButtonAction: onNext,
+            nextButtonDisabled: (selectedBrand == nil || selectedBrand == "") || (selectedModel == nil || selectedModel == ""),
+            nextButtonAction: {
+                // Commit selections to the viewModel when proceeding
+                if let brand = selectedBrand {
+                    viewModel.deviceBrand = brand
+                }
+                if let model = selectedModel {
+                    viewModel.deviceModel = model
+                }
+                onNext()
+            },
             backButtonAction: {
                 if let onBack = onBack {
                     onBack()
                 }
-            }
+            },
+            cancelAction: onCancel
         ) {
             VStack(spacing: 0) {
                 VStack(spacing: 8) {
@@ -44,23 +54,38 @@ struct DeviceCompatibilityView: View {
                         Text("Device Brand")
                             .font(.subheadline)
                             .foregroundColor(.gray)
-                        Picker(viewModel.deviceBrand.isEmpty ? "Choose device brand" : viewModel.deviceBrand, selection: $viewModel.deviceBrand) {
-                            ForEach(brands, id: \.self) { brand in
-                                Text(brand).tag(brand)
+                        
+                        Menu {
+                            ForEach(brands) { brand in
+                                Button(action: {
+                                    selectedBrand = brand.rawValue
+                                    
+                                    // Set default model when brand changes
+                                    if let models = phoneCatalog.models(for: brand).first {
+                                        selectedModel = models.name
+                                    } else {
+                                        selectedModel = nil
+                                    }
+                                }) {
+                                    Text(brand.rawValue)
+                                    if selectedBrand == brand.rawValue {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
                             }
-                        }
-                        .pickerStyle(.navigationLink)
-                        .padding(.horizontal, 0)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                        )
-                        .onChange(of: viewModel.deviceBrand) { oldBrand, newBrand in
-                            if let firstModel = modelsByBrand[newBrand]?.first {
-                                viewModel.deviceModel = firstModel
-                            } else {
-                                viewModel.deviceModel = ""
+                        } label: {
+                            HStack {
+                                Text(selectedBrand ?? "Select brand")
+                                    .foregroundColor(selectedBrand == nil ? .gray : .primary)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .foregroundColor(.gray)
                             }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            )
                         }
                     }
 
@@ -69,21 +94,53 @@ struct DeviceCompatibilityView: View {
                         Text("Device Model")
                             .font(.subheadline)
                             .foregroundColor(.gray)
-                        Picker(viewModel.deviceModel.isEmpty ? "Choose device model" : viewModel.deviceModel, selection: $viewModel.deviceModel) {
-                            ForEach(modelsByBrand[viewModel.deviceBrand] ?? [], id: \.self) { model in
-                                Text(model).tag(model)
+                        
+                        let availableModels = getAvailableModels(for: selectedBrand ?? "")
+                        
+                        if selectedBrand == nil || availableModels.isEmpty {
+                            HStack {
+                                Text("Select brand first")
+                                    .foregroundColor(.gray)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            )
+                        } else {
+                            Menu {
+                                ForEach(availableModels, id: \.name) { model in
+                                    Button(action: {
+                                        selectedModel = model.name
+                                    }) {
+                                        Text(model.name)
+                                        if selectedModel == model.name {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(selectedModel ?? "Select model")
+                                        .foregroundColor(selectedModel == nil ? .gray : .primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundColor(.gray)
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                                )
                             }
                         }
-                        .pickerStyle(.navigationLink)
-                        .padding(.horizontal, 0)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                        )
                     }
 
                     // Can't find device section
-                    if (modelsByBrand[viewModel.deviceBrand]?.isEmpty ?? true) {
+                    if selectedBrand != nil && !getAvailableModels(for: selectedBrand ?? "").isEmpty {
                         Text("Can't find your device in the list above?")
                             .font(.footnote)
                             .foregroundColor(.gray)
@@ -103,33 +160,31 @@ struct DeviceCompatibilityView: View {
                             )
                     }
                     .padding(.top, 4)
-
-                    // IMEI Field (optional, only if user wants)
-                    if false { // Hide by default, show if needed
-                        TextField("IMEI (optional)", text: $viewModel.imei)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .keyboardType(.numberPad)
-                    }
                 }
                 .padding(.horizontal, 24)
-
             }
             .onAppear {
-                // Set default values if empty
-                if viewModel.deviceBrand.isEmpty {
-                    viewModel.deviceBrand = brands.first ?? ""
+                // Initialize selections from viewModel if they exist
+                if !viewModel.deviceBrand.isEmpty {
+                    selectedBrand = viewModel.deviceBrand
                 }
-                // Always set model to first for selected brand if not present or not in list
-                let models = modelsByBrand[viewModel.deviceBrand] ?? []
-                if models.isEmpty {
-                    viewModel.deviceModel = ""
-                } else if !models.contains(viewModel.deviceModel) {
-                    viewModel.deviceModel = models.first ?? ""
+                if !viewModel.deviceModel.isEmpty {
+                    selectedModel = viewModel.deviceModel
                 }
-                // Set device as compatible for this demo
+                
+                // Set device as compatible for the demo
                 viewModel.deviceIsCompatible = true
             }
         }
+    }
+    
+    // Helper function to get models for selected brand
+    private func getAvailableModels(for brandName: String) -> [PhoneModel] {
+        guard !brandName.isEmpty,
+              let brand = PhoneBrand.allCases.first(where: { $0.rawValue == brandName }) else {
+            return []
+        }
+        return PhoneCatalog.shared.models(for: brand)
     }
 }
 

@@ -35,6 +35,7 @@ class UserRegistrationViewModel: ObservableObject {
     @Published var deviceIsCompatible: Bool = false
     
     @Published var userId: String? = nil
+    @Published var orderId: String? = nil // Added order ID property
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
     
@@ -50,15 +51,49 @@ class UserRegistrationViewModel: ObservableObject {
             return
         }
         
-        FirebaseManager.shared.updateUserRegistration(userId: userId, data: stepData) { [weak self] success, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
+        let dispatchGroup = DispatchGroup()
+        var errors: [String] = []
+        
+        // Always save to the user's main document
+        dispatchGroup.enter()
+        FirebaseManager.shared.updateUserRegistration(userId: userId, data: stepData) { success, error in
+            if !success {
                 if let error = error {
-                    self?.errorMessage = error.localizedDescription
-                    completion(false)
+                    errors.append("Failed to update user data: \(error.localizedDescription)")
                 } else {
-                    completion(success)
+                    errors.append("Failed to update user data")
                 }
+            }
+            dispatchGroup.leave()
+        }
+        
+        // If we have an orderId, also update the order document
+        if let orderId = orderId {
+            dispatchGroup.enter()
+            let db = Firestore.firestore()
+            db.collection("users").document(userId)
+                .collection("orders").document(orderId)
+                .updateData(stepData) { error in
+                    if let error = error {
+                        print("❌ Error updating order data: \(error.localizedDescription)")
+                        errors.append("Failed to update order data: \(error.localizedDescription)")
+                    } else {
+                        print("✅ Successfully updated order data")
+                    }
+                    dispatchGroup.leave()
+                }
+        }
+        
+        // When all save operations complete
+        dispatchGroup.notify(queue: .main) { [weak self] in
+            guard let self = self else { return }
+            
+            self.isLoading = false
+            if errors.isEmpty {
+                completion(true)
+            } else {
+                self.errorMessage = errors.joined(separator: "; ")
+                completion(false)
             }
         }
     }
@@ -166,7 +201,7 @@ class UserRegistrationViewModel: ObservableObject {
         
         let group = DispatchGroup()
         
-        // Load main user data
+        // Load only main user data and contact info, not order-specific data
         group.enter()
         FirebaseManager.shared.getUserRegistration(userId: userId) { [weak self] data, error in
             defer { group.leave() }
@@ -181,23 +216,10 @@ class UserRegistrationViewModel: ObservableObject {
             
             if let data = data {
                 DispatchQueue.main.async {
-                    // Update properties from main user document
+                    // Update only non-order specific properties
                     self.accountType = data["accountType"] as? String ?? ""
                     self.email = data["email"] as? String ?? ""
-                    self.firstName = data["firstName"] as? String ?? ""
-                    self.lastName = data["lastName"] as? String ?? ""
-                    self.phoneNumber = data["phoneNumber"] as? String ?? ""
-                    self.deviceBrand = data["deviceBrand"] as? String ?? ""
-                    self.deviceModel = data["deviceModel"] as? String ?? ""
-                    self.imei = data["imei"] as? String ?? ""
-                    self.simType = data["simType"] as? String ?? ""
-                    self.numberType = data["numberType"] as? String ?? ""
-                    self.selectedPhoneNumber = data["selectedPhoneNumber"] as? String ?? ""
-                    self.creditCardNumber = data["creditCardNumber"] as? String ?? ""
-                    self.billingDetails = data["billingDetails"] as? String ?? ""
-                    self.address = data["address"] as? String ?? ""
-                    self.country = data["country"] as? String ?? "USA"
-                    self.deviceIsCompatible = data["deviceIsCompatible"] as? Bool ?? false
+                    // Do not load device, SIM, phone number, or billing info from main document
                 }
             }
         }
@@ -209,7 +231,7 @@ class UserRegistrationViewModel: ObservableObject {
             guard let self = self, let data = data else { return }
             
             DispatchQueue.main.async {
-                // Update contact properties
+                // Update contact properties - these should be auto-filled
                 self.firstName = data["firstName"] as? String ?? self.firstName
                 self.lastName = data["lastName"] as? String ?? self.lastName
                 self.phoneNumber = data["phoneNumber"] as? String ?? self.phoneNumber
@@ -223,7 +245,7 @@ class UserRegistrationViewModel: ObservableObject {
             guard let self = self, let data = data else { return }
             
             DispatchQueue.main.async {
-                // Update address properties
+                // Update address properties - these should be auto-filled
                 self.street = data["street"] as? String ?? self.street
                 self.aptNumber = data["aptNumber"] as? String ?? self.aptNumber
                 self.zip = data["zip"] as? String ?? self.zip
@@ -232,17 +254,29 @@ class UserRegistrationViewModel: ObservableObject {
             }
         }
         
-        // Load billing address
-        group.enter()
-        FirebaseManager.shared.getBillingAddress(userId: userId) { [weak self] data, error in
-            defer { group.leave() }
-            guard let self = self, let data = data else { return }
+        // Do NOT load previous order-specific info like device info, SIM selection, etc.
+        // Reset order-specific fields to ensure they start fresh
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             
-            DispatchQueue.main.async {
-                // Update billing address properties
-                self.address = data["address"] as? String ?? self.address
-                self.country = data["country"] as? String ?? self.country
-            }
+            // Clear all order-specific fields
+            self.deviceBrand = ""
+            self.deviceModel = ""
+            self.imei = ""
+            self.simType = ""
+            self.numberType = ""
+            self.selectedPhoneNumber = ""
+            self.creditCardNumber = ""
+            self.billingDetails = ""
+            self.deviceIsCompatible = false
+            
+            // Keep address and country as they might be the same for billing
+            // self.address = ""
+            // self.country = "USA"
+            
+            // Clear the orderId to ensure a new one is created
+            self.orderId = nil
+            UserDefaults.standard.removeObject(forKey: "currentOrderId")
         }
         
         // When all data is loaded
@@ -253,7 +287,7 @@ class UserRegistrationViewModel: ObservableObject {
         }
     }
     
-    // Save contact information
+    // Save contact information to contactInfo, shippingAddress, and orders collections
     func saveContactInfo(completion: @escaping (Bool) -> Void) {
         print("🔍 saveContactInfo called with firstName: \(firstName), lastName: \(lastName), phoneNumber: \(phoneNumber)")
         
@@ -268,29 +302,29 @@ class UserRegistrationViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        // Create complete contact data for main document (include both contact and address info)
-        let completeContactData: [String: Any] = [
+        // Create contact-only data for contactInfo collection
+        let contactData: [String: Any] = [
             "firstName": firstName,
             "lastName": lastName,
             "phoneNumber": phoneNumber,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+        
+        // Create shipping address data for shippingAddress collection
+        let shippingAddressData: [String: Any] = [
             "street": street,
             "aptNumber": aptNumber,
             "zip": zip,
             "city": city,
-            "state": state
+            "state": state,
+            "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        print("📄 Main document data: \(completeContactData)")
-        
-        // Create contact-only data for subcollection
-        let contactData: [String: Any] = [
+        // Create order data that includes contact and shipping information
+        let orderData: [String: Any] = [
             "firstName": firstName,
             "lastName": lastName,
-            "phoneNumber": phoneNumber
-        ]
-        
-        // Create shipping address data for subcollection
-        let shippingAddressData: [String: Any] = [
+            "phoneNumber": phoneNumber,
             "street": street,
             "aptNumber": aptNumber,
             "zip": zip,
@@ -303,20 +337,9 @@ class UserRegistrationViewModel: ObservableObject {
         let dispatchGroup = DispatchGroup()
         var saveErrors: [String] = []
         
-        // Save to main document
+        // 1. Save to contactInfo collection
         dispatchGroup.enter()
-        print("🔄 Saving to main document...")
-        saveCurrentStepData(stepData: completeContactData) { success in
-            print("📌 Main document save result: \(success)")
-            if !success {
-                saveErrors.append("Failed to save to main document")
-            }
-            dispatchGroup.leave()
-        }
-        
-        // Save contact info to subcollection
-        dispatchGroup.enter()
-        print("🔄 Saving to contactInfo subcollection...")
+        print("🔄 Saving to contactInfo collection...")
         FirebaseManager.shared.saveContactInfo(userId: userId, contactData: contactData) { success, error in
             print("📌 Contact info save result: \(success)")
             if !success {
@@ -331,9 +354,9 @@ class UserRegistrationViewModel: ObservableObject {
             dispatchGroup.leave()
         }
         
-        // Save shipping address to subcollection
+        // 2. Save to shippingAddress collection
         dispatchGroup.enter()
-        print("🔄 Saving to shippingAddress subcollection...")
+        print("🔄 Saving to shippingAddress collection...")
         FirebaseManager.shared.saveShippingAddress(userId: userId, addressData: shippingAddressData) { success, error in
             print("📌 Shipping address save result: \(success)")
             if !success {
@@ -348,6 +371,30 @@ class UserRegistrationViewModel: ObservableObject {
             dispatchGroup.leave()
         }
         
+        // 3. Save to orders collection
+        dispatchGroup.enter()
+        print("🔄 Saving to orders collection...")
+        
+        // Get or create order ID
+        let orderId = self.orderId ?? "current"
+        if self.orderId == nil {
+            self.orderId = orderId
+            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        }
+        
+        let db = Firestore.firestore()
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            .setData(orderData, merge: true) { error in
+                if let error = error {
+                    print("❌ Error saving contact and shipping info to order: \(error.localizedDescription)")
+                    saveErrors.append("Failed to save info to order")
+                } else {
+                    print("✅ Successfully saved contact and shipping info to order")
+                }
+                dispatchGroup.leave()
+            }
+        
         // When all save operations complete
         dispatchGroup.notify(queue: .main) { [weak self] in
             guard let self = self else { 
@@ -359,7 +406,7 @@ class UserRegistrationViewModel: ObservableObject {
             
             if saveErrors.isEmpty {
                 // All saves successful
-                print("✅ Successfully saved contact information to all locations")
+                print("✅ Successfully saved contact information to all collections")
                 completion(true)
             } else {
                 // Some saves failed
@@ -371,14 +418,6 @@ class UserRegistrationViewModel: ObservableObject {
             // Let's debug the state after save
             FirebaseManager.shared.debugUserDataLocations(userId: userId) { results in
                 print("📊 Debug user data locations:")
-                if let mainDocExists = results["mainDocExists"] as? Bool {
-                    print("  - Main document exists: \(mainDocExists)")
-                    if mainDocExists, let data = results["mainDocData"] as? [String: Any] {
-                        print("  - Main document firstName: \(data["firstName"] ?? "nil")")
-                        print("  - Main document lastName: \(data["lastName"] ?? "nil")")
-                        print("  - Main document phoneNumber: \(data["phoneNumber"] ?? "nil")")
-                    }
-                }
                 
                 if let contactInfoExists = results["contactInfoExists"] as? Bool {
                     print("  - Contact info exists: \(contactInfoExists)")
@@ -396,38 +435,241 @@ class UserRegistrationViewModel: ObservableObject {
         }
     }
     
-    // Save device information
+    // Save device information directly to orders collection
     func saveDeviceInfo(completion: @escaping (Bool) -> Void) {
+        guard let userId = userId else {
+            errorMessage = "User ID not available"
+            completion(false)
+            return
+        }
+        
+        isLoading = true
+        errorMessage = nil
+        
         let deviceData: [String: Any] = [
             "deviceBrand": deviceBrand,
             "deviceModel": deviceModel,
             "imei": imei,
-            "deviceIsCompatible": deviceIsCompatible
+            "deviceIsCompatible": deviceIsCompatible,
+            "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        saveCurrentStepData(stepData: deviceData, completion: completion)
+        // Get or create order ID
+        let orderId = self.orderId ?? "current"
+        if self.orderId == nil {
+            self.orderId = orderId
+            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        }
+        
+        // Save directly to orders collection
+        let db = Firestore.firestore()
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            .setData(deviceData, merge: true) { error in
+                self.isLoading = false
+                
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ Error saving device info to order: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("✅ Successfully saved device info to order")
+                    completion(true)
+                }
+            }
     }
     
-    // Save SIM selection
+    // Save SIM selection directly to orders
     func saveSimSelection(completion: @escaping (Bool) -> Void) {
+        guard let userId = userId else {
+            errorMessage = "User ID not available"
+            completion(false)
+            return
+        }
+        
+        isLoading = true
+        errorMessage = nil
+        
         let simData: [String: Any] = [
-            "simType": simType
+            "simType": simType,
+            "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        saveCurrentStepData(stepData: simData, completion: completion)
+        // Get or create order ID
+        let orderId = self.orderId ?? "current"
+        if self.orderId == nil {
+            self.orderId = orderId
+            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        }
+        
+        // Save directly to orders collection
+        let db = Firestore.firestore()
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            .setData(simData, merge: true) { error in
+                self.isLoading = false
+                
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ Error saving SIM info to order: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("✅ Successfully saved SIM info to order")
+                    completion(true)
+                }
+            }
     }
     
-    // Save number selection
+    // Save number selection directly to orders
     func saveNumberSelection(completion: @escaping (Bool) -> Void) {
+        guard let userId = userId else {
+            errorMessage = "User ID not available"
+            completion(false)
+            return
+        }
+        
+        isLoading = true
+        errorMessage = nil
+        
         let numberData: [String: Any] = [
             "numberType": numberType,
-            "selectedPhoneNumber": selectedPhoneNumber
+            "selectedPhoneNumber": selectedPhoneNumber,
+            "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        saveCurrentStepData(stepData: numberData, completion: completion)
+        // Get or create order ID
+        let orderId = self.orderId ?? "current"
+        if self.orderId == nil {
+            self.orderId = orderId
+            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        }
+        
+        // Save directly to orders collection
+        let db = Firestore.firestore()
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            .setData(numberData, merge: true) { error in
+                self.isLoading = false
+                
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ Error saving number selection to order: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("✅ Successfully saved number selection to order")
+                    completion(true)
+                }
+            }
     }
     
-    // Save billing information
+    // Save shipping address information directly to orders and shippingAddress collection
+    func saveShippingAddress(completion: @escaping (Bool) -> Void) {
+        print("🔍 saveShippingAddress called with street: \(street), city: \(city), state: \(state), zip: \(zip)")
+        
+        guard let userId = userId else {
+            errorMessage = "User ID not available"
+            print("❌ Error: User ID not available")
+            completion(false)
+            return
+        }
+        
+        print("👤 Using userId: \(userId)")
+        isLoading = true
+        errorMessage = nil
+        
+        // Create shipping address data
+        let shippingAddressData: [String: Any] = [
+            "street": street,
+            "aptNumber": aptNumber,
+            "zip": zip,
+            "city": city,
+            "state": state,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+        
+        // Track completion of all save operations
+        let dispatchGroup = DispatchGroup()
+        var saveErrors: [String] = []
+        
+        // 1. Save to shippingAddress collection
+        dispatchGroup.enter()
+        print("🔄 Saving to shippingAddress collection...")
+        FirebaseManager.shared.saveShippingAddress(userId: userId, addressData: shippingAddressData) { success, error in
+            print("📌 Shipping address save result: \(success)")
+            if !success {
+                if let error = error {
+                    saveErrors.append("Failed to save shipping address: \(error.localizedDescription)")
+                    print("❌ Shipping address save error: \(error.localizedDescription)")
+                } else {
+                    saveErrors.append("Failed to save shipping address")
+                    print("❌ Shipping address save failed without error")
+                }
+            }
+            dispatchGroup.leave()
+        }
+        
+        // 2. Save to orders collection
+        dispatchGroup.enter()
+        print("🔄 Saving to orders collection...")
+        
+        // Get or create order ID
+        let orderId = self.orderId ?? "current"
+        if self.orderId == nil {
+            self.orderId = orderId
+            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        }
+        
+        let db = Firestore.firestore()
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            .setData(shippingAddressData, merge: true) { error in
+                if let error = error {
+                    print("❌ Error saving shipping address to order: \(error.localizedDescription)")
+                    saveErrors.append("Failed to save shipping address to order")
+                } else {
+                    print("✅ Successfully saved shipping address to order")
+                }
+                dispatchGroup.leave()
+            }
+        
+        // When all save operations complete
+        dispatchGroup.notify(queue: .main) { [weak self] in
+            guard let self = self else { 
+                print("❌ Self is nil in completion handler")
+                return 
+            }
+            
+            self.isLoading = false
+            
+            if saveErrors.isEmpty {
+                // All saves successful
+                print("✅ Successfully saved shipping address to all collections")
+                completion(true)
+            } else {
+                // Some saves failed
+                self.errorMessage = saveErrors.joined(separator: "; ")
+                print("❌ Error saving shipping address: \(self.errorMessage ?? "Unknown error")")
+                completion(false)
+            }
+            
+            // Debug check for shipping address
+            FirebaseManager.shared.debugUserDataLocations(userId: userId) { results in
+                print("📊 Debug shipping address data:")
+                
+                if let shippingAddressExists = results["shippingAddressExists"] as? Bool {
+                    print("  - Shipping address exists: \(shippingAddressExists)")
+                    if shippingAddressExists, let data = results["shippingAddressData"] as? [String: Any] {
+                        print("  - Street: \(data["street"] ?? "nil")")
+                        print("  - City: \(data["city"] ?? "nil")")
+                        print("  - State: \(data["state"] ?? "nil")")
+                        print("  - Zip: \(data["zip"] ?? "nil")")
+                    }
+                }
+            }
+        }
+    }
+    
+    // Save billing information directly to orders
     func saveBillingInfo(completion: @escaping (Bool) -> Void) {
         guard let userId = userId else {
             errorMessage = "User ID not available"
@@ -436,48 +678,74 @@ class UserRegistrationViewModel: ObservableObject {
         }
         
         isLoading = true
+        errorMessage = nil
         
-        // Create billing data for main user document
+        // Combine all billing data to save directly to orders
         let billingData: [String: Any] = [
             "creditCardNumber": creditCardNumber,
-            "billingDetails": billingDetails
-        ]
-        
-        // Create billing address data for subcollection
-        let billingAddressData: [String: Any] = [
+            "billingDetails": billingDetails,
             "address": address,
             "country": country,
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        // First save to main user document
-        saveCurrentStepData(stepData: billingData) { [weak self] success in
-            guard let self = self, success else {
-                self?.isLoading = false
-                completion(false)
-                return
-            }
-            
-            // Then save billing address to subcollection
-            FirebaseManager.shared.saveBillingAddress(userId: userId, addressData: billingAddressData) { success, error in
+        // Get or create order ID
+        let orderId = self.orderId ?? "current"
+        if self.orderId == nil {
+            self.orderId = orderId
+            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        }
+        
+        // Save directly to orders collection
+        let db = Firestore.firestore()
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            .setData(billingData, merge: true) { error in
                 self.isLoading = false
-                if !success {
-                    self.errorMessage = error?.localizedDescription
+                
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ Error saving billing info to order: \(error.localizedDescription)")
                     completion(false)
                 } else {
+                    print("✅ Successfully saved billing info to order")
                     completion(true)
                 }
             }
-        }
     }
     
     // Save final order
     func completeOrder(completion: @escaping (Bool) -> Void) {
+        guard let userId = userId, let orderId = orderId else {
+            errorMessage = "User ID or Order ID not available"
+            completion(false)
+            return
+        }
+        
+        isLoading = true
+        errorMessage = nil
+        
         let orderData: [String: Any] = [
             "orderCompleted": true,
-            "orderCompletionDate": FieldValue.serverTimestamp()
+            "orderCompletionDate": FieldValue.serverTimestamp(),
+            "status": "completed"
         ]
         
-        saveCurrentStepData(stepData: orderData, completion: completion)
+        // Save directly to orders collection only
+        let db = Firestore.firestore()
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            .setData(orderData, merge: true) { error in
+                self.isLoading = false
+                
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ Error completing order: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("✅ Successfully completed order")
+                    completion(true)
+                }
+            }
     }
 }

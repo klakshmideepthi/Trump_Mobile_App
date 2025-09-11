@@ -38,14 +38,14 @@ struct StepNavigationContainer<Content: View>: View {
                 VStack(spacing: 0) {
                     // Step indicator at top with back arrow and cancel button
                     HStack {
-                        // Back button on left (hidden for step 1)
+                        // Back button on left (hidden for step 1 and step 6)
                         Button(action: backButtonAction) {
                             Image(systemName: "arrow.left")
                                 .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(currentStep == 1 ? Color.clear : Color.accentGold)
+                                .foregroundColor((currentStep == 1 || currentStep == 6) ? Color.clear : Color.accentGold)
                                 .padding()
                         }
-                        .disabled(currentStep == 1)
+                        .disabled(currentStep == 1 || currentStep == 6)
                         
                         Spacer()
                         
@@ -72,7 +72,13 @@ struct StepNavigationContainer<Content: View>: View {
                         
                         // Cancel button on right
                         Button(action: {
-                            showCancelConfirmation = true
+                            print("DEBUG: Cancel button tapped in StepNavigationContainer")
+                            if cancelAction != nil {
+                                print("DEBUG: cancelAction exists in StepNavigationContainer")
+                                showCancelConfirmation = true
+                            } else {
+                                print("DEBUG: cancelAction is nil in StepNavigationContainer when tapped")
+                            }
                         }) {
                             Image(systemName: "xmark")
                                 .font(.system(size: 20, weight: .semibold))
@@ -120,9 +126,13 @@ struct StepNavigationContainer<Content: View>: View {
             Alert(
                 title: Text("Cancel Order"),
                 message: Text("Do you want to cancel the order?"),
-                primaryButton: .destructive(Text("Yes")) {
+                primaryButton: .destructive(Text("Yes, I want to cancel")) {
+                    print("DEBUG: Cancel button pressed in StepNavigationContainer")
                     if let cancelAction = cancelAction {
+                        print("DEBUG: Executing cancelAction in StepNavigationContainer")
                         cancelAction()
+                    } else {
+                        print("DEBUG: cancelAction is nil in StepNavigationContainer")
                     }
                 },
                 secondaryButton: .cancel(Text("No"))
@@ -238,10 +248,10 @@ struct StepIndicator: View {
                     onBack?()
                 }) {
                     Image(systemName: "arrow.left")
-                        .foregroundColor(currentStep == 1 ? Color.clear : Color.accentGold)
+                        .foregroundColor((currentStep == 1 || currentStep == 6) ? Color.clear : Color.accentGold)
                         .font(.system(size: 20, weight: .semibold))
                 }
-                .disabled(currentStep == 1)
+                .disabled(currentStep == 1 || currentStep == 6)
             }
             
             Spacer()
@@ -338,6 +348,12 @@ struct FixedBottomNavigationView<Content: View>: View {
         self.disableBackButton = disableBackButton
         self.disableCancelButton = disableCancelButton
         self.nextButtonText = nextButtonText
+        
+        // Enhanced debug logging
+        print("DEBUG: FixedBottomNavigationView init - cancelAction parameter: \(cancelAction == nil ? "nil" : "not nil")")
+        print("DEBUG: FixedBottomNavigationView init - self.cancelAction: \(self.cancelAction == nil ? "nil" : "not nil")")
+        print("DEBUG: FixedBottomNavigationView init - currentStep: \(currentStep)")
+        print("DEBUG: FixedBottomNavigationView init - disableCancelButton: \(disableCancelButton)")
     }
     
     var body: some View {
@@ -345,14 +361,14 @@ struct FixedBottomNavigationView<Content: View>: View {
             VStack(spacing: 0) {
                 // Fixed header with back button, step indicator, and cancel button
                 HStack {
-                    // Back button on left (hidden for step 1)
+                    // Back button on left (hidden for step 1 and step 6)
                     Button(action: backAction) {
                         Image(systemName: "arrow.left")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor((currentStep == 1 || disableBackButton) ? Color.clear : Color.accentGold)
+                            .foregroundColor((currentStep == 1 || currentStep == 6 || disableBackButton) ? Color.clear : Color.accentGold)
                             .padding()
                     }
-                    .disabled(currentStep == 1 || disableBackButton)
+                    .disabled(currentStep == 1 || currentStep == 6 || disableBackButton)
                     
                     Spacer()
                     
@@ -379,7 +395,16 @@ struct FixedBottomNavigationView<Content: View>: View {
                     
                     // Cancel button on right
                     Button(action: {
-                        showCancelConfirmation = true
+                        print("DEBUG: Cancel button tapped in FixedBottomNavigationView")
+                        print("DEBUG: Is cancelAction nil? \(cancelAction == nil ? "Yes" : "No")")
+                        if let cancelAction = cancelAction {
+                            print("DEBUG: cancelAction exists in FixedBottomNavigationView - showing confirmation")
+                            showCancelConfirmation = true
+                        } else {
+                            print("DEBUG: cancelAction is nil in FixedBottomNavigationView - not showing confirmation")
+                            // Re-check if self.cancelAction is nil
+                            print("DEBUG: Double-checking self.cancelAction: \(self.cancelAction == nil ? "nil" : "not nil")")
+                        }
                     }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 20, weight: .semibold))
@@ -427,9 +452,13 @@ struct FixedBottomNavigationView<Content: View>: View {
             Alert(
                 title: Text("Cancel Order"),
                 message: Text("Do you want to cancel the order?"),
-                primaryButton: .destructive(Text("Yes")) {
+                primaryButton: .destructive(Text("Yes, I want to cancel")) {
+                    print("DEBUG: Cancel button pressed in FixedBottomNavigationView")
                     if let cancelAction = cancelAction {
+                        print("DEBUG: Executing cancelAction in FixedBottomNavigationView")
                         cancelAction()
+                    } else {
+                        print("DEBUG: cancelAction is nil in FixedBottomNavigationView")
                     }
                 },
                 secondaryButton: .cancel(Text("No"))

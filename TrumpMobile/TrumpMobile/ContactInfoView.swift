@@ -7,6 +7,7 @@ struct ContactInfoView: View {
     @Environment(\.presentationMode) var presentationMode
     @ObservedObject var viewModel: UserRegistrationViewModel
     var onNext: () -> Void
+    var onCancel: (() -> Void)? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     
@@ -37,6 +38,7 @@ struct ContactInfoView: View {
                 }
             }, 
             isNextDisabled: viewModel.firstName.isEmpty || viewModel.lastName.isEmpty || viewModel.phoneNumber.isEmpty || isLoading,
+            cancelAction: onCancel,
             disableBackButton: true,
             disableCancelButton: false,
             nextButtonText: "Next Step"
@@ -176,61 +178,98 @@ struct ContactInfoView: View {
         let db = Firestore.firestore()
         let dispatchGroup = DispatchGroup()
         
-        // Load main user data
-        dispatchGroup.enter()
-        db.collection("users").document(user.uid).getDocument { document, error in
-            defer { dispatchGroup.leave() }
+        // If we have an orderId, try to load data from the order
+        if let orderId = viewModel.orderId {
+            print("🔄 Loading data from order: \(orderId)")
             
-            if let error = error {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Failed to load your information: \(error.localizedDescription)"
+            // Load contact info and shipping address directly from the order document
+            dispatchGroup.enter()
+            db.collection("users").document(user.uid)
+                .collection("orders").document(orderId).getDocument { document, error in
+                    defer { dispatchGroup.leave() }
+                    
+                    if let error = error {
+                        print("❌ Error loading order data: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    if let document = document, document.exists, let data = document.data() {
+                        print("✅ Found order data")
+                        DispatchQueue.main.async {
+                            // Update with order's contact info
+                            self.viewModel.firstName = data["firstName"] as? String ?? self.viewModel.firstName
+                            self.viewModel.lastName = data["lastName"] as? String ?? self.viewModel.lastName
+                            self.viewModel.phoneNumber = data["phoneNumber"] as? String ?? self.viewModel.phoneNumber
+                            
+                            // Update with order's shipping address
+                            self.viewModel.street = data["street"] as? String ?? self.viewModel.street
+                            self.viewModel.aptNumber = data["aptNumber"] as? String ?? self.viewModel.aptNumber
+                            self.viewModel.city = data["city"] as? String ?? self.viewModel.city
+                            self.viewModel.state = data["state"] as? String ?? self.viewModel.state
+                            self.viewModel.zip = data["zip"] as? String ?? self.viewModel.zip
+                        }
+                    } else {
+                        print("⚠️ No order data found")
+                    }
                 }
-                return
+        } else {
+            // If no orderId, load from user's main document and subcollections
+            // Load main user data
+            dispatchGroup.enter()
+            db.collection("users").document(user.uid).getDocument { document, error in
+                defer { dispatchGroup.leave() }
+                
+                if let error = error {
+                    DispatchQueue.main.async {
+                        self.errorMessage = "Failed to load your information: \(error.localizedDescription)"
+                    }
+                    return
+                }
+                
+                if let document = document, document.exists, let data = document.data() {
+                    DispatchQueue.main.async {
+                        // Auto-fill with main document data
+                        self.viewModel.firstName = data["firstName"] as? String ?? self.viewModel.firstName
+                        self.viewModel.lastName = data["lastName"] as? String ?? self.viewModel.lastName
+                        self.viewModel.phoneNumber = data["phoneNumber"] as? String ?? self.viewModel.phoneNumber
+                        self.viewModel.street = data["street"] as? String ?? self.viewModel.street
+                        self.viewModel.aptNumber = data["aptNumber"] as? String ?? self.viewModel.aptNumber
+                        self.viewModel.city = data["city"] as? String ?? self.viewModel.city
+                        self.viewModel.state = data["state"] as? String ?? self.viewModel.state
+                        self.viewModel.zip = data["zip"] as? String ?? self.viewModel.zip
+                    }
+                }
             }
             
-            if let document = document, document.exists, let data = document.data() {
-                DispatchQueue.main.async {
-                    // Auto-fill with main document data
-                    self.viewModel.firstName = data["firstName"] as? String ?? self.viewModel.firstName
-                    self.viewModel.lastName = data["lastName"] as? String ?? self.viewModel.lastName
-                    self.viewModel.phoneNumber = data["phoneNumber"] as? String ?? self.viewModel.phoneNumber
-                    self.viewModel.street = data["street"] as? String ?? self.viewModel.street
-                    self.viewModel.aptNumber = data["aptNumber"] as? String ?? self.viewModel.aptNumber
-                    self.viewModel.city = data["city"] as? String ?? self.viewModel.city
-                    self.viewModel.state = data["state"] as? String ?? self.viewModel.state
-                    self.viewModel.zip = data["zip"] as? String ?? self.viewModel.zip
+            // Load contact info from subcollection
+            dispatchGroup.enter()
+            db.collection("users").document(user.uid).collection("contactInfo").document("primary").getDocument { document, error in
+                defer { dispatchGroup.leave() }
+                
+                if let document = document, document.exists, let data = document.data() {
+                    DispatchQueue.main.async {
+                        // Update with more specific contact info
+                        self.viewModel.firstName = data["firstName"] as? String ?? self.viewModel.firstName
+                        self.viewModel.lastName = data["lastName"] as? String ?? self.viewModel.lastName
+                        self.viewModel.phoneNumber = data["phoneNumber"] as? String ?? self.viewModel.phoneNumber
+                    }
                 }
             }
-        }
-        
-        // Load contact info from subcollection
-        dispatchGroup.enter()
-        db.collection("users").document(user.uid).collection("contactInfo").document("primary").getDocument { document, error in
-            defer { dispatchGroup.leave() }
             
-            if let document = document, document.exists, let data = document.data() {
-                DispatchQueue.main.async {
-                    // Update with more specific contact info
-                    self.viewModel.firstName = data["firstName"] as? String ?? self.viewModel.firstName
-                    self.viewModel.lastName = data["lastName"] as? String ?? self.viewModel.lastName
-                    self.viewModel.phoneNumber = data["phoneNumber"] as? String ?? self.viewModel.phoneNumber
-                }
-            }
-        }
-        
-        // Load shipping address from subcollection
-        dispatchGroup.enter()
-        db.collection("users").document(user.uid).collection("shippingAddresses").document("primary").getDocument { document, error in
-            defer { dispatchGroup.leave() }
-            
-            if let document = document, document.exists, let data = document.data() {
-                DispatchQueue.main.async {
-                    // Update with shipping address info
-                    self.viewModel.street = data["street"] as? String ?? self.viewModel.street
-                    self.viewModel.aptNumber = data["aptNumber"] as? String ?? self.viewModel.aptNumber
-                    self.viewModel.city = data["city"] as? String ?? self.viewModel.city
-                    self.viewModel.state = data["state"] as? String ?? self.viewModel.state
-                    self.viewModel.zip = data["zip"] as? String ?? self.viewModel.zip
+            // Load shipping address from subcollection
+            dispatchGroup.enter()
+            db.collection("users").document(user.uid).collection("shippingAddress").document("primary").getDocument { document, error in
+                defer { dispatchGroup.leave() }
+                
+                if let document = document, document.exists, let data = document.data() {
+                    DispatchQueue.main.async {
+                        // Update with shipping address info
+                        self.viewModel.street = data["street"] as? String ?? self.viewModel.street
+                        self.viewModel.aptNumber = data["aptNumber"] as? String ?? self.viewModel.aptNumber
+                        self.viewModel.city = data["city"] as? String ?? self.viewModel.city
+                        self.viewModel.state = data["state"] as? String ?? self.viewModel.state
+                        self.viewModel.zip = data["zip"] as? String ?? self.viewModel.zip
+                    }
                 }
             }
         }
@@ -244,6 +283,6 @@ struct ContactInfoView: View {
 
 struct ContactInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ContactInfoView(viewModel: UserRegistrationViewModel(), onNext: {})
+        ContactInfoView(viewModel: UserRegistrationViewModel(), onNext: {}, onCancel: {})
     }
 }

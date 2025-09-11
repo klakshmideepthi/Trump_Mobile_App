@@ -11,10 +11,13 @@ struct RegistrationFlowView: View {
     @StateObject private var viewModel = UserRegistrationViewModel()
     @State private var showingAlert = false
     @State private var alertMessage = ""
-
-    init(startStep: RegistrationStep = .createAccount) {
+    
+    init(startStep: RegistrationStep = .createAccount, orderId: String? = nil) {
         self.startStep = startStep
         _step = State(initialValue: startStep)
+        if let orderId = orderId {
+            viewModel.orderId = orderId
+        }
     }
     
     var body: some View {

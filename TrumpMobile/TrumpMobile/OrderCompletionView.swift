@@ -22,8 +22,9 @@ struct OrderCompletionView: View {
                 }
             },
             isNextDisabled: false,  // Button should always be active
+            cancelAction: onGoToHome,  // Enable cancel button to go to home
             disableBackButton: false,
-            disableCancelButton: true,
+            disableCancelButton: false,  // Enable cancel button
             nextButtonText: "Go To Home"
         ) {
             VStack(spacing: 24) {

@@ -13,6 +13,90 @@ class FirebaseManager {
         }
     }
     
+    // Create a new order for a user
+    func createNewOrder(userId: String, completion: @escaping (String?, Error?) -> Void) {
+        // Create a new document reference with auto-generated ID
+        let orderRef = db.collection("users").document(userId).collection("orders").document()
+        let orderId = orderRef.documentID
+        
+        // Create initial order data
+        let orderData: [String: Any] = [
+            "orderId": orderId,
+            "status": "draft",
+            "createdAt": FieldValue.serverTimestamp(),
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+        
+        // Save the new order document
+        orderRef.setData(orderData) { error in
+            if let error = error {
+                print("❌ Error creating order: \(error.localizedDescription)")
+                completion(nil, error)
+            } else {
+                print("✅ Order created with ID: \(orderId)")
+                completion(orderId, nil)
+            }
+        }
+    }
+    
+    // Copy contact info from user to order
+    func copyContactInfoToOrder(userId: String, orderId: String, completion: @escaping (Bool, Error?) -> Void) {
+        // Get user's contact info
+        db.collection("users").document(userId).collection("contactInfo").document("primary").getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error getting contact info: \(error.localizedDescription)")
+                completion(false, error)
+                return
+            }
+            
+            guard let data = snapshot?.data(), !data.isEmpty else {
+                print("⚠️ No contact info found to copy")
+                completion(true, nil) // Still succeed if no data to copy
+                return
+            }
+            
+            // Use the new method to save to order without updating the user default (since we're copying from it)
+            self.saveOrderContactInfo(userId: userId, orderId: orderId, contactData: data, updateUserDefault: false) { success, error in
+                if success {
+                    print("✅ Contact info copied to order")
+                    completion(true, nil)
+                } else {
+                    print("❌ Error copying contact info to order: \(error?.localizedDescription ?? "unknown")")
+                    completion(false, error)
+                }
+            }
+        }
+    }
+    
+    // Copy shipping address from user to order
+    func copyShippingAddressToOrder(userId: String, orderId: String, completion: @escaping (Bool, Error?) -> Void) {
+        // Get user's shipping address
+        db.collection("users").document(userId).collection("shippingAddresses").document("primary").getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error getting shipping address: \(error.localizedDescription)")
+                completion(false, error)
+                return
+            }
+            
+            guard let data = snapshot?.data(), !data.isEmpty else {
+                print("⚠️ No shipping address found to copy")
+                completion(true, nil) // Still succeed if no data to copy
+                return
+            }
+            
+            // Use the new method to save to order without updating the user default (since we're copying from it)
+            self.saveOrderShippingAddress(userId: userId, orderId: orderId, addressData: data, updateUserDefault: false) { success, error in
+                if success {
+                    print("✅ Shipping address copied to order")
+                    completion(true, nil)
+                } else {
+                    print("❌ Error copying shipping address to order: \(error?.localizedDescription ?? "unknown")")
+                    completion(false, error)
+                }
+            }
+        }
+    }
+    
     // Update user registration data
     func updateUserRegistration(userId: String, data: [String: Any], completion: @escaping (Bool, Error?) -> Void) {
         print("📝 updateUserRegistration called for userId: \(userId)")
@@ -95,7 +179,7 @@ class FirebaseManager {
         print("📍 saveShippingAddress called for userId: \(userId)")
         print("📍 addressData: \(addressData)")
         
-        db.collection("users").document(userId).collection("shippingAddresses").document("primary")
+        db.collection("users").document(userId).collection("shippingAddress").document("primary")
             .setData(addressData, merge: true) { error in
                 if let error = error {
                     print("❌ Error saving shipping address: \(error.localizedDescription)")
@@ -107,9 +191,14 @@ class FirebaseManager {
             }
     }
     
-    // Save billing address separately
+    // Save billing address directly to orders
     func saveBillingAddress(userId: String, addressData: [String: Any], completion: @escaping (Bool, Error?) -> Void) {
-        db.collection("users").document(userId).collection("billingAddresses").document("primary")
+        // Get the current order ID or use a default one
+        let orderId = UserDefaults.standard.string(forKey: "currentOrderId") ?? "current"
+        
+        // Add billing info to the order document
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
             .setData(addressData, merge: true) { error in
                 completion(error == nil, error)
             }
@@ -146,7 +235,7 @@ class FirebaseManager {
     
     // Get shipping address
     func getShippingAddress(userId: String, completion: @escaping ([String: Any]?, Error?) -> Void) {
-        db.collection("users").document(userId).collection("shippingAddresses").document("primary")
+        db.collection("users").document(userId).collection("shippingAddress").document("primary")
             .getDocument { snapshot, error in
                 if let error = error {
                     completion(nil, error)
@@ -162,9 +251,14 @@ class FirebaseManager {
             }
     }
     
-    // Get billing address
+    // Get billing address from orders
     func getBillingAddress(userId: String, completion: @escaping ([String: Any]?, Error?) -> Void) {
-        db.collection("users").document(userId).collection("billingAddresses").document("primary")
+        // Get the current order ID or use a default one
+        let orderId = UserDefaults.standard.string(forKey: "currentOrderId") ?? "current"
+        
+        // Get billing info from the order document
+        db.collection("users").document(userId)
+            .collection("orders").document(orderId)
             .getDocument { snapshot, error in
                 if let error = error {
                     completion(nil, error)
@@ -176,8 +270,209 @@ class FirebaseManager {
                     return
                 }
                 
-                completion(data, nil)
+                // Extract only billing-related fields
+                var billingData: [String: Any] = [:]
+                let billingFields = ["address", "country", "creditCardNumber", "billingDetails", "billingZipCode", "billingCity", "billingState"]
+                
+                for field in billingFields {
+                    if let value = data[field] {
+                        billingData[field] = value
+                    }
+                }
+                
+                completion(billingData, nil)
             }
+    }
+    
+    // Save contact information directly to a specific order
+    func saveOrderContactInfo(userId: String, orderId: String, contactData: [String: Any], updateUserDefault: Bool = true, completion: @escaping (Bool, Error?) -> Void) {
+        print("📞 saveOrderContactInfo called for orderId: \(orderId)")
+        print("📞 contactData: \(contactData)")
+        
+        let orderRef = db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+        
+        // Save contact data directly to the order document
+        orderRef.setData(contactData, merge: true) { error in
+            if let error = error {
+                print("❌ Error saving order contact info: \(error.localizedDescription)")
+                completion(false, error)
+                return
+            }
+            
+            print("✅ Order contact info saved successfully")
+            
+            // If updateUserDefault is true, also update the user's default contact info
+            if updateUserDefault {
+                self.saveContactInfo(userId: userId, contactData: contactData) { success, error in
+                    if let error = error {
+                        print("⚠️ Updated order contact but failed to sync with user default: \(error.localizedDescription)")
+                    } else {
+                        print("✅ Successfully synced order contact with user default")
+                    }
+                    completion(true, nil)  // We still consider the operation successful if the order update worked
+                }
+            } else {
+                completion(true, nil)
+            }
+        }
+    }
+    
+    // Save shipping address directly to a specific order
+    func saveOrderShippingAddress(userId: String, orderId: String, addressData: [String: Any], updateUserDefault: Bool = true, completion: @escaping (Bool, Error?) -> Void) {
+        print("📍 saveOrderShippingAddress called for orderId: \(orderId)")
+        print("📍 addressData: \(addressData)")
+        
+        let orderRef = db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+        
+        // Save shipping address data directly to the order document
+        orderRef.setData(addressData, merge: true) { error in
+            if let error = error {
+                print("❌ Error saving order shipping address: \(error.localizedDescription)")
+                completion(false, error)
+                return
+            }
+            
+            print("✅ Order shipping address saved successfully")
+            
+            // If updateUserDefault is true, also update the user's default shipping address
+            if updateUserDefault {
+                self.saveShippingAddress(userId: userId, addressData: addressData) { success, error in
+                    if let error = error {
+                        print("⚠️ Updated order shipping address but failed to sync with user default: \(error.localizedDescription)")
+                    } else {
+                        print("✅ Successfully synced order shipping address with user default")
+                    }
+                    completion(true, nil)  // We still consider the operation successful if the order update worked
+                }
+            } else {
+                completion(true, nil)
+            }
+        }
+    }
+    
+    // Get contact information directly from a specific order
+    func getOrderContactInfo(userId: String, orderId: String, completion: @escaping ([String: Any]?, Error?) -> Void) {
+        print("📱 getOrderContactInfo called for orderId: \(orderId)")
+        
+        let orderRef = db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            
+        orderRef.getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error getting order document: \(error.localizedDescription)")
+                completion(nil, error)
+                return
+            }
+            
+            if snapshot?.exists == false {
+                print("⚠️ Order document does not exist")
+                completion(nil, nil)
+                return
+            }
+            
+            guard let data = snapshot?.data() else {
+                print("⚠️ Order document exists but has no data")
+                completion(nil, nil)
+                return
+            }
+            
+            // Extract only contact-related fields
+            var contactData: [String: Any] = [:]
+            let contactFields = ["firstName", "lastName", "phoneNumber", "email"]
+            
+            for field in contactFields {
+                if let value = data[field] {
+                    contactData[field] = value
+                }
+            }
+            
+            print("✅ Successfully retrieved order contact info")
+            completion(contactData, nil)
+        }
+    }
+    
+    // Get shipping address directly from a specific order
+    func getOrderShippingAddress(userId: String, orderId: String, completion: @escaping ([String: Any]?, Error?) -> Void) {
+        print("📱 getOrderShippingAddress called for orderId: \(orderId)")
+        
+        let orderRef = db.collection("users").document(userId)
+            .collection("orders").document(orderId)
+            
+        orderRef.getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error getting order document: \(error.localizedDescription)")
+                completion(nil, error)
+                return
+            }
+            
+            if snapshot?.exists == false {
+                print("⚠️ Order document does not exist")
+                completion(nil, nil)
+                return
+            }
+            
+            guard let data = snapshot?.data() else {
+                print("⚠️ Order document exists but has no data")
+                completion(nil, nil)
+                return
+            }
+            
+            // Extract only shipping address-related fields
+            var shippingData: [String: Any] = [:]
+            let shippingFields = ["street", "aptNumber", "zip", "city", "state"]
+            
+            for field in shippingFields {
+                if let value = data[field] {
+                    shippingData[field] = value
+                }
+            }
+            
+            print("✅ Successfully retrieved order shipping address")
+            completion(shippingData, nil)
+        }
+    }
+    
+    // Delete an order from Firebase
+    func deleteOrder(userId: String, orderId: String, completion: @escaping (Bool, Error?) -> Void) {
+        print("DEBUG: FirebaseManager.deleteOrder called")
+        print("DEBUG: Attempting to delete order with ID: \(orderId) for user: \(userId)")
+        
+        let orderRef = db.collection("users").document(userId).collection("orders").document(orderId)
+        
+        // First check if document exists
+        orderRef.getDocument { (docSnapshot, error) in
+            if let error = error {
+                print("DEBUG: Error checking if order exists: \(error.localizedDescription)")
+                completion(false, error)
+                return
+            }
+            
+            guard let docSnapshot = docSnapshot else {
+                print("DEBUG: Document snapshot is nil")
+                completion(false, nil)
+                return
+            }
+            
+            if docSnapshot.exists {
+                print("DEBUG: Order document exists, proceeding with deletion")
+                
+                orderRef.delete { error in
+                    if let error = error {
+                        print("DEBUG: Error deleting order: \(error.localizedDescription)")
+                        completion(false, error)
+                    } else {
+                        print("DEBUG: Order successfully deleted from Firestore")
+                        completion(true, nil)
+                    }
+                }
+            } else {
+                print("DEBUG: Order document does not exist in Firestore")
+                // Still return true since the end result is the same (no order exists)
+                completion(true, nil)
+            }
+        }
     }
     
     // Debug function to check where user data is stored
@@ -217,7 +512,7 @@ class FirebaseManager {
         
         // Check shipping address subcollection
         dispatchGroup.enter()
-        db.collection("users").document(userId).collection("shippingAddresses").document("primary").getDocument { snapshot, error in
+        db.collection("users").document(userId).collection("shippingAddress").document("primary").getDocument { snapshot, error in
             defer { dispatchGroup.leave() }
             
             if let error = error {

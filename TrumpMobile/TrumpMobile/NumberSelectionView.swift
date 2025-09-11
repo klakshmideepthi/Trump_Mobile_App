@@ -4,6 +4,7 @@ struct NumberSelectionView: View {
     @ObservedObject var viewModel: UserRegistrationViewModel
     var onNext: () -> Void
     var onBack: (() -> Void)? = nil
+    var onCancel: (() -> Void)? = nil
     
     var body: some View {
         StepNavigationContainer(
@@ -13,12 +14,23 @@ struct NumberSelectionView: View {
             nextButtonDisabled: viewModel.numberType.isEmpty || 
                           (viewModel.numberType == "New" && viewModel.selectedPhoneNumber.isEmpty) ||
                           (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.isEmpty),
-            nextButtonAction: onNext,
+            nextButtonAction: {
+                // Save number selection to orders collection
+                viewModel.saveNumberSelection { success in
+                    if success {
+                        // Continue to next step only if save was successful
+                        onNext()
+                    } else {
+                        print("Failed to save number selection")
+                    }
+                }
+            },
             backButtonAction: {
                 if let onBack = onBack {
                     onBack()
                 }
-            }
+            },
+            cancelAction: onCancel
         ) {
             VStack(spacing: 20) {
                 VStack(spacing: 8) {

@@ -12,7 +12,17 @@ struct SimSelectionView: View {
             totalSteps: 6,
             nextButtonText: "Next Step",
             nextButtonDisabled: viewModel.simType.isEmpty,
-            nextButtonAction: onNext,
+            nextButtonAction: {
+                // Save SIM selection to orders collection
+                viewModel.saveSimSelection { success in
+                    if success {
+                        // Continue to next step only if save was successful
+                        onNext()
+                    } else {
+                        print("Failed to save SIM selection")
+                    }
+                }
+            },
             backButtonAction: {
                 if let onBack = onBack {
                     onBack()

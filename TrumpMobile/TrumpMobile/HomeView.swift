@@ -3,25 +3,63 @@ import FirebaseAuth
 
 struct HomeView: View {
     @State private var showStartOrder = false
+    @State private var showProfileView = false
     var onStartOrder: (() -> Void)? = nil
     var onLogout: (() -> Void)? = nil
+    @EnvironmentObject private var navigationState: NavigationState
+    
+    init(onStartOrder: (() -> Void)? = nil, onLogout: (() -> Void)? = nil) {
+        print("DEBUG: HomeView initializing")
+        self.onStartOrder = onStartOrder
+        self.onLogout = onLogout
+    }
     
     var body: some View {
+        // Print statement moved inside onAppear
         NavigationView {
             ZStack {
                 Color.trumpBackground.ignoresSafeArea()
                 
                 VStack(spacing: 20) {
-                    Image("Trump_Mobile_logo_gold")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 100, height: 100)
-                        .padding(.top, 20)
+                    // Header with logo and profile button
+                    HStack {
+                        Image("Trump_Mobile_logo_gold")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 40)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            showProfileView = true
+                        }) {
+                            Image(systemName: "person.crop.circle")
+                                .font(.system(size: 24))
+                                .foregroundColor(Color.accentGold)
+                        }
+                        .sheet(isPresented: $showProfileView) {
+                            ProfileView()
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 10)
+                    
+                    // Main content
+                    Text("Welcome to")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.trumpText)
                     
                     Text("Trump™ Mobile")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.trumpText)
+                    
+                    Text("Get started with Trump™ Mobile in\njust a few steps.")
+                        .font(.title2)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.trumpText)
+                        .padding(.top, 5)
                     
                     Spacer()
                     
@@ -47,29 +85,24 @@ struct HomeView: View {
                     .padding(.horizontal)
                     
                     Spacer()
-                    
-                    if let onLogout = onLogout {
-                        Button(action: onLogout) {
-                            HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                Text("Logout")
-                            }
-                            .foregroundColor(.red)
-                        }
-                        .padding(.bottom, 30)
-                    }
                 }
                 .padding()
             }
-            .navigationTitle("Home")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("")
+            .navigationBarHidden(true)
+            .onAppear {
+                print("DEBUG: HomeView appeared")
+            }
             .fullScreenCover(isPresented: $showStartOrder) {
                 NavigationView {
                     StartOrderView(
-                        onStart: {
+                        onStart: { orderId in
                             showStartOrder = false
                             // Note: This will return to HomeView and then the parent ContentView
                             // will need to handle the actual navigation to the next step
+                            if let onStartOrder = onStartOrder {
+                                onStartOrder()
+                            }
                         },
                         onLogout: onLogout
                     )

@@ -25,12 +25,25 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct TrumpMobileApp: App {
   // register app delegate for Firebase setup
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+  
+  // Create navigationState as a StateObject
+  @StateObject private var navigationState = NavigationState()
+  
+  init() {
+    print("DEBUG: TrumpMobileApp initializing")
+  }
 
   var body: some Scene {
-    WindowGroup {
+    print("DEBUG: TrumpMobileApp body rendering, navigationState exists: \(navigationState != nil)")
+    
+    return WindowGroup {
       NavigationView {
         SplashView()
+          .onAppear {
+            print("DEBUG: SplashView appeared in TrumpMobileApp")
+          }
       }
+      .environmentObject(navigationState)
       // The app will use system appearance for light/dark mode
       // To force light mode, uncomment the following line:
       // UIView.appearance().overrideUserInterfaceStyle = .light
