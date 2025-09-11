@@ -170,7 +170,7 @@ struct CreateAccountView: View {
             guard
                 let idToken = signInResult?.user.idToken?.tokenString,
                 let accessToken = signInResult?.user.accessToken.tokenString,
-                let email = signInResult?.user.profile?.email
+                let _ = signInResult?.user.profile?.email
             else {
                 self.show(error: "Google authentication failed.")
                 return
@@ -179,35 +179,22 @@ struct CreateAccountView: View {
             let credential = GoogleAuthProvider.credential(withIDToken: idToken,
                                                            accessToken: accessToken)
             
-            // First check if the user already exists
-            Auth.auth().fetchSignInMethods(forEmail: email) { (methods, error) in
+            // Skip the check for existing accounts and directly try to sign in
+            // The error handling will tell us if the account already exists
+            Auth.auth().signIn(with: credential) { authResult, error in
                 if let error = error {
                     self.show(error: error.localizedDescription)
                     return
                 }
                 
-                // If the user doesn't exist (no sign-in methods), create a new account
-                if methods == nil || methods?.isEmpty == true {
-                    // Create new user with Google credentials
-                    Auth.auth().signIn(with: credential) { authResult, error in
-                        if let error = error {
-                            self.show(error: error.localizedDescription)
-                            return
-                        }
-                        
-                        // Update user registration model
-                        if let user = authResult?.user {
-                            self.viewModel.userId = user.uid
-                            self.viewModel.email = user.email ?? ""
-                            self.viewModel.accountType = "Google"
-                            self.onAccountCreated?()
-                        } else {
-                            self.show(error: "Failed to create account.")
-                        }
-                    }
+                // Update user registration model
+                if let user = authResult?.user {
+                    self.viewModel.userId = user.uid
+                    self.viewModel.email = user.email ?? ""
+                    self.viewModel.accountType = "Google"
+                    self.onAccountCreated?()
                 } else {
-                    // User already exists
-                    self.show(error: "An account already exists with this email. Please sign in instead.")
+                    self.show(error: "Failed to create account.")
                 }
             }
         }
@@ -221,7 +208,7 @@ struct CreateAccountView: View {
                 let appleIDCred = auth.credential as? ASAuthorizationAppleIDCredential,
                 let identityToken = appleIDCred.identityToken,
                 let tokenString = String(data: identityToken, encoding: .utf8),
-                let email = appleIDCred.email
+                let _ = appleIDCred.email
             else {
                 show(error: "Apple Sign-Up failed. Please try again.")
                 return
@@ -232,42 +219,28 @@ struct CreateAccountView: View {
                                                           rawNonce: nonce,
                                                           fullName: appleIDCred.fullName)
             
-            // First check if the user already exists
-            Auth.auth().fetchSignInMethods(forEmail: email) { (methods, error) in
+            // Skip checking if user exists and directly try to sign in
+            Auth.auth().signIn(with: credential) { authResult, error in
                 if let error = error {
                     self.show(error: error.localizedDescription)
                     return
                 }
                 
-                // If the user doesn't exist (no sign-in methods), create a new account
-                if methods == nil || methods?.isEmpty == true {
-                    // Create new user with Apple credentials
-                    Auth.auth().signIn(with: credential) { authResult, error in
-                        if let error = error {
-                            self.show(error: error.localizedDescription)
-                            return
-                        }
-                        
-                        // Update user registration model
-                        if let user = authResult?.user {
-                            self.viewModel.userId = user.uid
-                            self.viewModel.email = user.email ?? email
-                            self.viewModel.accountType = "Apple"
-                            
-                            // If we have the fullName
-                            if let fullName = appleIDCred.fullName {
-                                self.viewModel.firstName = fullName.givenName ?? ""
-                                self.viewModel.lastName = fullName.familyName ?? ""
-                            }
-                            
-                            self.onAccountCreated?()
-                        } else {
-                            self.show(error: "Failed to create account.")
-                        }
+                // Update user registration model
+                if let user = authResult?.user {
+                    self.viewModel.userId = user.uid
+                    self.viewModel.email = user.email ?? appleIDCred.email ?? ""
+                    self.viewModel.accountType = "Apple"
+                    
+                    // If we have the fullName
+                    if let fullName = appleIDCred.fullName {
+                        self.viewModel.firstName = fullName.givenName ?? ""
+                        self.viewModel.lastName = fullName.familyName ?? ""
                     }
+                    
+                    self.onAccountCreated?()
                 } else {
-                    // User already exists
-                    self.show(error: "An account already exists with this email. Please sign in instead.")
+                    self.show(error: "Failed to create account.")
                 }
             }
 

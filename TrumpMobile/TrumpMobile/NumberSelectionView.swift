@@ -6,18 +6,21 @@ struct NumberSelectionView: View {
     var onBack: (() -> Void)? = nil
     
     var body: some View {
-        VStack(spacing: 20) {
-            HStack {
+        FixedBottomNavigationView(
+            currentStep: 4,
+            backAction: {
                 if let onBack = onBack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
-                    }
-                    .padding(.leading)
+                    onBack()
                 }
-                Spacer()
-            }
-            Text("Step 5: Transfer existing number or choose a new one").font(.title2)
+            },
+            nextAction: onNext,
+            isNextDisabled: viewModel.numberType.isEmpty || 
+                          (viewModel.numberType == "New" && viewModel.selectedPhoneNumber.isEmpty) ||
+                          (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.isEmpty)
+        ) {
+            VStack(spacing: 20) {
+                // Step Indicator
+                StepIndicator(currentStep: 4)
             HStack {
                 Button(action: {
                     viewModel.numberType = "Existing"
@@ -88,12 +91,8 @@ struct NumberSelectionView: View {
                     .padding(.top)
             }
             
-            Button("Next Step") {
-                onNext()
-            }
-            .disabled(viewModel.numberType.isEmpty || 
-                     (viewModel.numberType == "New" && viewModel.selectedPhoneNumber.isEmpty) ||
-                     (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.isEmpty))
+            Spacer()
         }
-    }
+        .padding()
+    }}
 }

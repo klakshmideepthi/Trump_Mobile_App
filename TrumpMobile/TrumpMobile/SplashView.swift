@@ -4,6 +4,7 @@ import FirebaseAuth
 struct SplashView: View {
     @State private var isActive = false
     @State private var isSignedIn = false // Track sign-in state
+    @State private var authStateListener: AuthStateDidChangeListenerHandle?
 
     var body: some View {
         if isActive {
@@ -21,19 +22,24 @@ struct SplashView: View {
             .background(Color.white)
             .ignoresSafeArea()
             .onAppear {
-                // Check sign-in status using FirebaseAuth
-                isSignedIn = checkIfUserIsSignedIn()
+                // Set up auth state listener
+                authStateListener = Auth.auth().addStateDidChangeListener { auth, user in
+                    isSignedIn = user != nil
+                }
+                
+                // Delay splash screen
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                     withAnimation {
                         isActive = true
                     }
                 }
             }
+            .onDisappear {
+                // Remove listener when view disappears
+                if let handle = authStateListener {
+                    Auth.auth().removeStateDidChangeListener(handle)
+                }
+            }
         }
-    }
-
-    // Real authentication logic using FirebaseAuth
-    func checkIfUserIsSignedIn() -> Bool {
-        return Auth.auth().currentUser != nil
     }
 }

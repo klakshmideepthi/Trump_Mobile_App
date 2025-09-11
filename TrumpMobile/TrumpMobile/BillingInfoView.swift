@@ -6,18 +6,19 @@ struct BillingInfoView: View {
     var onBack: (() -> Void)? = nil
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
+        FixedBottomNavigationView(
+            currentStep: 5,
+            backAction: {
                 if let onBack = onBack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
-                    }
-                    .padding(.leading)
+                    onBack()
                 }
-                Spacer()
-            }
-            Text("Step 6: Billing Information").font(.title2)
+            },
+            nextAction: onNext,
+            isNextDisabled: viewModel.creditCardNumber.isEmpty || viewModel.billingDetails.isEmpty
+        ) {
+            VStack(spacing: 16) {
+                // Step Indicator
+                StepIndicator(currentStep: 5)
             TextField("Credit Card Number", text: $viewModel.creditCardNumber)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .keyboardType(.numberPad)
@@ -36,14 +37,8 @@ struct BillingInfoView: View {
             .pickerStyle(MenuPickerStyle())
             .padding(.vertical)
             
-            Button("Complete Order") {
-                onNext()
-            }
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
-            .disabled(viewModel.creditCardNumber.isEmpty || viewModel.billingDetails.isEmpty)
+            Spacer(minLength: 50)
         }
-    }
+        .padding()
+    }}
 }

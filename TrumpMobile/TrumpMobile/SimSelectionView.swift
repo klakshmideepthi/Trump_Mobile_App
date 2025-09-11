@@ -6,18 +6,19 @@ struct SimSelectionView: View {
     var onBack: (() -> Void)? = nil
     
     var body: some View {
-        VStack(spacing: 20) {
-            HStack {
+        FixedBottomNavigationView(
+            currentStep: 3,
+            backAction: {
                 if let onBack = onBack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
-                    }
-                    .padding(.leading)
+                    onBack()
                 }
-                Spacer()
-            }
-            Text("Step 4: Phone is compatible with our network").font(.title2)
+            },
+            nextAction: onNext,
+            isNextDisabled: viewModel.simType.isEmpty
+        ) {
+            VStack(spacing: 20) {
+                // Step Indicator
+                StepIndicator(currentStep: 3)
             HStack {
                 Button(action: {
                     viewModel.simType = "E-sim"
@@ -42,10 +43,9 @@ struct SimSelectionView: View {
                 Text("You selected: \(viewModel.simType)")
                     .font(.subheadline)
             }
-            Button("Next Step") {
-                onNext()
-            }
-            .disabled(viewModel.simType.isEmpty)
+            
+            Spacer()
         }
-    }
+        .padding()
+    }}
 }

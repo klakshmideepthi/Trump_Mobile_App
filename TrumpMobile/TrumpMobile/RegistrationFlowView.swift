@@ -16,6 +16,7 @@ struct RegistrationFlowView: View {
         self.startStep = startStep
         _step = State(initialValue: startStep)
     }
+    
     var body: some View {
         VStack {
             if viewModel.isLoading {
@@ -38,7 +39,7 @@ struct RegistrationFlowView: View {
                         }
                     }
                 case .deviceCompatibility:
-                    DeviceCompatibilityView(viewModel: viewModel) {
+                    DeviceCompatibilityView(viewModel: viewModel, onNext: {
                         viewModel.saveDeviceInfo { success in
                             if success {
                                 step = .simSelection
@@ -47,9 +48,11 @@ struct RegistrationFlowView: View {
                                 showingAlert = true
                             }
                         }
-                    }
+                    }, onBack: {
+                        step = .contactInfo
+                    })
                 case .simSelection:
-                    SimSelectionView(viewModel: viewModel) {
+                    SimSelectionView(viewModel: viewModel, onNext: {
                         viewModel.saveSimSelection { success in
                             if success {
                                 step = .numberSelection
@@ -58,9 +61,11 @@ struct RegistrationFlowView: View {
                                 showingAlert = true
                             }
                         }
-                    }
+                    }, onBack: {
+                        step = .deviceCompatibility
+                    })
                 case .numberSelection:
-                    NumberSelectionView(viewModel: viewModel) {
+                    NumberSelectionView(viewModel: viewModel, onNext: {
                         viewModel.saveNumberSelection { success in
                             if success {
                                 step = .billingInfo
@@ -69,9 +74,11 @@ struct RegistrationFlowView: View {
                                 showingAlert = true
                             }
                         }
-                    }
+                    }, onBack: {
+                        step = .simSelection
+                    })
                 case .billingInfo:
-                    BillingInfoView(viewModel: viewModel) {
+                    BillingInfoView(viewModel: viewModel, onNext: {
                         viewModel.saveBillingInfo { success in
                             if success {
                                 step = .orderCompletion
@@ -80,7 +87,9 @@ struct RegistrationFlowView: View {
                                 showingAlert = true
                             }
                         }
-                    }
+                    }, onBack: {
+                        step = .numberSelection
+                    })
                 case .orderCompletion:
                     OrderCompletionView(viewModel: viewModel)
                 }

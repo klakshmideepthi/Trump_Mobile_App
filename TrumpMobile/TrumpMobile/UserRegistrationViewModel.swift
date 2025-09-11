@@ -164,65 +164,151 @@ class UserRegistrationViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        let group = DispatchGroup()
+        
+        // Load main user data
+        group.enter()
         FirebaseManager.shared.getUserRegistration(userId: userId) { [weak self] data, error in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.isLoading = false
-                
-                if let error = error {
+            defer { group.leave() }
+            guard let self = self else { return }
+            
+            if let error = error {
+                DispatchQueue.main.async {
                     self.errorMessage = error.localizedDescription
-                    completion(false)
-                    return
                 }
-                
-                guard let data = data else {
-                    self.errorMessage = "No data found"
-                    completion(false)
-                    return
-                }
-                
-                // Update all properties from Firestore
-                self.accountType = data["accountType"] as? String ?? ""
-                self.email = data["email"] as? String ?? ""
-                self.firstName = data["firstName"] as? String ?? ""
-                self.lastName = data["lastName"] as? String ?? ""
-                self.phoneNumber = data["phoneNumber"] as? String ?? ""
-                self.street = data["street"] as? String ?? ""
-                self.aptNumber = data["aptNumber"] as? String ?? ""
-                self.zip = data["zip"] as? String ?? ""
-                self.city = data["city"] as? String ?? ""
-                self.state = data["state"] as? String ?? ""
-                self.deviceBrand = data["deviceBrand"] as? String ?? ""
-                self.deviceModel = data["deviceModel"] as? String ?? ""
-                self.imei = data["imei"] as? String ?? ""
-                self.simType = data["simType"] as? String ?? ""
-                self.numberType = data["numberType"] as? String ?? ""
-                self.selectedPhoneNumber = data["selectedPhoneNumber"] as? String ?? ""
-                self.creditCardNumber = data["creditCardNumber"] as? String ?? ""
-                self.billingDetails = data["billingDetails"] as? String ?? ""
-                self.address = data["address"] as? String ?? ""
-                self.country = data["country"] as? String ?? "USA"
-                self.deviceIsCompatible = data["deviceIsCompatible"] as? Bool ?? false
-                
-                completion(true)
+                return
             }
+            
+            if let data = data {
+                DispatchQueue.main.async {
+                    // Update properties from main user document
+                    self.accountType = data["accountType"] as? String ?? ""
+                    self.email = data["email"] as? String ?? ""
+                    self.firstName = data["firstName"] as? String ?? ""
+                    self.lastName = data["lastName"] as? String ?? ""
+                    self.phoneNumber = data["phoneNumber"] as? String ?? ""
+                    self.deviceBrand = data["deviceBrand"] as? String ?? ""
+                    self.deviceModel = data["deviceModel"] as? String ?? ""
+                    self.imei = data["imei"] as? String ?? ""
+                    self.simType = data["simType"] as? String ?? ""
+                    self.numberType = data["numberType"] as? String ?? ""
+                    self.selectedPhoneNumber = data["selectedPhoneNumber"] as? String ?? ""
+                    self.creditCardNumber = data["creditCardNumber"] as? String ?? ""
+                    self.billingDetails = data["billingDetails"] as? String ?? ""
+                    self.address = data["address"] as? String ?? ""
+                    self.country = data["country"] as? String ?? "USA"
+                    self.deviceIsCompatible = data["deviceIsCompatible"] as? Bool ?? false
+                }
+            }
+        }
+        
+        // Load contact info
+        group.enter()
+        FirebaseManager.shared.getContactInfo(userId: userId) { [weak self] data, error in
+            defer { group.leave() }
+            guard let self = self, let data = data else { return }
+            
+            DispatchQueue.main.async {
+                // Update contact properties
+                self.firstName = data["firstName"] as? String ?? self.firstName
+                self.lastName = data["lastName"] as? String ?? self.lastName
+                self.phoneNumber = data["phoneNumber"] as? String ?? self.phoneNumber
+            }
+        }
+        
+        // Load shipping address
+        group.enter()
+        FirebaseManager.shared.getShippingAddress(userId: userId) { [weak self] data, error in
+            defer { group.leave() }
+            guard let self = self, let data = data else { return }
+            
+            DispatchQueue.main.async {
+                // Update address properties
+                self.street = data["street"] as? String ?? self.street
+                self.aptNumber = data["aptNumber"] as? String ?? self.aptNumber
+                self.zip = data["zip"] as? String ?? self.zip
+                self.city = data["city"] as? String ?? self.city
+                self.state = data["state"] as? String ?? self.state
+            }
+        }
+        
+        // Load billing address
+        group.enter()
+        FirebaseManager.shared.getBillingAddress(userId: userId) { [weak self] data, error in
+            defer { group.leave() }
+            guard let self = self, let data = data else { return }
+            
+            DispatchQueue.main.async {
+                // Update billing address properties
+                self.address = data["address"] as? String ?? self.address
+                self.country = data["country"] as? String ?? self.country
+            }
+        }
+        
+        // When all data is loaded
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self else { return }
+            self.isLoading = false
+            completion(true)
         }
     }
     
     // Save contact information
     func saveContactInfo(completion: @escaping (Bool) -> Void) {
+        guard let userId = userId else {
+            errorMessage = "User ID not available"
+            completion(false)
+            return
+        }
+        
+        isLoading = true
+        
+        // Create contact data
         let contactData: [String: Any] = [
             "firstName": firstName,
             "lastName": lastName,
-            "phoneNumber": phoneNumber,
+            "phoneNumber": phoneNumber
+        ]
+        
+        // Create shipping address data
+        let shippingAddressData: [String: Any] = [
             "street": street,
             "aptNumber": aptNumber,
             "zip": zip,
             "city": city,
-            "state": state
+            "state": state,
+            "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        saveCurrentStepData(stepData: contactData, completion: completion)
+        // First save contact info to user document
+        saveCurrentStepData(stepData: contactData) { [weak self] success in
+            guard let self = self, success else {
+                self?.isLoading = false
+                completion(false)
+                return
+            }
+            
+            // Then save contact info to subcollection
+            FirebaseManager.shared.saveContactInfo(userId: userId, contactData: contactData) { success, error in
+                if !success {
+                    self.errorMessage = error?.localizedDescription
+                    self.isLoading = false
+                    completion(false)
+                    return
+                }
+                
+                // Finally save shipping address
+                FirebaseManager.shared.saveShippingAddress(userId: userId, addressData: shippingAddressData) { success, error in
+                    self.isLoading = false
+                    if !success {
+                        self.errorMessage = error?.localizedDescription
+                        completion(false)
+                    } else {
+                        completion(true)
+                    }
+                }
+            }
+        }
     }
     
     // Save device information
@@ -258,14 +344,46 @@ class UserRegistrationViewModel: ObservableObject {
     
     // Save billing information
     func saveBillingInfo(completion: @escaping (Bool) -> Void) {
+        guard let userId = userId else {
+            errorMessage = "User ID not available"
+            completion(false)
+            return
+        }
+        
+        isLoading = true
+        
+        // Create billing data for main user document
         let billingData: [String: Any] = [
             "creditCardNumber": creditCardNumber,
-            "billingDetails": billingDetails,
-            "address": address,
-            "country": country
+            "billingDetails": billingDetails
         ]
         
-        saveCurrentStepData(stepData: billingData, completion: completion)
+        // Create billing address data for subcollection
+        let billingAddressData: [String: Any] = [
+            "address": address,
+            "country": country,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+        
+        // First save to main user document
+        saveCurrentStepData(stepData: billingData) { [weak self] success in
+            guard let self = self, success else {
+                self?.isLoading = false
+                completion(false)
+                return
+            }
+            
+            // Then save billing address to subcollection
+            FirebaseManager.shared.saveBillingAddress(userId: userId, addressData: billingAddressData) { success, error in
+                self.isLoading = false
+                if !success {
+                    self.errorMessage = error?.localizedDescription
+                    completion(false)
+                } else {
+                    completion(true)
+                }
+            }
+        }
     }
     
     // Save final order

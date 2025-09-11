@@ -13,6 +13,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
   func application(_ application: UIApplication,
                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
     FirebaseApp.configure()
+    
+    // Firebase Auth persistence is enabled by default
+    // No need to explicitly enable it
+    
     return true
   }
 }

@@ -14,11 +14,15 @@ import FirebaseAuth
 
 struct ContentView: View {
   @StateObject private var viewModel = UserRegistrationViewModel()
-  @State private var isSignedIn: Bool = Auth.auth().currentUser != nil
+  @State private var isSignedIn: Bool = false
   @State private var showStartOrder = false
   @State private var isNewAccount = false
-  @State private var registrationStep: Int = 0
+  @State private var registrationStep: Int = 0 // 0 = Home View or Start Order View
+  @State private var showOrderFlow: Bool = false
   @Environment(\.colorScheme) var colorScheme
+  
+  // Add auth state listener
+  @State private var authStateListener: AuthStateDidChangeListenerHandle?
 
   var body: some View {
     ZStack {
@@ -39,13 +43,27 @@ struct ContentView: View {
         } else if showStartOrder {
           if isNewAccount {
             RegistrationFlowView(startStep: .createAccount)
+          } else if registrationStep == 0 {
+            // Show "Start New Order" page first
+            StartOrderView(
+              onStart: { registrationStep = 1 },
+              onLogout: {
+                do {
+                  try Auth.auth().signOut()
+                  isSignedIn = false
+                  showStartOrder = false
+                } catch {
+                  print("Error signing out: \(error.localizedDescription)")
+                }
+              }
+            )
           } else {
             // Existing user registration steps with back support
             switch registrationStep {
             case 1:
-              ExistingContactInfoView(
-                onNext: { registrationStep = 2 },
-                onBack: { showStartOrder = false }
+              ContactInfoView(
+                viewModel: viewModel,
+                onNext: { registrationStep = 2 }
               )
             case 2:
               DeviceCompatibilityView(
@@ -101,27 +119,55 @@ struct ContentView: View {
                 onBack: { registrationStep = 5 }
               )
             default:
-              ExistingContactInfoView(
-                onNext: { registrationStep = 2 },
-                onBack: { showStartOrder = false }
+              ContactInfoView(
+                viewModel: viewModel,
+                onNext: { registrationStep = 2 }
               )
             }
           }
         } else {
-            LoginView(
-              onSignIn: {
-                isSignedIn = true
+            HomeView(
+              onStartOrder: {
                 showStartOrder = true
+                registrationStep = 0 // Reset to start of order flow
               },
-              onNewAccount: {
-                isNewAccount = true
-                isSignedIn = true
-                showStartOrder = true
+              onLogout: {
+                do {
+                  try Auth.auth().signOut()
+                  isSignedIn = false
+                  showStartOrder = false
+                } catch {
+                  print("Error signing out: \(error.localizedDescription)")
+                }
               }
             )
         }
       }
       .padding()
+    }
+    .onAppear {
+      // Set up auth state listener when view appears
+      authStateListener = Auth.auth().addStateDidChangeListener { auth, user in
+        isSignedIn = user != nil
+        
+        // If user is signed in
+        if user != nil {
+          isSignedIn = true
+          
+          // Load user data if necessary
+          viewModel.userId = user?.uid
+          viewModel.loadUserData { _ in }
+        } else {
+          isSignedIn = false
+          showStartOrder = false
+        }
+      }
+    }
+    .onDisappear {
+      // Remove listener when view disappears
+      if let handle = authStateListener {
+        Auth.auth().removeStateDidChangeListener(handle)
+      }
     }
   }
 }
