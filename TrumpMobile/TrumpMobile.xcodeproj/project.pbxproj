@@ -1,0 +1,653 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D8068D8A2E70F96A00F02D68 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = D8068D892E70F96A00F02D68 /* FirebaseDatabase */; };
+		D8068D912E712F7900F02D68 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D8068D902E712F7900F02D68 /* FirebaseAuth */; };
+		D8068D942E712FE100F02D68 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D8068D932E712FE100F02D68 /* GoogleSignIn */; };
+		D8068D962E712FE100F02D68 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = D8068D952E712FE100F02D68 /* GoogleSignInSwift */; };
+		D8068D9C2E713C2200F02D68 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D8068D9B2E713C2200F02D68 /* FirebaseFirestore */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D8068D5E2E70BF7E00F02D68 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D8068D452E70BF7C00F02D68 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D8068D4C2E70BF7C00F02D68;
+			remoteInfo = TrumpMobile;
+		};
+		D8068D682E70BF7E00F02D68 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D8068D452E70BF7C00F02D68 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D8068D4C2E70BF7C00F02D68;
+			remoteInfo = TrumpMobile;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		D8068D4D2E70BF7C00F02D68 /* TrumpMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TrumpMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8068D5D2E70BF7E00F02D68 /* TrumpMobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrumpMobileTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8068D672E70BF7E00F02D68 /* TrumpMobileUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TrumpMobileUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D8068D982E71333300F02D68 /* Exceptions for "TrumpMobile" folder in "TrumpMobile" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D8068D4C2E70BF7C00F02D68 /* TrumpMobile */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		D8068D4F2E70BF7C00F02D68 /* TrumpMobile */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D8068D982E71333300F02D68 /* Exceptions for "TrumpMobile" folder in "TrumpMobile" target */,
+			);
+			path = TrumpMobile;
+			sourceTree = "<group>";
+		};
+		D8068D602E70BF7E00F02D68 /* TrumpMobileTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TrumpMobileTests;
+			sourceTree = "<group>";
+		};
+		D8068D6A2E70BF7E00F02D68 /* TrumpMobileUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TrumpMobileUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D8068D4A2E70BF7C00F02D68 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D8068D8A2E70F96A00F02D68 /* FirebaseDatabase in Frameworks */,
+				D8068D912E712F7900F02D68 /* FirebaseAuth in Frameworks */,
+				D8068D942E712FE100F02D68 /* GoogleSignIn in Frameworks */,
+				D8068D9C2E713C2200F02D68 /* FirebaseFirestore in Frameworks */,
+				D8068D962E712FE100F02D68 /* GoogleSignInSwift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8068D5A2E70BF7E00F02D68 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8068D642E70BF7E00F02D68 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D8068D442E70BF7C00F02D68 = {
+			isa = PBXGroup;
+			children = (
+				D8068D4F2E70BF7C00F02D68 /* TrumpMobile */,
+				D8068D602E70BF7E00F02D68 /* TrumpMobileTests */,
+				D8068D6A2E70BF7E00F02D68 /* TrumpMobileUITests */,
+				D8068D8F2E712F7900F02D68 /* Frameworks */,
+				D8068D4E2E70BF7C00F02D68 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D8068D4E2E70BF7C00F02D68 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D8068D4D2E70BF7C00F02D68 /* TrumpMobile.app */,
+				D8068D5D2E70BF7E00F02D68 /* TrumpMobileTests.xctest */,
+				D8068D672E70BF7E00F02D68 /* TrumpMobileUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D8068D8F2E712F7900F02D68 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D8068D4C2E70BF7C00F02D68 /* TrumpMobile */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D8068D712E70BF7E00F02D68 /* Build configuration list for PBXNativeTarget "TrumpMobile" */;
+			buildPhases = (
+				D8068D492E70BF7C00F02D68 /* Sources */,
+				D8068D4A2E70BF7C00F02D68 /* Frameworks */,
+				D8068D4B2E70BF7C00F02D68 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D8068D4F2E70BF7C00F02D68 /* TrumpMobile */,
+			);
+			name = TrumpMobile;
+			packageProductDependencies = (
+				D8068D892E70F96A00F02D68 /* FirebaseDatabase */,
+				D8068D902E712F7900F02D68 /* FirebaseAuth */,
+				D8068D932E712FE100F02D68 /* GoogleSignIn */,
+				D8068D952E712FE100F02D68 /* GoogleSignInSwift */,
+				D8068D9B2E713C2200F02D68 /* FirebaseFirestore */,
+			);
+			productName = TrumpMobile;
+			productReference = D8068D4D2E70BF7C00F02D68 /* TrumpMobile.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D8068D5C2E70BF7E00F02D68 /* TrumpMobileTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D8068D742E70BF7E00F02D68 /* Build configuration list for PBXNativeTarget "TrumpMobileTests" */;
+			buildPhases = (
+				D8068D592E70BF7E00F02D68 /* Sources */,
+				D8068D5A2E70BF7E00F02D68 /* Frameworks */,
+				D8068D5B2E70BF7E00F02D68 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D8068D5F2E70BF7E00F02D68 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D8068D602E70BF7E00F02D68 /* TrumpMobileTests */,
+			);
+			name = TrumpMobileTests;
+			packageProductDependencies = (
+			);
+			productName = TrumpMobileTests;
+			productReference = D8068D5D2E70BF7E00F02D68 /* TrumpMobileTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D8068D662E70BF7E00F02D68 /* TrumpMobileUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D8068D772E70BF7E00F02D68 /* Build configuration list for PBXNativeTarget "TrumpMobileUITests" */;
+			buildPhases = (
+				D8068D632E70BF7E00F02D68 /* Sources */,
+				D8068D642E70BF7E00F02D68 /* Frameworks */,
+				D8068D652E70BF7E00F02D68 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D8068D692E70BF7E00F02D68 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D8068D6A2E70BF7E00F02D68 /* TrumpMobileUITests */,
+			);
+			name = TrumpMobileUITests;
+			packageProductDependencies = (
+			);
+			productName = TrumpMobileUITests;
+			productReference = D8068D672E70BF7E00F02D68 /* TrumpMobileUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D8068D452E70BF7C00F02D68 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					D8068D4C2E70BF7C00F02D68 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					D8068D5C2E70BF7E00F02D68 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = D8068D4C2E70BF7C00F02D68;
+					};
+					D8068D662E70BF7E00F02D68 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = D8068D4C2E70BF7C00F02D68;
+					};
+				};
+			};
+			buildConfigurationList = D8068D482E70BF7C00F02D68 /* Build configuration list for PBXProject "TrumpMobile" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D8068D442E70BF7C00F02D68;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				D8068D922E712FE100F02D68 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D8068D4E2E70BF7C00F02D68 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D8068D4C2E70BF7C00F02D68 /* TrumpMobile */,
+				D8068D5C2E70BF7E00F02D68 /* TrumpMobileTests */,
+				D8068D662E70BF7E00F02D68 /* TrumpMobileUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D8068D4B2E70BF7C00F02D68 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8068D5B2E70BF7E00F02D68 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8068D652E70BF7E00F02D68 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D8068D492E70BF7C00F02D68 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8068D592E70BF7E00F02D68 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D8068D632E70BF7E00F02D68 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D8068D5F2E70BF7E00F02D68 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D8068D4C2E70BF7C00F02D68 /* TrumpMobile */;
+			targetProxy = D8068D5E2E70BF7E00F02D68 /* PBXContainerItemProxy */;
+		};
+		D8068D692E70BF7E00F02D68 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D8068D4C2E70BF7C00F02D68 /* TrumpMobile */;
+			targetProxy = D8068D682E70BF7E00F02D68 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		D8068D6F2E70BF7E00F02D68 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		D8068D702E70BF7E00F02D68 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D8068D722E70BF7E00F02D68 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"TrumpMobile/Preview Content\"";
+				DEVELOPMENT_TEAM = 3D5Z4RTGYG;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TrumpMobile/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Project.TrumpMobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D8068D732E70BF7E00F02D68 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"TrumpMobile/Preview Content\"";
+				DEVELOPMENT_TEAM = 3D5Z4RTGYG;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TrumpMobile/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Project.TrumpMobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D8068D752E70BF7E00F02D68 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3D5Z4RTGYG;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Project.TrumpMobileTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TrumpMobile.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TrumpMobile";
+			};
+			name = Debug;
+		};
+		D8068D762E70BF7E00F02D68 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3D5Z4RTGYG;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Project.TrumpMobileTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TrumpMobile.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TrumpMobile";
+			};
+			name = Release;
+		};
+		D8068D782E70BF7E00F02D68 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3D5Z4RTGYG;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Project.TrumpMobileUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TrumpMobile;
+			};
+			name = Debug;
+		};
+		D8068D792E70BF7E00F02D68 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3D5Z4RTGYG;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Project.TrumpMobileUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TrumpMobile;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D8068D482E70BF7C00F02D68 /* Build configuration list for PBXProject "TrumpMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D8068D6F2E70BF7E00F02D68 /* Debug */,
+				D8068D702E70BF7E00F02D68 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D8068D712E70BF7E00F02D68 /* Build configuration list for PBXNativeTarget "TrumpMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D8068D722E70BF7E00F02D68 /* Debug */,
+				D8068D732E70BF7E00F02D68 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D8068D742E70BF7E00F02D68 /* Build configuration list for PBXNativeTarget "TrumpMobileTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D8068D752E70BF7E00F02D68 /* Debug */,
+				D8068D762E70BF7E00F02D68 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D8068D772E70BF7E00F02D68 /* Build configuration list for PBXNativeTarget "TrumpMobileUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D8068D782E70BF7E00F02D68 /* Debug */,
+				D8068D792E70BF7E00F02D68 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.2.0;
+			};
+		};
+		D8068D922E712FE100F02D68 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D8068D892E70F96A00F02D68 /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+		D8068D902E712F7900F02D68 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		D8068D932E712FE100F02D68 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D922E712FE100F02D68 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		D8068D952E712FE100F02D68 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D922E712FE100F02D68 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		D8068D9B2E713C2200F02D68 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = D8068D452E70BF7C00F02D68 /* Project object */;
+}
