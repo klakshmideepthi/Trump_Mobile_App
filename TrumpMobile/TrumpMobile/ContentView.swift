@@ -116,7 +116,11 @@ struct ContentView: View {
             case 6:
               OrderCompletionView(
                 viewModel: viewModel,
-                onBack: { registrationStep = 5 }
+                onBack: { registrationStep = 5 },
+                onGoToHome: { 
+                    // Reset to start a new order
+                    registrationStep = 0
+                }
               )
             default:
               ContactInfoView(

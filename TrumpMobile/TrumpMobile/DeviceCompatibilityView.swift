@@ -15,26 +15,19 @@ struct DeviceCompatibilityView: View {
             "OnePlus": ["OnePlus 12", "OnePlus 11", "OnePlus 10"]
         ]
 
-        return FixedBottomNavigationView(
+        return StepNavigationContainer(
             currentStep: 2,
-            backAction: {
+            totalSteps: 6,
+            nextButtonText: "Next Step",
+            nextButtonDisabled: viewModel.deviceBrand.isEmpty || viewModel.deviceModel.isEmpty,
+            nextButtonAction: onNext,
+            backButtonAction: {
                 if let onBack = onBack {
                     onBack()
                 }
-            },
-            nextAction: onNext,
-            isNextDisabled: viewModel.deviceBrand.isEmpty || viewModel.deviceModel.isEmpty
+            }
         ) {
             VStack(spacing: 0) {
-                // Step Indicator with back button
-                StepIndicator(currentStep: 2, showBackButton: true, onBack: {
-                    if let onBack = onBack {
-                        onBack()
-                    }
-                })
-                    .padding(.top, 24)
-                    .padding(.bottom, 32)
-
                 VStack(spacing: 8) {
                     Text("Check device compatibility")
                         .font(.title2)
@@ -120,10 +113,7 @@ struct DeviceCompatibilityView: View {
                 }
                 .padding(.horizontal, 24)
 
-                Spacer()
             }
-            .background(Color(.systemBackground))
-            .edgesIgnoringSafeArea(.bottom)
             .onAppear {
                 // Set default values if empty
                 if viewModel.deviceBrand.isEmpty {

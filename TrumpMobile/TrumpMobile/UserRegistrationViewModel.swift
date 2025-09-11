@@ -255,22 +255,41 @@ class UserRegistrationViewModel: ObservableObject {
     
     // Save contact information
     func saveContactInfo(completion: @escaping (Bool) -> Void) {
+        print("🔍 saveContactInfo called with firstName: \(firstName), lastName: \(lastName), phoneNumber: \(phoneNumber)")
+        
         guard let userId = userId else {
             errorMessage = "User ID not available"
+            print("❌ Error: User ID not available")
             completion(false)
             return
         }
         
+        print("👤 Using userId: \(userId)")
         isLoading = true
+        errorMessage = nil
         
-        // Create contact data
+        // Create complete contact data for main document (include both contact and address info)
+        let completeContactData: [String: Any] = [
+            "firstName": firstName,
+            "lastName": lastName,
+            "phoneNumber": phoneNumber,
+            "street": street,
+            "aptNumber": aptNumber,
+            "zip": zip,
+            "city": city,
+            "state": state
+        ]
+        
+        print("📄 Main document data: \(completeContactData)")
+        
+        // Create contact-only data for subcollection
         let contactData: [String: Any] = [
             "firstName": firstName,
             "lastName": lastName,
             "phoneNumber": phoneNumber
         ]
         
-        // Create shipping address data
+        // Create shipping address data for subcollection
         let shippingAddressData: [String: Any] = [
             "street": street,
             "aptNumber": aptNumber,
@@ -280,32 +299,98 @@ class UserRegistrationViewModel: ObservableObject {
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        // First save contact info to user document
-        saveCurrentStepData(stepData: contactData) { [weak self] success in
-            guard let self = self, success else {
-                self?.isLoading = false
-                completion(false)
-                return
+        // Track completion of all save operations
+        let dispatchGroup = DispatchGroup()
+        var saveErrors: [String] = []
+        
+        // Save to main document
+        dispatchGroup.enter()
+        print("🔄 Saving to main document...")
+        saveCurrentStepData(stepData: completeContactData) { success in
+            print("📌 Main document save result: \(success)")
+            if !success {
+                saveErrors.append("Failed to save to main document")
+            }
+            dispatchGroup.leave()
+        }
+        
+        // Save contact info to subcollection
+        dispatchGroup.enter()
+        print("🔄 Saving to contactInfo subcollection...")
+        FirebaseManager.shared.saveContactInfo(userId: userId, contactData: contactData) { success, error in
+            print("📌 Contact info save result: \(success)")
+            if !success {
+                if let error = error {
+                    saveErrors.append("Failed to save contact info: \(error.localizedDescription)")
+                    print("❌ Contact info save error: \(error.localizedDescription)")
+                } else {
+                    saveErrors.append("Failed to save contact info")
+                    print("❌ Contact info save failed without error")
+                }
+            }
+            dispatchGroup.leave()
+        }
+        
+        // Save shipping address to subcollection
+        dispatchGroup.enter()
+        print("🔄 Saving to shippingAddress subcollection...")
+        FirebaseManager.shared.saveShippingAddress(userId: userId, addressData: shippingAddressData) { success, error in
+            print("📌 Shipping address save result: \(success)")
+            if !success {
+                if let error = error {
+                    saveErrors.append("Failed to save shipping address: \(error.localizedDescription)")
+                    print("❌ Shipping address save error: \(error.localizedDescription)")
+                } else {
+                    saveErrors.append("Failed to save shipping address")
+                    print("❌ Shipping address save failed without error")
+                }
+            }
+            dispatchGroup.leave()
+        }
+        
+        // When all save operations complete
+        dispatchGroup.notify(queue: .main) { [weak self] in
+            guard let self = self else { 
+                print("❌ Self is nil in completion handler")
+                return 
             }
             
-            // Then save contact info to subcollection
-            FirebaseManager.shared.saveContactInfo(userId: userId, contactData: contactData) { success, error in
-                if !success {
-                    self.errorMessage = error?.localizedDescription
-                    self.isLoading = false
-                    completion(false)
-                    return
+            self.isLoading = false
+            
+            if saveErrors.isEmpty {
+                // All saves successful
+                print("✅ Successfully saved contact information to all locations")
+                completion(true)
+            } else {
+                // Some saves failed
+                self.errorMessage = saveErrors.joined(separator: "; ")
+                print("❌ Error saving contact information: \(self.errorMessage ?? "Unknown error")")
+                completion(false)
+            }
+            
+            // Let's debug the state after save
+            FirebaseManager.shared.debugUserDataLocations(userId: userId) { results in
+                print("📊 Debug user data locations:")
+                if let mainDocExists = results["mainDocExists"] as? Bool {
+                    print("  - Main document exists: \(mainDocExists)")
+                    if mainDocExists, let data = results["mainDocData"] as? [String: Any] {
+                        print("  - Main document firstName: \(data["firstName"] ?? "nil")")
+                        print("  - Main document lastName: \(data["lastName"] ?? "nil")")
+                        print("  - Main document phoneNumber: \(data["phoneNumber"] ?? "nil")")
+                    }
                 }
                 
-                // Finally save shipping address
-                FirebaseManager.shared.saveShippingAddress(userId: userId, addressData: shippingAddressData) { success, error in
-                    self.isLoading = false
-                    if !success {
-                        self.errorMessage = error?.localizedDescription
-                        completion(false)
-                    } else {
-                        completion(true)
+                if let contactInfoExists = results["contactInfoExists"] as? Bool {
+                    print("  - Contact info exists: \(contactInfoExists)")
+                    if contactInfoExists, let data = results["contactInfoData"] as? [String: Any] {
+                        print("  - Contact info firstName: \(data["firstName"] ?? "nil")")
+                        print("  - Contact info lastName: \(data["lastName"] ?? "nil")")
+                        print("  - Contact info phoneNumber: \(data["phoneNumber"] ?? "nil")")
                     }
+                }
+                
+                if let shippingAddressExists = results["shippingAddressExists"] as? Bool {
+                    print("  - Shipping address exists: \(shippingAddressExists)")
                 }
             }
         }

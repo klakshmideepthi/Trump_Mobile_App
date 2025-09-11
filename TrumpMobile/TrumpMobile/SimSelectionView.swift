@@ -4,32 +4,37 @@ struct SimSelectionView: View {
     @ObservedObject var viewModel: UserRegistrationViewModel
     var onNext: () -> Void
     var onBack: (() -> Void)? = nil
+    var onCancel: (() -> Void)? = nil
     
     var body: some View {
-        FixedBottomNavigationView(
+        StepNavigationContainer(
             currentStep: 3,
-            backAction: {
+            totalSteps: 6,
+            nextButtonText: "Next Step",
+            nextButtonDisabled: viewModel.simType.isEmpty,
+            nextButtonAction: onNext,
+            backButtonAction: {
                 if let onBack = onBack {
                     onBack()
                 }
             },
-            nextAction: onNext,
-            isNextDisabled: viewModel.simType.isEmpty
+            cancelAction: onCancel
         ) {
             VStack(spacing: 20) {
-                // Step Indicator with back button
-                StepIndicator(currentStep: 3, showBackButton: true, onBack: {
-                    if let onBack = onBack {
-                        onBack()
-                    }
-                })
-            HStack {
+                VStack(spacing: 16) {
+                    Text("Choose SIM Type")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            HStack(spacing: 16) {
                 Button(action: {
                     viewModel.simType = "E-sim"
                 }) {
                     Text("E-sim")
                         .padding()
-                        .background(viewModel.simType == "E-sim" ? Color.blue : Color.gray.opacity(0.2))
+                        .frame(maxWidth: .infinity)
+                        .background(viewModel.simType == "E-sim" ? Color.accentGold : Color.gray.opacity(0.2))
                         .foregroundColor(.white)
                         .cornerRadius(8)
                 }
@@ -38,7 +43,8 @@ struct SimSelectionView: View {
                 }) {
                     Text("Physical")
                         .padding()
-                        .background(viewModel.simType == "Physical" ? Color.blue : Color.gray.opacity(0.2))
+                        .frame(maxWidth: .infinity)
+                        .background(viewModel.simType == "Physical" ? Color.accentGold : Color.gray.opacity(0.2))
                         .foregroundColor(.white)
                         .cornerRadius(8)
                 }
@@ -46,10 +52,11 @@ struct SimSelectionView: View {
             if !viewModel.simType.isEmpty {
                 Text("You selected: \(viewModel.simType)")
                     .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
             
             Spacer()
+            }
         }
-        .padding()
-    }}
+    }
 }

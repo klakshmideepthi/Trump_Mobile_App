@@ -29,14 +29,9 @@ struct RegistrationFlowView: View {
                     })
                 case .contactInfo:
                     ContactInfoView(viewModel: viewModel) {
-                        viewModel.saveContactInfo { success in
-                            if success {
-                                step = .deviceCompatibility
-                            } else {
-                                alertMessage = viewModel.errorMessage ?? "Error saving contact information"
-                                showingAlert = true
-                            }
-                        }
+                        // This is now handled in ContactInfoView
+                        print("✅ Contact info view completed, moving to device compatibility step")
+                        step = .deviceCompatibility
                     }
                 case .deviceCompatibility:
                     DeviceCompatibilityView(viewModel: viewModel, onNext: {
@@ -91,7 +86,18 @@ struct RegistrationFlowView: View {
                         step = .numberSelection
                     })
                 case .orderCompletion:
-                    OrderCompletionView(viewModel: viewModel)
+                    OrderCompletionView(
+                        viewModel: viewModel,
+                        onBack: {
+                            step = .billingInfo
+                        },
+                        onGoToHome: {
+                            // This would navigate back to the very beginning
+                            // We need a way to completely exit the flow
+                            // For now, we'll set it back to the first step
+                            step = .createAccount
+                        }
+                    )
                 }
             }
         }
