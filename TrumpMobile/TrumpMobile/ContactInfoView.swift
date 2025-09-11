@@ -19,8 +19,8 @@ struct ContactInfoView: View {
         ) {
             ScrollView {
                 VStack(alignment: .center, spacing: 20) {
-                    // Step Indicator
-                    StepIndicator(currentStep: 1)
+                    // Step Indicator - first step, so no back button
+                    StepIndicator(currentStep: 1, showBackButton: false)
                     
                     if isLoading {
                         ProgressView()

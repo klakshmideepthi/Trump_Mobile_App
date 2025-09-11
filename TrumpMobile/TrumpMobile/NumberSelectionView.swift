@@ -19,8 +19,12 @@ struct NumberSelectionView: View {
                           (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.isEmpty)
         ) {
             VStack(spacing: 20) {
-                // Step Indicator
-                StepIndicator(currentStep: 4)
+                // Step Indicator with back button
+                StepIndicator(currentStep: 4, showBackButton: true, onBack: {
+                    if let onBack = onBack {
+                        onBack()
+                    }
+                })
             HStack {
                 Button(action: {
                     viewModel.numberType = "Existing"

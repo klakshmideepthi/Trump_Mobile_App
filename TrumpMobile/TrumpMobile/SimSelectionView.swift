@@ -17,8 +17,12 @@ struct SimSelectionView: View {
             isNextDisabled: viewModel.simType.isEmpty
         ) {
             VStack(spacing: 20) {
-                // Step Indicator
-                StepIndicator(currentStep: 3)
+                // Step Indicator with back button
+                StepIndicator(currentStep: 3, showBackButton: true, onBack: {
+                    if let onBack = onBack {
+                        onBack()
+                    }
+                })
             HStack {
                 Button(action: {
                     viewModel.simType = "E-sim"

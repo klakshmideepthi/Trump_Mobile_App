@@ -17,8 +17,12 @@ struct BillingInfoView: View {
             isNextDisabled: viewModel.creditCardNumber.isEmpty || viewModel.billingDetails.isEmpty
         ) {
             VStack(spacing: 16) {
-                // Step Indicator
-                StepIndicator(currentStep: 5)
+                // Step Indicator with back button
+                StepIndicator(currentStep: 5, showBackButton: true, onBack: {
+                    if let onBack = onBack {
+                        onBack()
+                    }
+                })
             TextField("Credit Card Number", text: $viewModel.creditCardNumber)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .keyboardType(.numberPad)

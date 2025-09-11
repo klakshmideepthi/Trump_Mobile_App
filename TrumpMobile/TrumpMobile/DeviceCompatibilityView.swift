@@ -26,8 +26,12 @@ struct DeviceCompatibilityView: View {
             isNextDisabled: viewModel.deviceBrand.isEmpty || viewModel.deviceModel.isEmpty
         ) {
             VStack(spacing: 0) {
-                // Step Indicator
-                StepIndicator(currentStep: 2)
+                // Step Indicator with back button
+                StepIndicator(currentStep: 2, showBackButton: true, onBack: {
+                    if let onBack = onBack {
+                        onBack()
+                    }
+                })
                     .padding(.top, 24)
                     .padding(.bottom, 32)
 

@@ -8,16 +8,8 @@ struct OrderCompletionView: View {
     
     var body: some View {
         VStack(spacing: 24) {
-            HStack {
-                if let onBack = onBack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                        Text("Back")
-                    }
-                    .padding(.leading)
-                }
-                Spacer()
-            }
+            // Step Indicator
+            StepIndicator(currentStep: 5, showBackButton: false)
             Text("Step 7: Thank you for joining TrumpMobile!").font(.title)
             Text("Order Complete").font(.headline)
             Text("Broadband Facts: ...")
