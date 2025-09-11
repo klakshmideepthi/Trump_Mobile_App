@@ -103,10 +103,10 @@ struct LoginView: View {
             }
             .navigationTitle("Sign In")
             .sheet(isPresented: $showRegistration) {
-                CreateAccountView(viewModel: viewModel) {
+                CreateAccountView(viewModel: viewModel, onAccountCreated: {
                     showRegistration = false
                     onNewAccount?()
-                }
+                })
             }
             .alert(isPresented: $showError) {
                 Alert(

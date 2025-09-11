@@ -23,16 +23,9 @@ struct RegistrationFlowView: View {
             } else {
                 switch step {
                 case .createAccount:
-                    CreateAccountView(viewModel: viewModel) {
-                        viewModel.createUserAccount { success in
-                            if success {
-                                step = .contactInfo
-                            } else {
-                                alertMessage = viewModel.errorMessage ?? "Error creating account"
-                                showingAlert = true
-                            }
-                        }
-                    }
+                    CreateAccountView(viewModel: viewModel, onAccountCreated: {
+                        step = .contactInfo
+                    })
                 case .contactInfo:
                     ContactInfoView(viewModel: viewModel) {
                         viewModel.saveContactInfo { success in
