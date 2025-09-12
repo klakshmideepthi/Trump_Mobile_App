@@ -1,9 +1,12 @@
+
 import SwiftUI
+import AVKit
 
 struct IMEICheckView: View {
     @Binding var isPresented: Bool
     @State private var imeiNumber: String = ""
     @State private var selectedTab = 0
+    @State private var showVideoSheet = false
     
     var body: some View {
         NavigationView {
@@ -74,33 +77,55 @@ struct IMEICheckView: View {
                         }
                         
                         // Instructions Text
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("1. To find your IMEI, go to Settings, General, About. You'll find your IMEI there. Alternatively, enter *#06# on your device's dialer to bring up the IMEI. If you see two IMEI numbers, enter either one to check device compatibility.")
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                            
-                            Divider()
-                                .padding(.vertical, 8)
-                            
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Can't find your IMEI?")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                
-                                Text("You can skip the compatibility check, but just a heads-up — we can't promise everything will run smoothly if your device isn't compatible. Your call, but don't say we didn't warn you.")
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                                
-                                Button(action: {
-                                    isPresented = false
-                                }) {
-                                    Text("Skip compatibility check")
-                                        .foregroundColor(.blue)
+
+                            VStack(alignment: .leading, spacing: 12) {
+                                if selectedTab == 0 {
+                                    // iOS Instructions
+                                    Text("1. To find your IMEI, go to Settings, General, About. You'll find your IMEI there. Alternatively, enter *#06# on your device's dialer to bring up the IMEI. If you see two IMEI numbers, enter either one to check device compatibility.")
                                         .font(.body)
+                                        .foregroundColor(.secondary)
+                                } else {
+                                    // Android Instructions with video link
+                                    Text("1. To find your IMEI, open your Phone app and dial *#06#. Your IMEI will appear on the screen. You can also find it in Settings > About Phone.")
+                                        .font(.body)
+                                        .foregroundColor(.secondary)
+
+                                    Button(action: {
+                                        showVideoSheet = true
+                                    }) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "play.rectangle.fill")
+                                                .foregroundColor(.blue)
+                                            Text("Watch Video Guide")
+                                                .underline()
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                    .padding(.vertical, 8)
                                 }
-                                .padding(.top, 4)
+
+                                Divider()
+                                    .padding(.vertical, 8)
+
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Can't find your IMEI?")
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+
+                                    Text("You can skip the compatibility check, but just a heads-up — we can't promise everything will run smoothly if your device isn't compatible. Your call, but don't say we didn't warn you.")
+                                        .font(.body)
+                                        .foregroundColor(.secondary)
+
+                                    Button(action: {
+                                        isPresented = false
+                                    }) {
+                                        Text("Skip compatibility check")
+                                            .foregroundColor(.blue)
+                                            .font(.body)
+                                    }
+                                    .padding(.top, 4)
+                                }
                             }
-                        }
                         
                         Spacer(minLength: 40)
                     }
@@ -114,6 +139,42 @@ struct IMEICheckView: View {
                         isPresented = false
                     }
                     .foregroundColor(Color("AccentColor2"))
+                }
+            }
+        }
+        .sheet(isPresented: $showVideoSheet) {
+            IMEIVideoSheet()
+        }
+    }
+}
+
+// MARK: - Video Sheet View
+
+struct IMEIVideoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationView {
+            VStack {
+                if let url = Bundle.main.url(forResource: "imei_android", withExtension: "mp4") {
+                    VideoPlayer(player: AVPlayer(url: url))
+                        .aspectRatio(contentMode: .fit)
+                        .cornerRadius(12)
+                        .padding()
+                } else {
+                    Text("Video not found. Make sure imei_android.mp4 is added to your app target and not inside Assets.xcassets.")
+                        .foregroundColor(.red)
+                }
+                Spacer()
+            }
+            .navigationTitle("IMEI Video Guide")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .imageScale(.large)
+                            .foregroundColor(.primary)
+                    }
                 }
             }
         }

@@ -38,69 +38,21 @@ struct StartOrderView: View {
     var body: some View {
         return ZStack {
             Color.trumpBackground.ignoresSafeArea()
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Header with logo and profile button
-                    HStack {
-                        Image("Trump_Mobile_logo_gold")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 50)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            showProfileView = true
-                        }) {
-                            Image(systemName: "person.crop.circle")
-                                .font(.system(size: 30))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                        }
-                        .sheet(isPresented: $showProfileView) {
-                            ProfileView()
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, 10)
-                    
-                    // Header section with plan badge
-                    HStack(alignment: .center, spacing: 20) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("ALL-AMERICAN")
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(.trumpText)
-                            Text("PERFORMANCE.")
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(.trumpText)
-                            Text("EVERYDAY PRICE.")
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(.trumpText)
-                        }
-                        
-                        Spacer()
-                        
-                        // Plan badge
-                        ZStack {
-                            Circle()
-                                .fill(Color.primary.opacity(0.9))
-                                .frame(width: 100, height: 100)
-                            
-                            VStack(spacing: 0) {
-                                Text("The")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(.systemBackground))
-                                Text("47")
-                                    .font(.system(size: 36, weight: .bold))
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Header with logo and profile button
+                        HStack {
+                            Image("Trump_Mobile_logo_gold")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 50)
+                            Spacer()
+                            Button(action: {
+                                showProfileView = true
+                            }) {
+                                Image(systemName: "person.crop.circle")
+                                    .font(.system(size: 30))
                                     .foregroundStyle(
                                         LinearGradient(
                                             gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
@@ -108,87 +60,121 @@ struct StartOrderView: View {
                                             endPoint: .trailing
                                         )
                                     )
-                                Text("plan")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(.systemBackground))
+                            }
+                            .sheet(isPresented: $showProfileView) {
+                                ProfileView()
                             }
                         }
-                    }
-                    .padding(.top, 20)
-                    
-                    // Price section
-                    Text("$47.45/MONTH.")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .padding(.bottom, 10)
-                    
-                    // Features section
-                    VStack(alignment: .leading, spacing: 18) {
-                        FeatureRow(icon: "message.and.waveform.fill", text: "Unlimited Talk, Text & Data")
-                        FeatureRow(icon: "simcard.fill", text: "Free SIM Kit + Shipping")
-                        FeatureRow(icon: "doc.text.fill", text: "No Contract – Cancel Anytime")
-                        FeatureRow(icon: "iphone", text: "Bring Your Own Phone")
-                        
-                        HStack(alignment: .top, spacing: 12) {
-                            Image(systemName: "globe")
-                                .frame(width: 24, height: 24)
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                            
-                            VStack(alignment: .leading) {
-                                Text("International Calling to 100 destinations")
-                                    .foregroundColor(.trumpText)
-                                Button(action: {
-                                    showInternationalDetails.toggle()
-                                }) {
-                                    Text("see details here")
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                                                startPoint: .leading,
-                                                endPoint: .trailing
+                        .padding(.horizontal)
+                        .padding(.top, 10)
+                        // Header section with plan badge
+                        GeometryReader { geometry in
+                            HStack() {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("ALL-AMERICAN")
+                                        .font(.title)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.trumpText)
+                                    Text("PERFORMANCE.")
+                                        .font(.title)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.trumpText)
+                                    Text("EVERYDAY PRICE.")
+                                        .font(.title)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.trumpText)
+                                }
+                                .frame(width: geometry.size.width * 0.7, alignment: .leading)
+
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.primary.opacity(0.9))
+                                        .frame(width: 100, height: 100)
+                                    VStack(spacing: 0) {
+                                        Text("The")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(Color(.systemBackground))
+                                        Text("47")
+                                            .font(.system(size: 36, weight: .bold))
+                                            .foregroundStyle(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
                                             )
+                                        Text("plan")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(Color(.systemBackground))
+                                    }
+                                }
+                                .frame(width: geometry.size.width * 0.3, alignment: .trailing)
+                            }
+                        }
+                        .frame(height: 150) // Adjust as needed
+                        .padding(.top, 20)
+                        // Price section
+                        Text("$47.45/MONTH.")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .padding(.bottom, 10)
+                        // Features section
+                        VStack(alignment: .leading, spacing: 18) {
+                            FeatureRow(icon: "message.and.waveform.fill", text: "Unlimited Talk, Text & Data")
+                            FeatureRow(icon: "simcard.fill", text: "Free SIM Kit + Shipping")
+                            FeatureRow(icon: "doc.text.fill", text: "No Contract – Cancel Anytime")
+                            FeatureRow(icon: "iphone", text: "Bring Your Own Phone")
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "globe")
+                                    .frame(width: 24, height: 24)
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
                                         )
-                                        .underline()
+                                    )
+                                VStack(alignment: .leading) {
+                                    Text("International Calling to 100 destinations")
+                                        .foregroundColor(.trumpText)
+                                    Button(action: {
+                                        showInternationalDetails.toggle()
+                                    }) {
+                                        Text("see details here")
+                                            .foregroundStyle(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
+                                            )
+                                            .underline()
+                                    }
                                 }
                             }
+                            FeatureRow(icon: "creditcard.fill", text: "No Credit Check")
                         }
-                        
-                        FeatureRow(icon: "creditcard.fill", text: "No Credit Check")
-                    }
-                    .padding(.bottom, 20)
-                    
-                    if isLoading {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle())
-                                .scaleEffect(1.5)
-                            Spacer()
+                        .padding(.bottom, 20)
+                        if let error = errorMessage {
+                            Text(error)
+                                .foregroundColor(.red)
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(8)
                         }
+                        Spacer(minLength: 80) // Add space for the button at the bottom
                     }
-                    
-                    if let error = errorMessage {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                    }
-                    
-                    // Enroll button
+                    .padding(.horizontal)
+                }
+                // Fixed bottom button
+                VStack {
                     Button(action: createNewOrder) {
                         Text("Enroll in Trump™ Mobile Now")
                             .font(.headline)
@@ -205,15 +191,33 @@ struct StartOrderView: View {
                             .foregroundColor(.white)
                             .cornerRadius(25)
                     }
-                    .padding(.vertical)
+                    .padding(.horizontal)
+                    .padding(.bottom, 20)
                     .disabled(isLoading)
                 }
-                .padding(.horizontal)
+                .background(Color.trumpBackground.ignoresSafeArea(edges: .bottom))
             }
+            .ignoresSafeArea(.keyboard)
             .sheet(isPresented: $showInternationalDetails) {
                 NavigationView {
                     InternationalLongDistanceView()
                 }
+            }
+            // Loading overlay (no dimming)
+            if isLoading {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .scaleEffect(2.0)
+                        Spacer()
+                    }
+                    Spacer()
+                }
+                .transition(.opacity)
+                .zIndex(1)
             }
         }
         
