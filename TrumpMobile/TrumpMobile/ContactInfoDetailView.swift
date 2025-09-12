@@ -35,8 +35,8 @@ struct ContactInfoDetailView: View {
                         // Reload data after editing
                         viewModel.loadContactInfo()
                     })) {
-                        Text("Edit")
-                            .foregroundColor(.accentColor)
+                        // Text("Edit")
+                            // .foregroundColor(.accentColor)
                     }
                 }
             }
@@ -65,11 +65,18 @@ struct ContactInfoDetailView: View {
                 ContactInfoRow(title: "Phone", value: viewModel.contactInfo.phoneNumber)
             }
             .padding()
-            .background(Color.white)
+            .background(Color(.secondarySystemBackground))
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        lineWidth: 2
+                    )
             )
         }
     }
@@ -91,11 +98,18 @@ struct ContactInfoDetailView: View {
                 ContactInfoRow(title: "ZIP Code", value: viewModel.shippingAddress.zip)
             }
             .padding()
-            .background(Color.white)
+            .background(Color(.secondarySystemBackground))
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        lineWidth: 2
+                    )
             )
         }
     }

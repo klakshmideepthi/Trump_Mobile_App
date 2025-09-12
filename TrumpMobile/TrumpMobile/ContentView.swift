@@ -15,10 +15,8 @@ import FirebaseAuth
 struct ContentView: View {
   @StateObject private var viewModel = UserRegistrationViewModel()
   @State private var isSignedIn: Bool = false
-  @State private var showStartOrder = false
   @State private var isNewAccount = false
-  @State private var registrationStep: Int = 0 // 0 = Home View or Start Order View
-  @State private var showOrderFlow: Bool = false
+  @State private var registrationStep: Int = 0 // 0 = Start Order View
   @Environment(\.colorScheme) var colorScheme
   @EnvironmentObject private var navigationState: NavigationState
   
@@ -38,17 +36,18 @@ struct ContentView: View {
             onSignIn: {
               isSignedIn = true
               isNewAccount = false
-              registrationStep = 1
+              registrationStep = 0 // Start with StartOrderView
             },
             onNewAccount: {
               isNewAccount = true
-              showStartOrder = false
             }
           )
-        } else if showStartOrder {
-          if isNewAccount {
-            RegistrationFlowView(startStep: .createAccount)
-          } else if registrationStep == 0 {
+        } else if isNewAccount {
+          RegistrationFlowView(startStep: .createAccount)
+        } else {
+          // Show StartOrderView or registration steps
+          switch registrationStep {
+          case 0:
             // Show "Start New Order" page first
             StartOrderView(
               onStart: { orderId in
@@ -62,24 +61,19 @@ struct ContentView: View {
                 do {
                   try Auth.auth().signOut()
                   isSignedIn = false
-                  showStartOrder = false
                 } catch {
                   print("Error signing out: \(error.localizedDescription)")
                 }
               }
             )
-          } else {
-            // Existing user registration steps with back support
-            switch registrationStep {
-            case 1:
-              ContactInfoView(
-                viewModel: viewModel,
-                onNext: { registrationStep = 2 },
-                onCancel: {
-                    showStartOrder = false
-                    registrationStep = 0
-                }
-              )
+          case 1:
+            ContactInfoView(
+              viewModel: viewModel,
+              onNext: { registrationStep = 2 },
+              onCancel: {
+                  registrationStep = 0
+              }
+            )
             case 2:
               DeviceCompatibilityView(
                 viewModel: viewModel,
@@ -92,7 +86,6 @@ struct ContentView: View {
                 },
                 onBack: { registrationStep = 1 },
                 onCancel: {
-                    showStartOrder = false
                     registrationStep = 0
                 }
               )
@@ -108,7 +101,6 @@ struct ContentView: View {
                 },
                 onBack: { registrationStep = 2 },
                 onCancel: {
-                    showStartOrder = false
                     registrationStep = 0
                 }
               )
@@ -124,7 +116,6 @@ struct ContentView: View {
                 },
                 onBack: { registrationStep = 3 },
                 onCancel: {
-                    showStartOrder = false
                     registrationStep = 0
                 }
               )
@@ -140,7 +131,6 @@ struct ContentView: View {
                 },
                 onBack: { registrationStep = 4 },
                 onCancel: {
-                    showStartOrder = false
                     registrationStep = 0
                 }
               )
@@ -156,70 +146,31 @@ struct ContentView: View {
                 }
               )
             default:
-              ContactInfoView(
-                viewModel: viewModel,
-                onNext: { registrationStep = 2 }
+              StartOrderView(
+                onStart: { orderId in
+                  if let orderId = orderId {
+                    viewModel.orderId = orderId
+                  }
+                  registrationStep = 1
+                },
+                onLogout: {
+                  do {
+                    try Auth.auth().signOut()
+                    isSignedIn = false
+                  } catch {
+                    print("Error signing out: \(error.localizedDescription)")
+                  }
+                }
               )
             }
-          }
-        } else {
-            HomeView(
-              onStartOrder: {
-                showStartOrder = true
-                registrationStep = 0 // Reset to start of order flow
-              },
-              onLogout: {
-                do {
-                  try Auth.auth().signOut()
-                  isSignedIn = false
-                  showStartOrder = false
-                } catch {
-                  print("Error signing out: \(error.localizedDescription)")
-                }
-              }
-            )
         }
       }
       .padding()
     }
     .onAppear {
       print("DEBUG: ContentView appeared with navigationState destination: \(navigationState.currentDestination)")
-      print("DEBUG: ContentView current showStartOrder: \(showStartOrder), registrationStep: \(registrationStep)")
-    }
-    .onChange(of: navigationState.currentDestination) { newDestination in
-        print("DEBUG: ContentView detected navigation change to: \(newDestination)")
-        print("DEBUG: Previous state - showStartOrder: \(showStartOrder), registrationStep: \(registrationStep)")
-        
-        // Intentionally add a small delay to ensure the UI updates properly
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            print("DEBUG: Processing navigation change after delay")
-            switch newDestination {
-            case .home:
-                print("DEBUG: Setting state for HomeView navigation")
-                showStartOrder = false
-                registrationStep = 0
-                print("DEBUG: After setting state - showStartOrder: \(showStartOrder), registrationStep: \(registrationStep)")
-            case .startNewOrder:
-                print("DEBUG: Setting state for StartOrderView navigation")
-                showStartOrder = true
-                registrationStep = 0
-                print("DEBUG: After setting state - showStartOrder: \(showStartOrder), registrationStep: \(registrationStep)")
-            case .orderFlow:
-                print("DEBUG: Setting state for OrderFlow navigation")
-                showStartOrder = true
-                registrationStep = 1
-                print("DEBUG: After setting state - showStartOrder: \(showStartOrder), registrationStep: \(registrationStep)")
-            case .orderDetails:
-                print("DEBUG: Setting state for OrderDetails navigation")
-                // Handle OrderDetails navigation if needed
-                break
-            default:
-                print("DEBUG: Unknown navigation destination: \(newDestination)")
-                break
-            }
-        }
-    }
-    .onAppear {
+      print("DEBUG: ContentView current registrationStep: \(registrationStep)")
+      
       // Set up auth state listener when view appears
       authStateListener = Auth.auth().addStateDidChangeListener { auth, user in
         isSignedIn = user != nil
@@ -233,9 +184,34 @@ struct ContentView: View {
           viewModel.loadUserData { _ in }
         } else {
           isSignedIn = false
-          showStartOrder = false
         }
       }
+    }
+    .onChange(of: navigationState.currentDestination) { newDestination in
+        print("DEBUG: ContentView detected navigation change to: \(newDestination)")
+        print("DEBUG: Previous state - registrationStep: \(registrationStep)")
+        
+        // Intentionally add a small delay to ensure the UI updates properly
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            print("DEBUG: Processing navigation change after delay")
+            switch newDestination {
+            case .home, .startNewOrder:
+                print("DEBUG: Setting state for StartOrderView navigation")
+                registrationStep = 0
+                print("DEBUG: After setting state - registrationStep: \(registrationStep)")
+            case .orderFlow:
+                print("DEBUG: Setting state for OrderFlow navigation")
+                registrationStep = 1
+                print("DEBUG: After setting state - registrationStep: \(registrationStep)")
+            case .orderDetails:
+                print("DEBUG: Setting state for OrderDetails navigation")
+                // Handle OrderDetails navigation if needed
+                break
+            default:
+                print("DEBUG: Unknown navigation destination: \(newDestination)")
+                break
+            }
+        }
     }
     .onDisappear {
       // Remove listener when view disappears

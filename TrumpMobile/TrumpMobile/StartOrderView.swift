@@ -46,7 +46,7 @@ struct StartOrderView: View {
                         Image("Trump_Mobile_logo_gold")
                             .resizable()
                             .scaledToFit()
-                            .frame(height: 40)
+                            .frame(height: 50)
                         
                         Spacer()
                         
@@ -54,7 +54,7 @@ struct StartOrderView: View {
                             showProfileView = true
                         }) {
                             Image(systemName: "person.crop.circle")
-                                .font(.system(size: 24))
+                                .font(.system(size: 30))
                                 .foregroundStyle(
                                     LinearGradient(
                                         gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
@@ -70,12 +70,51 @@ struct StartOrderView: View {
                     .padding(.horizontal)
                     .padding(.top, 10)
                     
-                    // Header section
-                    Text("ALL-AMERICAN PERFORMANCE.\nEVERYDAY PRICE.")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.trumpText)
-                        .padding(.top, 20)
+                    // Header section with plan badge
+                    HStack(alignment: .center, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("ALL-AMERICAN")
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(.trumpText)
+                            Text("PERFORMANCE.")
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(.trumpText)
+                            Text("EVERYDAY PRICE.")
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(.trumpText)
+                        }
+                        
+                        Spacer()
+                        
+                        // Plan badge
+                        ZStack {
+                            Circle()
+                                .fill(Color.primary.opacity(0.9))
+                                .frame(width: 100, height: 100)
+                            
+                            VStack(spacing: 0) {
+                                Text("The")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(.systemBackground))
+                                Text("47")
+                                    .font(.system(size: 36, weight: .bold))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                Text("plan")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(.systemBackground))
+                            }
+                        }
+                    }
+                    .padding(.top, 20)
                     
                     // Price section
                     Text("$47.45/MONTH.")
@@ -128,36 +167,6 @@ struct StartOrderView: View {
                         }
                         
                         FeatureRow(icon: "creditcard.fill", text: "No Credit Check")
-                    }
-                    .padding(.bottom, 20)
-                    
-                    // Plan badge
-                    HStack {
-                        Spacer()
-                        ZStack {
-                            Circle()
-                                .fill(Color.black)
-                                .frame(width: 120, height: 120)
-                            
-                            VStack(spacing: 0) {
-                                Text("THE")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                Text("47")
-                                    .font(.system(size: 48, weight: .bold))
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                Text("PLAN")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                            }
-                        }
-                        Spacer()
                     }
                     .padding(.bottom, 20)
                     

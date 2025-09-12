@@ -7,6 +7,14 @@ extension Color {
     static let trumpBackground = Color("BackgroundColor")
     static let trumpText = Color("TextColor")
     static let trumpSecondary = Color("SecondaryCustom") // Renamed to avoid conflict
+    
+    // Adaptive colors for forms and UI elements
+    static let adaptiveBackground = Color(.systemBackground)
+    static let adaptiveSecondaryBackground = Color(.secondarySystemBackground)
+    static let adaptiveTertiaryBackground = Color(.tertiarySystemBackground)
+    static let adaptiveText = Color(.label)
+    static let adaptiveSecondaryText = Color(.secondaryLabel)
+    static let adaptiveBorder = Color(.systemGray4)
 }
 
 struct GradientButtonStyle: ButtonStyle {

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct InternationalLongDistanceView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var selectedCountry = ""
     @State private var searchText = ""
     @State private var scrollOffset: CGFloat = 0
@@ -49,7 +50,7 @@ struct InternationalLongDistanceView: View {
                     HStack {
                         Spacer()
                         Button("Close") {
-                            // Add close action here - typically dismiss the view
+                            dismiss()
                         }
                         .foregroundColor(.accentColor)
                         .font(.body)
@@ -108,24 +109,26 @@ struct InternationalLongDistanceView: View {
                         }
                         .padding(.horizontal)
                         
-                        // Military Families Section
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("The Sacrifices of Our Military Families")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.primary)
-                            
-                            Text("At Trump Mobile, we honor the sacrifice of our military families. That's why our plan makes it easy and affordable for service members and their loved ones to stay connected — whether stationed at home or overseas. With free international texting, discounted international calling, and reliable global coverage, you can share life's important moments no matter where duty calls. Because when you're serving our country, you deserve to stay close to the ones who matter most.")
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                                .lineLimit(nil)
-                        }
-                        .padding()
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                        
-                        // Country Rates Section
+        // Military Families Section
+        VStack(alignment: .leading, spacing: 16) {
+            Text("The Sacrifices of Our Military Families")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            Text("At Trump Mobile, we honor the sacrifice of our military families. That's why our plan makes it easy and affordable for service members and their loved ones to stay connected — whether stationed at home or overseas. With free international texting, discounted international calling, and reliable global coverage, you can share life's important moments no matter where duty calls. Because when you're serving our country, you deserve to stay close to the ones who matter most.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .lineLimit(nil)
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
+        .padding(.horizontal)                        // Country Rates Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Country Rates & Limits")
                                 .font(.title2)
@@ -173,8 +176,12 @@ struct InternationalLongDistanceView: View {
                                     Divider()
                                 }
                             }
-                            .background(Color(.secondarySystemGroupedBackground))
+                            .background(Color(.secondarySystemBackground))
                             .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
+                            )
                         }
                         .padding(.horizontal)
                         
@@ -217,8 +224,12 @@ struct InternationalLongDistanceView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 30)
                         .padding(.horizontal, 24)
-                        .background(Color(.secondarySystemGroupedBackground))
+                        .background(Color(.secondarySystemBackground))
                         .cornerRadius(16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
                         .padding(.horizontal)
                         
                         Spacer(minLength: 100)
@@ -235,7 +246,7 @@ struct InternationalLongDistanceView: View {
                             .foregroundColor(.primary)
                         Spacer()
                         Button("Close") {
-                            // Add close action here - typically dismiss the view
+                            dismiss()
                         }
                         .foregroundColor(.accentColor)
                         .font(.body)
@@ -280,8 +291,12 @@ struct InternationalLongDistanceView: View {
                 }
             }
             .padding()
-            .background(Color(.secondarySystemGroupedBackground))
+            .background(Color(.secondarySystemBackground))
             .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+            )
         }
     }
     

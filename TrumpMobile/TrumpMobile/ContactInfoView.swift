@@ -74,40 +74,44 @@ struct ContactInfoView: View {
                     
                         // Input fields with improved styling
                         TextField("First Name", text: $viewModel.firstName)
-                        .padding()
-                        .background(Color.white)
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                        
-                        TextField("Last Name", text: $viewModel.lastName)
                             .padding()
-                            .background(Color.white)
+                            .background(Color(.systemBackground))
+                            .foregroundColor(.primary)
                             .cornerRadius(8)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
+                            )
+                        
+                        TextField("Last Name", text: $viewModel.lastName)
+                            .padding()
+                            .background(Color(.systemBackground))
+                            .foregroundColor(.primary)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
                             )
                         
                         TextField("Phone Number", text: $viewModel.phoneNumber)
                             .padding()
-                            .background(Color.white)
+                            .background(Color(.systemBackground))
+                            .foregroundColor(.primary)
                             .cornerRadius(8)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
                             )
                             .keyboardType(.phonePad)
                         
                         TextField("Email", text: $viewModel.email)
                             .padding()
-                            .background(Color.white)
+                            .background(Color(.systemBackground))
+                            .foregroundColor(.primary)
                             .cornerRadius(8)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
                             )
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
@@ -125,48 +129,53 @@ struct ContactInfoView: View {
                         
                         TextField("Street Address", text: $viewModel.street)
                             .padding()
-                            .background(Color.white)
+                            .background(Color(.systemBackground))
+                            .foregroundColor(.primary)
                             .cornerRadius(8)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
                             )
                         
                         TextField("Apt, Suite, etc. (optional)", text: $viewModel.aptNumber)
                             .padding()
-                            .background(Color.white)
+                            .background(Color(.systemBackground))
+                            .foregroundColor(.primary)
                             .cornerRadius(8)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
                             )
                         
                         TextField("City", text: $viewModel.city)
                             .padding()
-                            .background(Color.white)
+                            .background(Color(.systemBackground))
+                            .foregroundColor(.primary)
                             .cornerRadius(8)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
                             )
                         
                         HStack(spacing: 15) {
                             TextField("State", text: $viewModel.state)
                                 .padding()
-                                .background(Color.white)
+                                .background(Color(.systemBackground))
+                                .foregroundColor(.primary)
                                 .cornerRadius(8)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
                                 )
                             
                             TextField("Zip Code", text: $viewModel.zip)
                                 .padding()
-                                .background(Color.white)
+                                .background(Color(.systemBackground))
+                                .foregroundColor(.primary)
                                 .cornerRadius(8)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
                                 )
                                 .keyboardType(.numberPad)
                         }
