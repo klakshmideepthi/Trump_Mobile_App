@@ -2,6 +2,7 @@ import SwiftUI
 import Firebase
 import FirebaseAuth
 import FirebaseFirestore
+import CoreLocation
 
 struct ContactInfoView: View {
     @Environment(\.presentationMode) var presentationMode
@@ -10,6 +11,10 @@ struct ContactInfoView: View {
     var onCancel: (() -> Void)? = nil
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
+    @StateObject private var locationManager = LocationManager()
+    @State private var showLocationAlert = false
+    @State private var locationError: String? = nil
+    @State private var useLocation = false
     
     var body: some View {
         StepNavigationContainer(
@@ -22,7 +27,6 @@ struct ContactInfoView: View {
                 if let userId = viewModel.userId ?? Auth.auth().currentUser?.uid {
                     print("👤 Using userId: \(userId)")
                     viewModel.userId = userId  // Ensure userId is set
-                    
                     // Save contact info before continuing
                     viewModel.saveContactInfo { success in
                         if success {
@@ -123,7 +127,8 @@ struct ContactInfoView: View {
                             .fontWeight(.bold)
                             .foregroundColor(Color.trumpText)
                             .padding(.top, 8)
-                        
+
+
                         TextField("Street Address", text: $viewModel.street)
                             .padding()
                             .background(Color(.systemBackground))
@@ -133,7 +138,7 @@ struct ContactInfoView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color(.systemGray4), lineWidth: 1)
                             )
-                        
+
                         TextField("Apt, Suite, etc. (optional)", text: $viewModel.aptNumber)
                             .padding()
                             .background(Color(.systemBackground))
@@ -143,7 +148,7 @@ struct ContactInfoView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color(.systemGray4), lineWidth: 1)
                             )
-                        
+
                         TextField("City", text: $viewModel.city)
                             .padding()
                             .background(Color(.systemBackground))
@@ -153,7 +158,7 @@ struct ContactInfoView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color(.systemGray4), lineWidth: 1)
                             )
-                        
+
                         HStack(spacing: 15) {
                             TextField("State", text: $viewModel.state)
                                 .padding()
@@ -164,7 +169,7 @@ struct ContactInfoView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color(.systemGray4), lineWidth: 1)
                                 )
-                            
+
                             TextField("Zip Code", text: $viewModel.zip)
                                 .padding()
                                 .background(Color(.systemBackground))
@@ -177,6 +182,23 @@ struct ContactInfoView: View {
                                 .keyboardType(.numberPad)
                         }
                     }
+                        
+                                        // Checkbox-style 'Use My Location' below all fields
+                                        Button(action: {
+                                            useLocation.toggle()
+                                            if useLocation {
+                                                showLocationAlert = true
+                                            }
+                                        }) {
+                                            HStack {
+                                                Image(systemName: useLocation ? "checkmark.square" : "square")
+                                                    .foregroundColor(.accentColor)
+                                                Text("Use My Location to autofill address")
+                                                    .foregroundColor(.primary)
+                                            }
+                                            .padding(.vertical, 8)
+                                        }
+                                        .buttonStyle(.plain)
                 }
                 
                 Spacer(minLength: 20)
@@ -189,6 +211,35 @@ struct ContactInfoView: View {
                 viewModel.email = Auth.auth().currentUser?.email ?? ""
             }
             loadUserData()
+        }
+        .alert("Allow Location Access?", isPresented: $showLocationAlert) {
+            Button("Allow") {
+                locationManager.requestLocation()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("We can use your location to autofill your shipping address.")
+        }
+        .onChange(of: locationManager.userLocation) { location in
+            guard let location = location else { return }
+            let geocoder = CLGeocoder()
+            geocoder.reverseGeocodeLocation(location) { placemarks, error in
+                if let placemark = placemarks?.first {
+                    viewModel.street = placemark.thoroughfare ?? ""
+                    viewModel.city = placemark.locality ?? ""
+                    viewModel.state = placemark.administrativeArea ?? ""
+                    viewModel.zip = placemark.postalCode ?? ""
+                    // Optionally fill aptNumber if available
+                    viewModel.aptNumber = placemark.subThoroughfare ?? ""
+                } else if let error = error {
+                    locationError = error.localizedDescription
+                }
+            }
+        }
+        .alert("Location Error", isPresented: .constant(locationError != nil)) {
+            Button("OK") { locationError = nil }
+        } message: {
+            Text(locationError ?? "")
         }
     }
     
@@ -237,6 +288,19 @@ struct ContactInfoView: View {
         // Once all data loading attempts are completed
         dispatchGroup.notify(queue: .main) {
             self.isLoading = false
+
+            // Autofill from Gmail if first/last name are empty
+            if self.viewModel.firstName.isEmpty || self.viewModel.lastName.isEmpty {
+                if let displayName = Auth.auth().currentUser?.displayName {
+                    let nameParts = displayName.split(separator: " ")
+                    if self.viewModel.firstName.isEmpty, let first = nameParts.first {
+                        self.viewModel.firstName = String(first)
+                    }
+                    if self.viewModel.lastName.isEmpty, nameParts.count > 1 {
+                        self.viewModel.lastName = nameParts.dropFirst().joined(separator: " ")
+                    }
+                }
+            }
         }
     }
 }

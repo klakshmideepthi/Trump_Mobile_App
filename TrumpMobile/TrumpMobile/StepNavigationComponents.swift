@@ -20,7 +20,7 @@ struct StepIndicatorText: View {
                 .font(.headline)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 10)
         }
     }
 }
@@ -82,7 +82,7 @@ struct StepNavigationContainer<Content: View>: View {
                     
                     Spacer()
                     
-                    // Cancel button on right - hidden in step 6
+                    // Cancel button on right - hidden in step 6, replaced with placeholder to keep center alignment
                     if currentStep != 6 {
                         Button(action: {
                             print("DEBUG: Cancel button tapped in StepNavigationContainer")
@@ -98,6 +98,12 @@ struct StepNavigationContainer<Content: View>: View {
                                 .padding()
                         }
                         .disabled(disableCancelButton)
+                    } else {
+                        // Placeholder to keep step indicator centered
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.clear)
+                            .padding()
                     }
                 }
                 
