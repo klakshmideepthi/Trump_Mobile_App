@@ -7,6 +7,7 @@ struct IMEICheckView: View {
     @State private var imeiNumber: String = ""
     @State private var selectedTab = 0
     @State private var showVideoSheet = false
+    var onSubmitIMEI: ((String) -> Void)? = nil // Closure to pass IMEI up
     
     var body: some View {
         NavigationView {
@@ -28,7 +29,8 @@ struct IMEICheckView: View {
                     
                     // Submit Button
                     Button(action: {
-                        // Handle IMEI submission
+                        // Pass IMEI up and dismiss
+                        onSubmitIMEI?(imeiNumber)
                         isPresented = false
                     }) {
                         Text("Submit & Next")

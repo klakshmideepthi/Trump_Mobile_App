@@ -6,6 +6,8 @@ struct DeviceCompatibilityView: View {
     @State private var selectedBrand: String?
     @State private var selectedModel: String?
     @State private var showIMEICheck = false
+    @State private var imeiNumber: String = ""
+    @State private var imeiCompatible: Bool? = nil
     
     var onNext: () -> Void
     var onBack: (() -> Void)? = nil
@@ -193,6 +195,30 @@ struct DeviceCompatibilityView: View {
                                     .stroke(Color("AccentColor2"), lineWidth: 1)
                             )
                     }
+
+                    // IMEI Compatibility Section
+                    if !imeiNumber.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if let compatible = imeiCompatible {
+                                if compatible {
+                                    HStack {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                        Text("Your device matches our network!")
+                                            .foregroundColor(.green)
+                                    }
+                                } else {
+                                    HStack {
+                                        Image(systemName: "xmark.octagon.fill")
+                                            .foregroundColor(.red)
+                                        Text("Sorry, your device is not compatible.")
+                                            .foregroundColor(.red)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
                 }
             }
         }
@@ -216,7 +242,12 @@ struct DeviceCompatibilityView: View {
                     currentStep: 2,
                     totalSteps: 6,
                     nextButtonText: "Next Step",
-                    nextButtonDisabled: (selectedBrand == nil || selectedBrand == "") || (selectedModel == nil || selectedModel == ""),
+                    nextButtonDisabled: {
+                        let brandSelected = (selectedBrand != nil && selectedBrand != "") && (selectedModel != nil && selectedModel != "")
+                        let imeiValid = (!imeiNumber.isEmpty && imeiCompatible == true)
+                        // Next is disabled only if neither is valid
+                        return !(brandSelected || imeiValid)
+                    }(),
                     nextButtonAction: {
                         // Commit selections to the viewModel when proceeding
                         if let brand = selectedBrand {
@@ -237,9 +268,12 @@ struct DeviceCompatibilityView: View {
                     contentView
                 }
                 .sheet(isPresented: $showIMEICheck) {
-                    IMEICheckView(isPresented: $showIMEICheck)
-                        .presentationDetents([.large])
-                        .presentationDragIndicator(.visible)
+                    IMEICheckView(isPresented: $showIMEICheck, onSubmitIMEI: { imei in
+                        imeiNumber = imei
+                        imeiCompatible = imei.count > 4
+                    })
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
                 }
             )
         } else {
