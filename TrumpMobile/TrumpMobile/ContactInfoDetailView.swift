@@ -7,7 +7,7 @@ struct ContactInfoDetailView: View {
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
                     if viewModel.isLoading {

@@ -28,14 +28,14 @@ struct OrderFlowView: View {
         print("DEBUG: OrderFlowView creating FixedBottomNavigationView with cancelActionClosure")
         print("DEBUG: Is cancelActionClosure nil? \(cancelActionClosure == nil ? "Yes" : "No")")
         
-        return FixedBottomNavigationView(
+        return StepNavigationContainer(
             currentStep: currentStep,
             totalSteps: 6,
-            backAction: handleBackAction,
-            nextAction: handleNextAction,
-            isNextDisabled: false,
-            cancelAction: cancelActionClosure,
-            nextButtonText: "Next Step"
+            nextButtonText: "Next Step",
+            nextButtonDisabled: false,
+            nextButtonAction: handleNextAction,
+            backButtonAction: handleBackAction,
+            cancelAction: cancelActionClosure
         ) {
             // Your order flow content based on current step
             VStack {
@@ -59,7 +59,8 @@ struct OrderFlowView: View {
                         onCancel: { 
                             print("DEBUG: Cancel from DeviceCompatibilityView")
                             handleCancelOrder() 
-                        }
+                        },
+                        showNavigation: false  // Don't show navigation since it's already provided by FixedBottomNavigationView
                     )
                 case 3:
                     SimSelectionView(
@@ -75,7 +76,8 @@ struct OrderFlowView: View {
                         onCancel: { 
                             print("DEBUG: Cancel from SimSelectionView")
                             handleCancelOrder() 
-                        }
+                        },
+                        showNavigation: false  // Don't show navigation since it's already provided by FixedBottomNavigationView
                     )
                 case 4:
                     NumberSelectionView(
@@ -91,7 +93,8 @@ struct OrderFlowView: View {
                         onCancel: {
                             print("DEBUG: Cancel from NumberSelectionView")
                             handleCancelOrder()
-                        }
+                        },
+                        showNavigation: false  // Don't show navigation since it's already provided by FixedBottomNavigationView
                     )
                 case 5:
                     BillingInfoView(

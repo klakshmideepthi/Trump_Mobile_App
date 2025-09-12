@@ -37,7 +37,7 @@ struct TrumpMobileApp: App {
     print("DEBUG: TrumpMobileApp body rendering, navigationState exists: \(navigationState != nil)")
     
     return WindowGroup {
-      NavigationView {
+      NavigationStack {
         SplashView()
           .onAppear {
             print("DEBUG: SplashView appeared in TrumpMobileApp")

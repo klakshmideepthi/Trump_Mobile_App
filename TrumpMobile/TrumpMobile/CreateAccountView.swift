@@ -17,7 +17,7 @@ struct CreateAccountView: View {
     @State private var currentNonce: String?
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
                 VStack(spacing: 16) {
                     TextField("Email", text: $viewModel.email)
@@ -97,6 +97,7 @@ struct CreateAccountView: View {
                 Spacer()
             }
             .navigationTitle("Create Account")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
@@ -110,6 +111,7 @@ struct CreateAccountView: View {
                 )
             }
         }
+        .navigationBarBackButtonHidden()
     }
     
     private func createAccount() {

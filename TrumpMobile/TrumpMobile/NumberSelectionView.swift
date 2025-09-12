@@ -5,133 +5,178 @@ struct NumberSelectionView: View {
     var onNext: () -> Void
     var onBack: (() -> Void)? = nil
     var onCancel: (() -> Void)? = nil
+    var showNavigation: Bool = true  // New parameter to control navigation display
     
     var body: some View {
-        StepNavigationContainer(
-            currentStep: 4,
-            totalSteps: 6,
-            nextButtonText: "Next Step",
-            nextButtonDisabled: viewModel.numberType.isEmpty || 
-                          (viewModel.numberType == "New" && viewModel.selectedPhoneNumber.isEmpty) ||
-                          (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.isEmpty),
-            nextButtonAction: {
-                // Save number selection to orders collection
-                viewModel.saveNumberSelection { success in
-                    if success {
-                        // Continue to next step only if save was successful
-                        onNext()
-                    } else {
-                        print("Failed to save number selection")
-                    }
-                }
-            },
-            backButtonAction: {
-                if let onBack = onBack {
-                    onBack()
-                }
-            },
-            cancelAction: onCancel
-        ) {
+        let contentView = VStack(spacing: 24) {
+            // Header section matching the screenshot
             VStack(spacing: 16) {
-                VStack(spacing: 6) {
-                    Text("Choose Your Number")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    Text("You can either keep your existing number or select a new one")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                }
-                .padding(.top, 4)
-            HStack(spacing: 16) {
+                Text("TRANSFER YOUR EXISTING NUMBER OR CHOOSE A NEW NUMBER")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+            }
+            .padding(.top, 8)
+            
+            // Button section with styling similar to SimSelectionView
+            VStack(spacing: 12) {
                 Button(action: {
                     viewModel.numberType = "Existing"
                 }) {
-                    Text("Existing")
-                        .padding()
+                    Text("Transfer Your Existing Number")
+                        .font(.system(size: 18, weight: .medium))
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
                         .frame(maxWidth: .infinity)
-                        .background(viewModel.numberType == "Existing" ? Color.accentGold : Color.gray.opacity(0.2))
+                        .background(
+                            RoundedRectangle(cornerRadius: 25)
+                                .stroke(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ),
+                                    lineWidth: 2
+                                )
+                                .background(
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(
+                                            viewModel.numberType == "Existing" ?
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            ) :
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.clear, Color.clear]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                )
+                        )
                         .foregroundColor(viewModel.numberType == "Existing" ? .white : .primary)
-                        .cornerRadius(8)
                 }
+                
                 Button(action: {
                     viewModel.numberType = "New"
                 }) {
-                    Text("New")
-                        .padding()
+                    Text("Choose a New Number")
+                        .font(.system(size: 18, weight: .medium))
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
                         .frame(maxWidth: .infinity)
-                        .background(viewModel.numberType == "New" ? Color.accentGold : Color.gray.opacity(0.2))
+                        .background(
+                            RoundedRectangle(cornerRadius: 25)
+                                .stroke(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ),
+                                    lineWidth: 2
+                                )
+                                .background(
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(
+                                            viewModel.numberType == "New" ?
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            ) :
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.clear, Color.clear]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                )
+                        )
                         .foregroundColor(viewModel.numberType == "New" ? .white : .primary)
-                        .cornerRadius(8)
                 }
             }
-            if !viewModel.numberType.isEmpty {
-                Text("You selected: \(viewModel.numberType)")
-                    .font(.subheadline)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
+            .padding(.horizontal, 16)
             
-            if viewModel.numberType == "New" {
-                // Display some sample numbers to choose from
+            // Conditional content based on selection
+            if viewModel.numberType == "Existing" {
+                // Explanatory text similar to screenshot
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Select a number:")
-                        .font(.headline)
-                        .padding(.top, 6)
-                    
-                    Button(action: {
-                        viewModel.selectedPhoneNumber = "(202) 555-1234"
-                    }) {
-                        HStack {
-                            Text("(202) 555-1234")
-                                .font(.headline)
-                                .foregroundColor(Color.accentGold)
-                            Spacer()
-                            if viewModel.selectedPhoneNumber == "(202) 555-1234" {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.blue)
-                                    .font(.title2)
-                            }
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                    }
-                    
-                    Button(action: {
-                        viewModel.selectedPhoneNumber = "(202) 555-5678"
-                    }) {
-                        HStack {
-                            Text("(202) 555-5678")
-                                .font(.headline)
-                                .foregroundColor(Color.accentGold)
-                            Spacer()
-                            if viewModel.selectedPhoneNumber == "(202) 555-5678" {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.blue)
-                                    .font(.title2)
-                            }
-                        }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .foregroundColor(.orange)
+                            .font(.system(size: 16, weight: .bold))
+                            .padding(.top, 2)
+                        
+                        Text("If you prefer to transfer your existing number to us, supply us with the Account Number, Account Name, Account Address, and most importantly a Transfer PIN or password. Without a correct PIN/Password, your existing carrier will NOT release your number to us. You can usually get the Transfer PIN by calling your carrier or obtain from their app. So please have such information ready before going onto the 'Next' step.")
+                            .font(.system(size: 15))
+                            .lineSpacing(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-            } else if viewModel.numberType == "Existing" {
+                .padding(.horizontal, 10)
+                .padding(.top, 8)
+                
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Enter your existing number:")
-                        .font(.headline)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
                         .padding(.top, 6)
                         
-                    TextField("Enter your current phone number", text: $viewModel.selectedPhoneNumber)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    TextField("(000) 000-0000", text: $viewModel.selectedPhoneNumber)
+                        .font(.system(size: 16))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(.systemGray3), lineWidth: 1)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemBackground))
+                                )
+                        )
                         .keyboardType(.phonePad)
+                        .textContentType(.telephoneNumber)
                 }
+                .padding(.horizontal, 16)
             }
             
             Spacer()
-            }
+        }
+        
+        // Return either wrapped in navigation container or just the content
+        if showNavigation {
+            return AnyView(
+                StepNavigationContainer(
+                    currentStep: 4,
+                    totalSteps: 6,
+                    nextButtonText: "Next Step",
+                    nextButtonDisabled: viewModel.numberType.isEmpty || 
+                                  (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.isEmpty),
+                    nextButtonAction: {
+                        // Save number selection to orders collection
+                        viewModel.saveNumberSelection { success in
+                            if success {
+                                // Continue to next step only if save was successful
+                                onNext()
+                            } else {
+                                print("Failed to save number selection")
+                            }
+                        }
+                    },
+                    backButtonAction: {
+                        if let onBack = onBack {
+                            onBack()
+                        }
+                    },
+                    cancelAction: onCancel
+                ) {
+                    contentView
+                }
+            )
+        } else {
+            return AnyView(contentView)
         }
     }
 }

@@ -9,10 +9,11 @@ struct OrderCompletionView: View {
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
-        FixedBottomNavigationView(
+        StepNavigationContainer(
             currentStep: 6,
-            backAction: { if let onBack = onBack { onBack() } },
-            nextAction: { 
+            nextButtonText: "Go To Home",
+            nextButtonDisabled: false,  // Button should always be active
+            nextButtonAction: { 
                 // Navigate back to home/start order view
                 if let onGoToHome = onGoToHome {
                     onGoToHome()
@@ -21,11 +22,10 @@ struct OrderCompletionView: View {
                     presentationMode.wrappedValue.dismiss()
                 }
             },
-            isNextDisabled: false,  // Button should always be active
+            backButtonAction: { if let onBack = onBack { onBack() } },
             cancelAction: onGoToHome,  // Enable cancel button to go to home
             disableBackButton: false,
-            disableCancelButton: false,  // Enable cancel button
-            nextButtonText: "Go To Home"
+            disableCancelButton: false  // Enable cancel button
         ) {
             VStack(spacing: 16) {
                 Text("Thank you for joining TrumpMobile!")

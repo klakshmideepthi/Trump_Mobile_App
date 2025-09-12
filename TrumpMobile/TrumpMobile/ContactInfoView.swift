@@ -12,10 +12,11 @@ struct ContactInfoView: View {
     @State private var errorMessage: String? = nil
     
     var body: some View {
-        FixedBottomNavigationView(
-            currentStep: 1, 
-            backAction: {}, 
-            nextAction: {
+        StepNavigationContainer(
+            currentStep: 1,
+            nextButtonText: "Next Step",
+            nextButtonDisabled: viewModel.firstName.isEmpty || viewModel.lastName.isEmpty || viewModel.phoneNumber.isEmpty || isLoading,
+            nextButtonAction: {
                 print("📲 Next button tapped in ContactInfoView")
                 // This is the critical fix - make sure we save before continuing
                 if let userId = viewModel.userId ?? Auth.auth().currentUser?.uid {
@@ -36,16 +37,13 @@ struct ContactInfoView: View {
                     print("❌ No userId available")
                     errorMessage = "User ID not available. Please log in again."
                 }
-            }, 
-            isNextDisabled: viewModel.firstName.isEmpty || viewModel.lastName.isEmpty || viewModel.phoneNumber.isEmpty || isLoading,
+            },
+            backButtonAction: {},
             cancelAction: onCancel,
             disableBackButton: true,
-            disableCancelButton: false,
-            nextButtonText: "Next Step"
+            disableCancelButton: false
         ) {
             VStack(alignment: .center, spacing: 12) {
-                // Step indicator is now provided by FixedBottomNavigationView
-                
                 if isLoading {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle())

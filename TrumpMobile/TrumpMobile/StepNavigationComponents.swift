@@ -1,5 +1,30 @@
 import SwiftUI
 
+struct StepIndicatorText: View {
+    let currentStep: Int
+    let totalSteps: Int
+    
+    var body: some View {
+        ZStack {
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 40)
+            
+            Text("STEP \(currentStep) OF \(totalSteps)")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+        }
+    }
+}
+
 struct StepNavigationContainer<Content: View>: View {
     let currentStep: Int
     let totalSteps: Int
@@ -9,6 +34,8 @@ struct StepNavigationContainer<Content: View>: View {
     let content: Content
     let nextButtonDisabled: Bool
     let cancelAction: (() -> Void)?
+    let disableBackButton: Bool
+    let disableCancelButton: Bool
     @State private var showCancelConfirmation = false
     
     init(
@@ -19,6 +46,8 @@ struct StepNavigationContainer<Content: View>: View {
         nextButtonAction: @escaping () -> Void,
         backButtonAction: @escaping () -> Void,
         cancelAction: (() -> Void)? = nil,
+        disableBackButton: Bool = false,
+        disableCancelButton: Bool = false,
         @ViewBuilder content: () -> Content
     ) {
         self.currentStep = currentStep
@@ -28,67 +57,47 @@ struct StepNavigationContainer<Content: View>: View {
         self.nextButtonAction = nextButtonAction
         self.backButtonAction = backButtonAction
         self.cancelAction = cancelAction
+        self.disableBackButton = disableBackButton
+        self.disableCancelButton = disableCancelButton
         self.content = content()
     }
     
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                // Fixed header area with Step indicator
-                VStack(spacing: 0) {
-                    // Step indicator at top with back arrow and cancel button
-                    HStack {
-                        // Back button on left (hidden for step 1 and step 6)
-                        Button(action: backButtonAction) {
-                            Image(systemName: "arrow.left")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor((currentStep == 1 || currentStep == 6) ? Color.clear : Color.accentGold)
-                                .padding()
-                        }
-                        .disabled(currentStep == 1 || currentStep == 6)
-                        
-                        Spacer()
-                        
-                        // Step indicator in center
-                        ZStack {
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(height: 40)
-                            
-                            Text("STEP \(currentStep) OF \(totalSteps)")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 20)
-                        }
-                        
-                        Spacer()
-                        
-                        // Cancel button on right
-                        Button(action: {
-                            print("DEBUG: Cancel button tapped in StepNavigationContainer")
-                            if cancelAction != nil {
-                                showCancelConfirmation = true
-                            } else {
-                                print("DEBUG: cancelAction is nil in StepNavigationContainer when tapped")
-                            }
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(Color.accentGold)
-                                .padding()
-                        }
+                HStack {
+                    // Back button on left
+                    Button(action: backButtonAction) {
+                        Image(systemName: "arrow.left")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor((currentStep == 1 || currentStep == 6 || disableBackButton) ? Color.clear : Color.accentGold)
+                            .padding()
                     }
-                    .padding(.horizontal)
+                    .disabled(currentStep == 1 || currentStep == 6 || disableBackButton)
+                    
+                    Spacer()
+                    
+                    // Step indicator in center
+                    StepIndicatorText(currentStep: currentStep, totalSteps: totalSteps)
+                    
+                    Spacer()
+                    
+                    // Cancel button on right
+                    Button(action: {
+                        print("DEBUG: Cancel button tapped in StepNavigationContainer")
+                        if cancelAction != nil {
+                            showCancelConfirmation = true
+                        } else {
+                            print("DEBUG: cancelAction is nil in StepNavigationContainer when tapped")
+                        }
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(disableCancelButton ? Color.clear : Color.accentGold)
+                            .padding()
+                    }
+                    .disabled(disableCancelButton)
                 }
-                .background(Color(.systemBackground))
-                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 2)
                 
                 // Content area (flexible)
                 ScrollView {
@@ -99,7 +108,6 @@ struct StepNavigationContainer<Content: View>: View {
                         .padding(.bottom, 100) // Add padding to ensure content isn't hidden behind button
                 }
             }
-            .background(Color(.systemGroupedBackground))
             
             // Fixed navigation button at bottom
             VStack(spacing: 0) {
@@ -119,7 +127,7 @@ struct StepNavigationContainer<Content: View>: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 5, y: -2)
             )
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color(.systemBackground))
         .edgesIgnoringSafeArea(.all)
         .alert(isPresented: $showCancelConfirmation) {
             Alert(
@@ -181,7 +189,6 @@ struct StepNavigationButton: View {
                     Image(systemName: "chevron.right")
                 }
             }
-            .padding(.horizontal, 40)
             .padding(.vertical, 15)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
@@ -199,72 +206,8 @@ struct StepNavigationButton: View {
                 }
             )
             .cornerRadius(10)
-            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         }
-        .padding(.horizontal, 30)
         .disabled(isDisabled)
-    }
-}
-
-struct StepIndicator: View {
-    let currentStep: Int
-    let totalSteps: Int
-    let showBackButton: Bool
-    let onBack: (() -> Void)?
-    
-    init(currentStep: Int, totalSteps: Int = 6, showBackButton: Bool = false, onBack: (() -> Void)? = nil) {
-        self.currentStep = currentStep
-        self.totalSteps = totalSteps
-        self.showBackButton = showBackButton
-        self.onBack = onBack
-    }
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            if showBackButton {
-                Button(action: {
-                    onBack?()
-                }) {
-                    Image(systemName: "arrow.left")
-                        .foregroundColor((currentStep == 1 || currentStep == 6) ? Color.clear : Color.accentGold)
-                        .font(.system(size: 20, weight: .semibold))
-                }
-                .disabled(currentStep == 1 || currentStep == 6)
-            }
-            
-            Spacer()
-            
-            ZStack {
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(height: 40)
-                
-                Text("STEP \(currentStep) OF \(totalSteps)")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-            }
-            
-            Spacer()
-            
-            // Placeholder to balance the layout
-            if showBackButton {
-                Image(systemName: "xmark")
-                    .font(.system(size: 20))
-                    .foregroundColor(.clear)
-            }
-        }
-        .padding(.top, 20)
-        .padding(.horizontal)
-        .frame(maxWidth: .infinity)
-        .frame(height: 60) // Fixed height for consistent positioning
     }
 }
 
@@ -283,184 +226,34 @@ struct NavigationButtonsView: View {
                 action: nextAction
             )
         }
-        .padding(.bottom, 20)
-        .background(
-            Rectangle()
-                .fill(Color(.systemBackground))
-                .shadow(radius: 2)
-                .edgesIgnoringSafeArea(.bottom)
-        )
     }
 }
 
-struct FixedBottomNavigationView<Content: View>: View {
-    let content: Content
-    let currentStep: Int
-    let totalSteps: Int
-    let backAction: () -> Void
-    let nextAction: () -> Void
-    let isNextDisabled: Bool
-    let cancelAction: (() -> Void)?
-    let disableBackButton: Bool
-    let disableCancelButton: Bool
-    let nextButtonText: String
-    @State private var showCancelConfirmation = false
-    
-    init(currentStep: Int, 
-         totalSteps: Int = 6,
-         backAction: @escaping () -> Void, 
-         nextAction: @escaping () -> Void, 
-         isNextDisabled: Bool,
-         cancelAction: (() -> Void)? = nil,
-         disableBackButton: Bool = false,
-         disableCancelButton: Bool = false,
-         nextButtonText: String = "Next Step",
-         @ViewBuilder content: () -> Content) {
-        self.content = content()
-        self.currentStep = currentStep
-        self.totalSteps = totalSteps
-        self.backAction = backAction
-        self.nextAction = nextAction
-        self.isNextDisabled = isNextDisabled
-        self.cancelAction = cancelAction
-        self.disableBackButton = disableBackButton
-        self.disableCancelButton = disableCancelButton
-        self.nextButtonText = nextButtonText
-    }
-    
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                // Fixed header with back button, step indicator, and cancel button
-                HStack {
-                    // Back button on left (hidden for step 1 and step 6)
-                    Button(action: backAction) {
-                        Image(systemName: "arrow.left")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor((currentStep == 1 || currentStep == 6 || disableBackButton) ? Color.clear : Color.accentGold)
-                            .padding()
-                    }
-                    .disabled(currentStep == 1 || currentStep == 6 || disableBackButton)
-                    
-                    Spacer()
-                    
-                    // Step indicator in center
-                    ZStack {
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(height: 40)
-                        
-                        Text("STEP \(currentStep) OF \(totalSteps)")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20)
-                    }
-                    
-                    Spacer()
-                    
-                    // Cancel button on right
-                    Button(action: {
-                        if let cancelAction = cancelAction {
-                            print("DEBUG: cancelAction exists in FixedBottomNavigationView - showing confirmation")
-                            showCancelConfirmation = true
-                        } else {
-                            print("DEBUG: cancelAction is nil in FixedBottomNavigationView - not showing confirmation")
-                            // Re-check if self.cancelAction is nil
-                            print("DEBUG: Double-checking self.cancelAction: \(self.cancelAction == nil ? "nil" : "not nil")")
-                        }
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(disableCancelButton ? Color.clear : Color.accentGold)
-                            .padding()
-                    }
-                    .disabled(disableCancelButton)
-                }
-                .padding(.horizontal)
-                .background(Color(.systemBackground))
-                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 2)
-                
-                // Main content
-                ScrollView {
-                    content
-                        .padding(.horizontal, 16)  // Reduced horizontal padding
-                        .padding(.top, 4)          // Minimal top padding
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, 100) // Add padding to ensure content isn't hidden behind the button
-                }
-                .background(Color(.systemGroupedBackground))
-            }
-            
-            // Fixed navigation button at bottom
-            VStack(spacing: 0) {
-                StepNavigationButton(
-                    currentStep: currentStep,
-                    totalSteps: totalSteps,
-                    buttonText: nextButtonText == "Next Step" && currentStep == 5 ? "Complete Order" : nextButtonText,
-                    isDisabled: isNextDisabled,
-                    action: nextAction
-                )
-                .padding(.bottom, 20)
-            }
-            .background(
-                Rectangle()
-                    .fill(Color(.systemBackground))
-                    .edgesIgnoringSafeArea(.bottom)
-                    .shadow(color: Color.black.opacity(0.1), radius: 5, y: -2)
-            )
-        }
-        .background(Color(.systemGroupedBackground))
-        .edgesIgnoringSafeArea(.all)
-        .alert(isPresented: $showCancelConfirmation) {
-            Alert(
-                title: Text("Cancel Order"),
-                message: Text("Do you want to cancel the order?"),
-                primaryButton: .destructive(Text("Yes, I want to cancel")) {
-                    print("DEBUG: Cancel button pressed in FixedBottomNavigationView")
-                    if let cancelAction = cancelAction {
-                        print("DEBUG: Executing cancelAction in FixedBottomNavigationView")
-                        cancelAction()
-                    } else {
-                        print("DEBUG: cancelAction is nil in FixedBottomNavigationView")
-                    }
-                },
-                secondaryButton: .cancel(Text("No"))
-            )
-        }
-        .navigationBarBackButtonHidden(true)
-    }
-}
+// Create a typealias for backward compatibility
+typealias FixedBottomNavigationView = StepNavigationContainer
 
 struct StepNavigationComponents_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            // Preview for FixedBottomNavigationView
-            FixedBottomNavigationView(
+            // Preview for StepNavigationContainer (showing consolidated functionality)
+            StepNavigationContainer(
                 currentStep: 2,
                 totalSteps: 6,
-                backAction: {}, 
-                nextAction: {}, 
-                isNextDisabled: false,
+                nextButtonText: "Next Step",
+                nextButtonDisabled: false,
+                nextButtonAction: {},
+                backButtonAction: {},
                 cancelAction: {},
                 disableBackButton: false,
-                disableCancelButton: false,
-                nextButtonText: "Next Step"
+                disableCancelButton: false
             ) {
                 VStack(spacing: 20) {
-                    // Removed duplicate StepIndicator
                     Text("Content goes here")
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             
-            // Preview for StepNavigationContainer
+            // Another preview showing different step
             StepNavigationContainer(
                 currentStep: 3,
                 totalSteps: 6,

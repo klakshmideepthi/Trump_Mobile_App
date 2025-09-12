@@ -21,7 +21,7 @@ struct LoginView: View {
     @State private var currentNonce: String?
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
                 Image("Trump_Mobile_logo_gold")
                     .resizable()

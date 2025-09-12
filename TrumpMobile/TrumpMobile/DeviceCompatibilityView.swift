@@ -5,78 +5,107 @@ struct DeviceCompatibilityView: View {
     // Create a local state to track selection before committing to viewModel
     @State private var selectedBrand: String?
     @State private var selectedModel: String?
+    @State private var showIMEICheck = false
     
     var onNext: () -> Void
     var onBack: (() -> Void)? = nil
     var onCancel: (() -> Void)? = nil
+    var showNavigation: Bool = true  // New parameter to control navigation display
     
     var body: some View {
         // Use PhoneCatalog for brands and models
         let brands = PhoneBrand.allCases
         let phoneCatalog = PhoneCatalog.shared
-
-        return StepNavigationContainer(
-            currentStep: 2,
-            totalSteps: 6,
-            nextButtonText: "Next Step",
-            nextButtonDisabled: (selectedBrand == nil || selectedBrand == "") || (selectedModel == nil || selectedModel == ""),
-            nextButtonAction: {
-                // Commit selections to the viewModel when proceeding
-                if let brand = selectedBrand {
-                    viewModel.deviceBrand = brand
-                }
-                if let model = selectedModel {
-                    viewModel.deviceModel = model
-                }
-                onNext()
-            },
-            backButtonAction: {
-                if let onBack = onBack {
-                    onBack()
-                }
-            },
-            cancelAction: onCancel
-        ) {
-            VStack(spacing: 0) {
-                VStack(spacing: 6) {
-                    Text("Check device compatibility")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    Text("Let's double check that your device works with Trump Mobile")
+        
+        let contentView = VStack(spacing: 0) {
+            VStack(spacing: 6) {
+                Text("Check device compatibility")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Text("Let's double check that your device works with Trump Mobile")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            .padding(.bottom, 20)
+            
+            VStack(spacing: 16) {
+                // Brand Picker
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Device Brand")
                         .font(.subheadline)
                         .foregroundColor(.gray)
+                    
+                    Menu {
+                        ForEach(brands) { brand in
+                            Button(action: {
+                                selectedBrand = brand.rawValue
+                                
+                                // Set default model when brand changes
+                                if let models = phoneCatalog.models(for: brand).first {
+                                    selectedModel = models.name
+                                } else {
+                                    selectedModel = nil
+                                }
+                            }) {
+                                Text(brand.rawValue)
+                                if selectedBrand == brand.rawValue {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text(selectedBrand ?? "Select brand")
+                                .foregroundColor(selectedBrand == nil ? .gray : .primary)
+                            Spacer()
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(.gray)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                        )
+                    }
                 }
-                .padding(.bottom, 20)
-
-                VStack(spacing: 16) {
-                    // Brand Picker
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Device Brand")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                        
+                
+                // Model Picker
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Device Model")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    
+                    let availableModels = getAvailableModels(for: selectedBrand ?? "")
+                    
+                    if selectedBrand == nil || availableModels.isEmpty {
+                        HStack {
+                            Text("Select brand first")
+                                .foregroundColor(.gray)
+                            Spacer()
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(.gray)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                        )
+                    } else {
                         Menu {
-                            ForEach(brands) { brand in
+                            ForEach(availableModels, id: \.name) { model in
                                 Button(action: {
-                                    selectedBrand = brand.rawValue
-                                    
-                                    // Set default model when brand changes
-                                    if let models = phoneCatalog.models(for: brand).first {
-                                        selectedModel = models.name
-                                    } else {
-                                        selectedModel = nil
-                                    }
+                                    selectedModel = model.name
                                 }) {
-                                    Text(brand.rawValue)
-                                    if selectedBrand == brand.rawValue {
+                                    Text(model.name)
+                                    if selectedModel == model.name {
                                         Image(systemName: "checkmark")
                                     }
                                 }
                             }
                         } label: {
                             HStack {
-                                Text(selectedBrand ?? "Select brand")
-                                    .foregroundColor(selectedBrand == nil ? .gray : .primary)
+                                Text(selectedModel ?? "Select model")
+                                    .foregroundColor(selectedModel == nil ? .gray : .primary)
                                 Spacer()
                                 Image(systemName: "chevron.down")
                                     .foregroundColor(.gray)
@@ -88,70 +117,75 @@ struct DeviceCompatibilityView: View {
                             )
                         }
                     }
-
-                    // Model Picker
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Device Model")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+                }
+                
+                // Compatibility Results Section
+                if let selectedModel = selectedModel, !selectedModel.isEmpty {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Results for \(selectedModel)")
+                            .font(.headline)
+                            .fontWeight(.medium)
+                            .padding(.top, 8)
                         
-                        let availableModels = getAvailableModels(for: selectedBrand ?? "")
-                        
-                        if selectedBrand == nil || availableModels.isEmpty {
-                            HStack {
-                                Text("Select brand first")
-                                    .foregroundColor(.gray)
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 16))
+                                Text("Device is compatible with our network.")
+                                    .font(.body)
+                                    .foregroundColor(.primary)
                                 Spacer()
-                                Image(systemName: "chevron.down")
-                                    .foregroundColor(.gray)
                             }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                            )
-                        } else {
-                            Menu {
-                                ForEach(availableModels, id: \.name) { model in
-                                    Button(action: {
-                                        selectedModel = model.name
-                                    }) {
-                                        Text(model.name)
-                                        if selectedModel == model.name {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Text(selectedModel ?? "Select model")
-                                        .foregroundColor(selectedModel == nil ? .gray : .primary)
-                                    Spacer()
-                                    Image(systemName: "chevron.down")
-                                        .foregroundColor(.gray)
-                                }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                                )
+                            
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 16))
+                                Text("You can use an eSIM with your device.")
+                                    .font(.body)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                            
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 16))
+                                Text("You can use a SIM card with your device.")
+                                    .font(.body)
+                                    .foregroundColor(.primary)
+                                Spacer()
                             }
                         }
                     }
-
-                    // Can't find device section
-                    if selectedBrand != nil && !getAvailableModels(for: selectedBrand ?? "").isEmpty {
-                        Text("Can't find your device in the list above?")
-                            .font(.footnote)
-                            .foregroundColor(.gray)
-                    }
-
+                }
+                
+                // Separator Line
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color("AccentColor"), Color("AccentColor2")]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(height: 1)
+                    .padding(.vertical, 8)
+                
+                // Can't find device section
+                VStack(spacing: 16) {
+                    Text("Can't find your device in the list above?")
+                        .font(.body)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                    
                     Button(action: {
-                        // Show IMEI help (could be a sheet/alert)
+                        showIMEICheck = true
                     }) {
                         Text("Check your IMEI instead")
                             .font(.subheadline)
-                            .foregroundColor(Color("AccentColor2"))
+                            .foregroundColor(.primary)
                             .padding(.vertical, 10)
                             .frame(maxWidth: .infinity)
                             .background(
@@ -159,9 +193,9 @@ struct DeviceCompatibilityView: View {
                                     .stroke(Color("AccentColor2"), lineWidth: 1)
                             )
                     }
-                    .padding(.top, 4)
                 }
             }
+        }
             .onAppear {
                 // Initialize selections from viewModel if they exist
                 if !viewModel.deviceBrand.isEmpty {
@@ -174,6 +208,42 @@ struct DeviceCompatibilityView: View {
                 // Set device as compatible for the demo
                 viewModel.deviceIsCompatible = true
             }
+        
+        // Return either wrapped in navigation container or just the content
+        if showNavigation {
+            return AnyView(
+                StepNavigationContainer(
+                    currentStep: 2,
+                    totalSteps: 6,
+                    nextButtonText: "Next Step",
+                    nextButtonDisabled: (selectedBrand == nil || selectedBrand == "") || (selectedModel == nil || selectedModel == ""),
+                    nextButtonAction: {
+                        // Commit selections to the viewModel when proceeding
+                        if let brand = selectedBrand {
+                            viewModel.deviceBrand = brand
+                        }
+                        if let model = selectedModel {
+                            viewModel.deviceModel = model
+                        }
+                        onNext()
+                    },
+                    backButtonAction: {
+                        if let onBack = onBack {
+                            onBack()
+                        }
+                    },
+                    cancelAction: onCancel
+                ) {
+                    contentView
+                }
+                .sheet(isPresented: $showIMEICheck) {
+                    IMEICheckView(isPresented: $showIMEICheck)
+                        .presentationDetents([.large])
+                        .presentationDragIndicator(.visible)
+                }
+            )
+        } else {
+            return AnyView(contentView)
         }
     }
     

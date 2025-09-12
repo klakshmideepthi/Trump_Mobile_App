@@ -24,7 +24,7 @@ struct SplashView: View {
                     .frame(width: 280, height: 280)
                 Spacer()
             }
-            .background(Color.white)
+            .background(Color(.systemBackground))
             .ignoresSafeArea()
             .onAppear {
                 print("DEBUG: SplashView appeared with navigationState")
