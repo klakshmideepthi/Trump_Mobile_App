@@ -4,6 +4,14 @@ import FirebaseAuth
 import Combine
 
 class ContactInfoDetailViewModel: ObservableObject {
+    // Reset all user-specific data (call on logout)
+    func reset() {
+        contactInfo = ContactInfoData()
+        shippingAddress = ShippingAddressData()
+        isLoading = false
+        showError = false
+        errorMessage = ""
+    }
     @Published var contactInfo = ContactInfoData()
     @Published var shippingAddress = ShippingAddressData()
     @Published var isLoading = false

@@ -3,6 +3,8 @@ import FirebaseAuth
 
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var userRegistrationViewModel: UserRegistrationViewModel
+    @EnvironmentObject var contactInfoDetailViewModel: ContactInfoDetailViewModel
     
     var body: some View {
         NavigationView {
@@ -37,6 +39,9 @@ struct ProfileView: View {
                     Button(action: {
                         do {
                             try Auth.auth().signOut()
+                            userRegistrationViewModel.resetAllUserData()
+                            userRegistrationViewModel.logout()
+                            contactInfoDetailViewModel.reset()
                         } catch {
                             print("Error signing out: \(error.localizedDescription)")
                         }

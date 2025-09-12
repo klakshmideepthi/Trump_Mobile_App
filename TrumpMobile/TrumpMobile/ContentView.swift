@@ -51,7 +51,9 @@ struct ContentView: View {
             // Show "Start New Order" page first
             StartOrderView(
               onStart: { orderId in
-                // Set the order ID in the view model
+                // Always reset order-specific fields first
+                viewModel.resetOrderSpecificFields()
+                // Set the new orderId from Firestore or UUID
                 if let orderId = orderId {
                   viewModel.orderId = orderId
                 }
@@ -139,7 +141,8 @@ struct ContentView: View {
                 viewModel: viewModel,
                 onBack: { registrationStep = 5 },
                 onGoToHome: { 
-                    // Reset to start a new order
+                    // Reset order-specific fields and go to home
+                    viewModel.resetOrderSpecificFields()
                     registrationStep = 0
                     // Also update navigation state
                     navigationState.navigateTo(.startNewOrder)
@@ -168,9 +171,7 @@ struct ContentView: View {
       .padding()
     }
     .onAppear {
-      print("DEBUG: ContentView appeared with navigationState destination: \(navigationState.currentDestination)")
-      print("DEBUG: ContentView current registrationStep: \(registrationStep)")
-      
+
       // Set up auth state listener when view appears
       authStateListener = Auth.auth().addStateDidChangeListener { auth, user in
         isSignedIn = user != nil

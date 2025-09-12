@@ -4,6 +4,49 @@ import FirebaseAuth
 import FirebaseFirestore
 
 class UserRegistrationViewModel: ObservableObject {
+    // Logout function to clear user session and data
+    func logout() {
+        // Sign out from Firebase Auth
+        do {
+            try Auth.auth().signOut()
+        } catch {
+            print("❌ Error signing out: \(error.localizedDescription)")
+        }
+        // Reset all user data
+        resetAllUserData()
+        // Remove persisted orderId
+        UserDefaults.standard.removeObject(forKey: "currentOrderId")
+    }
+    // Reset all user-specific data (call on logout)
+    func resetAllUserData() {
+        accountType = ""
+        email = ""
+        password = ""
+        confirmPassword = ""
+        firstName = ""
+        lastName = ""
+        phoneNumber = ""
+        street = ""
+        aptNumber = ""
+        zip = ""
+        city = ""
+        state = ""
+        deviceBrand = ""
+        deviceModel = ""
+        imei = ""
+        simType = ""
+        numberType = ""
+        selectedPhoneNumber = ""
+        creditCardNumber = ""
+        billingDetails = ""
+        address = ""
+        country = "USA"
+        deviceIsCompatible = false
+        userId = nil
+        orderId = nil
+        isLoading = false
+        errorMessage = nil
+    }
     // Step 1
     @Published var accountType: String = ""
     @Published var email: String = ""
@@ -60,8 +103,7 @@ class UserRegistrationViewModel: ObservableObject {
         address = ""
         country = "USA"
         
-        // Clear the orderId to ensure a new one is created
-        orderId = nil
+        // Do NOT clear orderId here; let completeOrder handle it after completion
         UserDefaults.standard.removeObject(forKey: "currentOrderId")
         
         print("✅ Order-specific fields reset complete")
@@ -773,15 +815,18 @@ class UserRegistrationViewModel: ObservableObject {
         let db = Firestore.firestore()
         db.collection("users").document(userId)
             .collection("orders").document(orderId)
-            .setData(orderData, merge: true) { error in
+            .setData(orderData, merge: true) { [weak self] error in
+                guard let self = self else { return }
                 self.isLoading = false
-                
                 if let error = error {
                     self.errorMessage = error.localizedDescription
                     print("❌ Error completing order: \(error.localizedDescription)")
                     completion(false)
                 } else {
                     print("✅ Successfully completed order")
+                    // After marking as completed, reset order-specific fields and clear orderId
+                    self.resetOrderSpecificFields()
+                    self.orderId = nil
                     completion(true)
                 }
             }

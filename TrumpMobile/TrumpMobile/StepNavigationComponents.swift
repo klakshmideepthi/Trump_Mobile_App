@@ -120,7 +120,6 @@ struct StepNavigationContainer<Content: View>: View {
                     isDisabled: nextButtonDisabled,
                     action: nextButtonAction
                 )
-                .padding(.bottom, 20)
             }
             .background(
                 Rectangle()
@@ -209,8 +208,12 @@ struct StepNavigationButton: View {
             )
             .cornerRadius(10)
         }
-        .disabled(isDisabled)
+        .disabled(isDisabled || isSaving)
     }
+
+    // Add a state to track saving
+    @State private var isSaving: Bool = false
+    // To use this, set isSaving = true when save starts, and isSaving = false when save completes
 }
 
 struct NavigationButtonsView: View {

@@ -130,13 +130,10 @@ struct OrderFlowView: View {
             // Set up the view model with the orderId and reset order-specific fields
             if let orderId = currentOrder?.id {
                 print("🔄 Setting orderId in viewModel: \(orderId)")
+                // Always reset order-specific fields first
+                viewModel.resetOrderSpecificFields()
                 viewModel.orderId = orderId
                 viewModel.userId = Auth.auth().currentUser?.uid
-                
-                // Reset order-specific fields to ensure clean start for new order
-                viewModel.resetOrderSpecificFields()
-                // Restore the orderId since resetOrderSpecificFields clears it
-                viewModel.orderId = orderId
             } else {
                 // If no orderId, ensure all order fields are cleared
                 viewModel.resetOrderSpecificFields()
