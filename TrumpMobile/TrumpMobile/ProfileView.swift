@@ -8,7 +8,7 @@ struct ProfileView: View {
         NavigationView {
             List {
                 Section(header: Text("Account")) {
-                    NavigationLink(destination: ContactInfoView(viewModel: UserRegistrationViewModel(), onNext: {})) {
+                    NavigationLink(destination: ContactInfoDetailView()) {
                         Label("Contact Information", systemImage: "person.fill")
                     }
                 }

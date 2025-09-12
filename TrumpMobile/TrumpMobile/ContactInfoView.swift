@@ -100,6 +100,18 @@ struct ContactInfoView: View {
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                             .keyboardType(.phonePad)
+                        
+                        TextField("Email", text: $viewModel.email)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
                     }
                     .padding(.horizontal)
             
@@ -167,6 +179,10 @@ struct ContactInfoView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            // Set the authenticated user's email if not already set
+            if viewModel.email.isEmpty {
+                viewModel.email = Auth.auth().currentUser?.email ?? ""
+            }
             loadUserData()
         }
     }

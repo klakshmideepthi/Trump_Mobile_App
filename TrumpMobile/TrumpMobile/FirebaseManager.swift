@@ -8,7 +8,11 @@ class FirebaseManager {
     
     // Save user registration data
     func saveUserRegistration(userId: String, data: [String: Any], completion: @escaping (Bool, Error?) -> Void) {
-        db.collection("users").document(userId).setData(data) { error in
+        // Ensure userId is included in the data for Firestore security rules
+        var dataWithUserId = data
+        dataWithUserId["userId"] = userId
+        
+        db.collection("users").document(userId).setData(dataWithUserId) { error in
             completion(error == nil, error)
         }
     }
@@ -19,9 +23,10 @@ class FirebaseManager {
         let orderRef = db.collection("users").document(userId).collection("orders").document()
         let orderId = orderRef.documentID
         
-        // Create initial order data
+        // Create initial order data with userId for security rules
         let orderData: [String: Any] = [
             "orderId": orderId,
+            "userId": userId,
             "status": "draft",
             "createdAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp()
@@ -102,6 +107,10 @@ class FirebaseManager {
         print("📝 updateUserRegistration called for userId: \(userId)")
         print("📝 Data to update: \(data)")
         
+        // Ensure userId is included in the data for Firestore security rules
+        var dataWithUserId = data
+        dataWithUserId["userId"] = userId
+        
         let userRef = db.collection("users").document(userId)
         
         // Check if document exists first
@@ -115,7 +124,7 @@ class FirebaseManager {
             if document?.exists == true {
                 print("📄 Document exists, updating it")
                 // Document exists, update it
-                userRef.updateData(data) { error in
+                userRef.updateData(dataWithUserId) { error in
                     if let error = error {
                         print("❌ Error updating document: \(error.localizedDescription)")
                         completion(false, error)
@@ -127,7 +136,7 @@ class FirebaseManager {
             } else {
                 print("📄 Document doesn't exist, creating it")
                 // Document doesn't exist, create it
-                userRef.setData(data, merge: true) { error in
+                userRef.setData(dataWithUserId, merge: true) { error in
                     if let error = error {
                         print("❌ Error creating document: \(error.localizedDescription)")
                         completion(false, error)
@@ -162,8 +171,14 @@ class FirebaseManager {
         print("📞 saveContactInfo called for userId: \(userId)")
         print("📞 contactData: \(contactData)")
         
-        db.collection("users").document(userId).collection("contactInfo").document("primary")
-            .setData(contactData, merge: true) { error in
+        // Ensure userId is included in the data for Firestore security rules
+        var dataWithUserId = contactData
+        dataWithUserId["userId"] = userId
+        
+        // Save to users/{userId}/contactInfo/primary subcollection
+        db.collection("users").document(userId)
+            .collection("contactInfo").document("primary")
+            .setData(dataWithUserId, merge: true) { error in
                 if let error = error {
                     print("❌ Error saving contact info: \(error.localizedDescription)")
                     completion(false, error)
@@ -179,8 +194,14 @@ class FirebaseManager {
         print("📍 saveShippingAddress called for userId: \(userId)")
         print("📍 addressData: \(addressData)")
         
-        db.collection("users").document(userId).collection("shippingAddress").document("primary")
-            .setData(addressData, merge: true) { error in
+        // Ensure userId is included in the data for Firestore security rules
+        var dataWithUserId = addressData
+        dataWithUserId["userId"] = userId
+        
+        // Save to users/{userId}/shippingAddress/primary subcollection
+        db.collection("users").document(userId)
+            .collection("shippingAddress").document("primary")
+            .setData(dataWithUserId, merge: true) { error in
                 if let error = error {
                     print("❌ Error saving shipping address: \(error.localizedDescription)")
                     completion(false, error)
@@ -196,10 +217,14 @@ class FirebaseManager {
         // Get the current order ID or use a default one
         let orderId = UserDefaults.standard.string(forKey: "currentOrderId") ?? "current"
         
+        // Ensure userId is included in the data for Firestore security rules
+        var dataWithUserId = addressData
+        dataWithUserId["userId"] = userId
+        
         // Add billing info to the order document
         db.collection("users").document(userId)
             .collection("orders").document(orderId)
-            .setData(addressData, merge: true) { error in
+            .setData(dataWithUserId, merge: true) { error in
                 completion(error == nil, error)
             }
     }
@@ -208,7 +233,8 @@ class FirebaseManager {
     func getContactInfo(userId: String, completion: @escaping ([String: Any]?, Error?) -> Void) {
         print("📱 getContactInfo called for userId: \(userId)")
         
-        db.collection("users").document(userId).collection("contactInfo").document("primary")
+        db.collection("users").document(userId)
+            .collection("contactInfo").document("primary")
             .getDocument { snapshot, error in
                 if let error = error {
                     print("❌ Error getting contact info: \(error.localizedDescription)")
@@ -235,7 +261,8 @@ class FirebaseManager {
     
     // Get shipping address
     func getShippingAddress(userId: String, completion: @escaping ([String: Any]?, Error?) -> Void) {
-        db.collection("users").document(userId).collection("shippingAddress").document("primary")
+        db.collection("users").document(userId)
+            .collection("shippingAddress").document("primary")
             .getDocument { snapshot, error in
                 if let error = error {
                     completion(nil, error)
@@ -289,11 +316,15 @@ class FirebaseManager {
         print("📞 saveOrderContactInfo called for orderId: \(orderId)")
         print("📞 contactData: \(contactData)")
         
+        // Ensure userId is included in the data for Firestore security rules
+        var dataWithUserId = contactData
+        dataWithUserId["userId"] = userId
+        
         let orderRef = db.collection("users").document(userId)
             .collection("orders").document(orderId)
         
         // Save contact data directly to the order document
-        orderRef.setData(contactData, merge: true) { error in
+        orderRef.setData(dataWithUserId, merge: true) { error in
             if let error = error {
                 print("❌ Error saving order contact info: \(error.localizedDescription)")
                 completion(false, error)
@@ -323,11 +354,15 @@ class FirebaseManager {
         print("📍 saveOrderShippingAddress called for orderId: \(orderId)")
         print("📍 addressData: \(addressData)")
         
+        // Ensure userId is included in the data for Firestore security rules
+        var dataWithUserId = addressData
+        dataWithUserId["userId"] = userId
+        
         let orderRef = db.collection("users").document(userId)
             .collection("orders").document(orderId)
         
         // Save shipping address data directly to the order document
-        orderRef.setData(addressData, merge: true) { error in
+        orderRef.setData(dataWithUserId, merge: true) { error in
             if let error = error {
                 print("❌ Error saving order shipping address: \(error.localizedDescription)")
                 completion(false, error)

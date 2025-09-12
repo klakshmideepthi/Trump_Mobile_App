@@ -134,6 +134,7 @@ class UserRegistrationViewModel: ObservableObject {
             
             // Save initial user data
             let initialData: [String: Any] = [
+                "userId": user.uid,
                 "accountType": self.accountType,
                 "email": self.email,
                 "createdAt": FieldValue.serverTimestamp()
@@ -196,6 +197,9 @@ class UserRegistrationViewModel: ObservableObject {
             return
         }
         
+        // Get the authenticated user's email
+        let authenticatedEmail = Auth.auth().currentUser?.email ?? ""
+        
         isLoading = true
         errorMessage = nil
         
@@ -218,8 +222,14 @@ class UserRegistrationViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     // Update only non-order specific properties
                     self.accountType = data["accountType"] as? String ?? ""
-                    self.email = data["email"] as? String ?? ""
+                    // Use authenticated email as fallback if not stored in Firebase
+                    self.email = data["email"] as? String ?? authenticatedEmail
                     // Do not load device, SIM, phone number, or billing info from main document
+                }
+            } else {
+                // If no stored data, use the authenticated user's email
+                DispatchQueue.main.async {
+                    self.email = authenticatedEmail
                 }
             }
         }
@@ -298,20 +308,28 @@ class UserRegistrationViewModel: ObservableObject {
             return
         }
         
+        // Get the authenticated user's email
+        let authenticatedEmail = Auth.auth().currentUser?.email ?? ""
+        let emailToSave = email.isEmpty ? authenticatedEmail : email
+        
         print("👤 Using userId: \(userId)")
+        print("📧 Email to save: \(emailToSave)")
         isLoading = true
         errorMessage = nil
         
         // Create contact-only data for contactInfo collection
         let contactData: [String: Any] = [
+            "userId": userId,
             "firstName": firstName,
             "lastName": lastName,
             "phoneNumber": phoneNumber,
+            "email": emailToSave,
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
         // Create shipping address data for shippingAddress collection
         let shippingAddressData: [String: Any] = [
+            "userId": userId,
             "street": street,
             "aptNumber": aptNumber,
             "zip": zip,
@@ -322,9 +340,11 @@ class UserRegistrationViewModel: ObservableObject {
         
         // Create order data that includes contact and shipping information
         let orderData: [String: Any] = [
+            "userId": userId,
             "firstName": firstName,
             "lastName": lastName,
             "phoneNumber": phoneNumber,
+            "email": emailToSave,
             "street": street,
             "aptNumber": aptNumber,
             "zip": zip,
@@ -447,6 +467,7 @@ class UserRegistrationViewModel: ObservableObject {
         errorMessage = nil
         
         let deviceData: [String: Any] = [
+            "userId": userId,
             "deviceBrand": deviceBrand,
             "deviceModel": deviceModel,
             "imei": imei,
@@ -491,6 +512,7 @@ class UserRegistrationViewModel: ObservableObject {
         errorMessage = nil
         
         let simData: [String: Any] = [
+            "userId": userId,
             "simType": simType,
             "updatedAt": FieldValue.serverTimestamp()
         ]
@@ -532,6 +554,7 @@ class UserRegistrationViewModel: ObservableObject {
         errorMessage = nil
         
         let numberData: [String: Any] = [
+            "userId": userId,
             "numberType": numberType,
             "selectedPhoneNumber": selectedPhoneNumber,
             "updatedAt": FieldValue.serverTimestamp()
@@ -579,6 +602,7 @@ class UserRegistrationViewModel: ObservableObject {
         
         // Create shipping address data
         let shippingAddressData: [String: Any] = [
+            "userId": userId,
             "street": street,
             "aptNumber": aptNumber,
             "zip": zip,
@@ -682,6 +706,7 @@ class UserRegistrationViewModel: ObservableObject {
         
         // Combine all billing data to save directly to orders
         let billingData: [String: Any] = [
+            "userId": userId,
             "creditCardNumber": creditCardNumber,
             "billingDetails": billingDetails,
             "address": address,
@@ -726,6 +751,7 @@ class UserRegistrationViewModel: ObservableObject {
         errorMessage = nil
         
         let orderData: [String: Any] = [
+            "userId": userId,
             "orderCompleted": true,
             "orderCompletionDate": FieldValue.serverTimestamp(),
             "status": "completed"
