@@ -30,8 +30,8 @@ struct SimSelectionView: View {
             },
             cancelAction: onCancel
         ) {
-            VStack(spacing: 20) {
-                VStack(spacing: 16) {
+            VStack(spacing: 16) {
+                VStack(spacing: 12) {
                     Text("Choose SIM Type")
                         .font(.title2)
                         .fontWeight(.semibold)

@@ -32,8 +32,8 @@ struct NumberSelectionView: View {
             },
             cancelAction: onCancel
         ) {
-            VStack(spacing: 20) {
-                VStack(spacing: 8) {
+            VStack(spacing: 16) {
+                VStack(spacing: 6) {
                     Text("Choose Your Number")
                         .font(.title2)
                         .fontWeight(.semibold)
@@ -44,7 +44,7 @@ struct NumberSelectionView: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
-                .padding(.top, 8)
+                .padding(.top, 4)
             HStack(spacing: 16) {
                 Button(action: {
                     viewModel.numberType = "Existing"
@@ -75,10 +75,10 @@ struct NumberSelectionView: View {
             
             if viewModel.numberType == "New" {
                 // Display some sample numbers to choose from
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Select a number:")
                         .font(.headline)
-                        .padding(.top, 8)
+                        .padding(.top, 6)
                     
                     Button(action: {
                         viewModel.selectedPhoneNumber = "(202) 555-1234"
@@ -119,10 +119,10 @@ struct NumberSelectionView: View {
                     }
                 }
             } else if viewModel.numberType == "Existing" {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Enter your existing number:")
                         .font(.headline)
-                        .padding(.top, 8)
+                        .padding(.top, 6)
                         
                     TextField("Enter your current phone number", text: $viewModel.selectedPhoneNumber)
                         .textFieldStyle(RoundedBorderTextFieldStyle())

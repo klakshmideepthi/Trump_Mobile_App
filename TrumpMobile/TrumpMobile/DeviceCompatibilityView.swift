@@ -38,7 +38,7 @@ struct DeviceCompatibilityView: View {
             cancelAction: onCancel
         ) {
             VStack(spacing: 0) {
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Text("Check device compatibility")
                         .font(.title2)
                         .fontWeight(.semibold)
@@ -46,9 +46,9 @@ struct DeviceCompatibilityView: View {
                         .font(.subheadline)
                         .foregroundColor(.gray)
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, 20)
 
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // Brand Picker
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Device Brand")
@@ -161,7 +161,6 @@ struct DeviceCompatibilityView: View {
                     }
                     .padding(.top, 4)
                 }
-                .padding(.horizontal, 24)
             }
             .onAppear {
                 // Initialize selections from viewModel if they exist

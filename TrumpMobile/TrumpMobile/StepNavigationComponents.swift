@@ -74,7 +74,6 @@ struct StepNavigationContainer<Content: View>: View {
                         Button(action: {
                             print("DEBUG: Cancel button tapped in StepNavigationContainer")
                             if cancelAction != nil {
-                                print("DEBUG: cancelAction exists in StepNavigationContainer")
                                 showCancelConfirmation = true
                             } else {
                                 print("DEBUG: cancelAction is nil in StepNavigationContainer when tapped")
@@ -94,8 +93,8 @@ struct StepNavigationContainer<Content: View>: View {
                 // Content area (flexible)
                 ScrollView {
                     content
-                        .padding(.horizontal)  // Only add horizontal padding
-                        .padding(.top, 8)      // Minimal top padding
+                        .padding(.horizontal, 16)  // Reduced horizontal padding
+                        .padding(.top, 4)          // Minimal top padding
                         .frame(maxWidth: .infinity)
                         .padding(.bottom, 100) // Add padding to ensure content isn't hidden behind button
                 }
@@ -142,28 +141,7 @@ struct StepNavigationContainer<Content: View>: View {
     }
 }
 
-struct ProgressBar: View {
-    var value: Double // Between 0 and 1
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .opacity(0.3)
-                    .foregroundColor(.gray)
-                
-                Rectangle()
-                    .frame(width: min(CGFloat(self.value) * geometry.size.width, geometry.size.width), height: geometry.size.height)
-                    .foregroundColor(Color.accentGold)
-            }
-            .cornerRadius(45)
-        }
-    }
-}
-
 struct StepNavigationButton: View {
-    // Parameters for customization
     let currentStep: Int
     let totalSteps: Int
     let buttonText: String
@@ -348,12 +326,6 @@ struct FixedBottomNavigationView<Content: View>: View {
         self.disableBackButton = disableBackButton
         self.disableCancelButton = disableCancelButton
         self.nextButtonText = nextButtonText
-        
-        // Enhanced debug logging
-        print("DEBUG: FixedBottomNavigationView init - cancelAction parameter: \(cancelAction == nil ? "nil" : "not nil")")
-        print("DEBUG: FixedBottomNavigationView init - self.cancelAction: \(self.cancelAction == nil ? "nil" : "not nil")")
-        print("DEBUG: FixedBottomNavigationView init - currentStep: \(currentStep)")
-        print("DEBUG: FixedBottomNavigationView init - disableCancelButton: \(disableCancelButton)")
     }
     
     var body: some View {
@@ -395,8 +367,6 @@ struct FixedBottomNavigationView<Content: View>: View {
                     
                     // Cancel button on right
                     Button(action: {
-                        print("DEBUG: Cancel button tapped in FixedBottomNavigationView")
-                        print("DEBUG: Is cancelAction nil? \(cancelAction == nil ? "Yes" : "No")")
                         if let cancelAction = cancelAction {
                             print("DEBUG: cancelAction exists in FixedBottomNavigationView - showing confirmation")
                             showCancelConfirmation = true
@@ -420,8 +390,8 @@ struct FixedBottomNavigationView<Content: View>: View {
                 // Main content
                 ScrollView {
                     content
-                        .padding(.horizontal)  // Only add horizontal padding
-                        .padding(.top, 8)      // Minimal top padding
+                        .padding(.horizontal, 16)  // Reduced horizontal padding
+                        .padding(.top, 4)          // Minimal top padding
                         .frame(maxWidth: .infinity)
                         .padding(.bottom, 100) // Add padding to ensure content isn't hidden behind the button
                 }

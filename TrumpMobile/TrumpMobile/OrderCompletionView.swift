@@ -27,7 +27,7 @@ struct OrderCompletionView: View {
             disableCancelButton: false,  // Enable cancel button
             nextButtonText: "Go To Home"
         ) {
-            VStack(spacing: 24) {
+            VStack(spacing: 16) {
                 Text("Thank you for joining TrumpMobile!")
                     .font(.title)
                     .multilineTextAlignment(.center)
@@ -38,7 +38,7 @@ struct OrderCompletionView: View {
                 Text("Broadband Facts: ...")
                 
                 // Show summary
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Order Summary")
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -48,11 +48,10 @@ struct OrderCompletionView: View {
                     Text("Selected Number: \(viewModel.selectedPhoneNumber)")
                     Text("SIM Type: \(viewModel.simType)")
                 }
-                .padding()
+                .padding(12)
                 .background(Color(.systemBackground))
                 .cornerRadius(10)
                 .shadow(radius: 2)
-                .padding(.horizontal)
                 
                 Spacer()
             }

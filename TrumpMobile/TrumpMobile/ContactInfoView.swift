@@ -43,30 +43,30 @@ struct ContactInfoView: View {
             disableCancelButton: false,
             nextButtonText: "Next Step"
         ) {
-            VStack(alignment: .center, spacing: 20) {
+            VStack(alignment: .center, spacing: 12) {
                 // Step indicator is now provided by FixedBottomNavigationView
                 
                 if isLoading {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle())
                         .scaleEffect(1.5)
-                        .padding(.top)
+                        .padding(.top, 8)
                 }
                 
                 // Always show status message if available
                 if let message = errorMessage {
                     Text(message)
                         .foregroundColor(message.contains("success") ? .green : .red)
-                        .padding()
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(8)
-                        .padding(.horizontal)
                 }
                 
                 // Form fields
                 if !isLoading {
                     // Contact Information Section
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("CONTACT INFORMATION")
                             .font(.headline)
                             .fontWeight(.bold)
@@ -117,15 +117,14 @@ struct ContactInfoView: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
                     }
-                    .padding(.horizontal)
-            
+                    
                     // Customer Address Section
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("SHIPPING ADDRESS")
                             .font(.headline)
                             .fontWeight(.bold)
                             .foregroundColor(Color.trumpText)
-                            .padding(.top, 10)
+                            .padding(.top, 8)
                         
                         TextField("Street Address", text: $viewModel.street)
                             .padding()
@@ -180,10 +179,9 @@ struct ContactInfoView: View {
                                 .keyboardType(.numberPad)
                         }
                     }
-                    .padding(.horizontal)
                 }
                 
-                Spacer(minLength: 30)
+                Spacer(minLength: 20)
             }
         }
         .navigationBarHidden(true)

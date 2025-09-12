@@ -29,14 +29,14 @@ struct BillingInfoView: View {
             cancelAction: onCancel,
             nextButtonText: "Complete Order"
         ) {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Step indicator is now provided by FixedBottomNavigationView
                 
                 Text("Payment Information")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 8)
+                    .padding(.top, 4)
                 
                 TextField("Credit Card Number", text: $viewModel.creditCardNumber)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -55,7 +55,7 @@ struct BillingInfoView: View {
                     Text("Mexico").tag("Mexico")
                 }
                 .pickerStyle(MenuPickerStyle())
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
                 
                 Spacer()
             }
