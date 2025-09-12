@@ -1,6 +1,8 @@
 import Foundation
 import CoreLocation
 
+import SwiftUI
+import UIKit
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     @Published var userLocation: CLLocation?
@@ -9,6 +11,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     override init() {
         super.init()
         manager.delegate = self
+        // Set initial status
+        self.authorizationStatus = CLLocationManager.authorizationStatus()
     }
 
     func requestLocation() {
@@ -26,5 +30,12 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorizationStatus = manager.authorizationStatus
+    }
+}
+
+// Helper to open app settings
+func openAppSettings() {
+    if let url = URL(string: UIApplication.openSettingsURLString) {
+        UIApplication.shared.open(url)
     }
 }

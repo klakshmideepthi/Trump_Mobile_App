@@ -13,8 +13,11 @@ struct ContactInfoView: View {
     @State private var errorMessage: String? = nil
     @StateObject private var locationManager = LocationManager()
     @State private var showLocationAlert = false
+    @State private var didPromptSettings = false
     @State private var locationError: String? = nil
     @State private var useLocation = false
+    @State private var isAutofillingLocation = false
+    @State private var autofillTimeoutTask: DispatchWorkItem? = nil
     
     var body: some View {
         StepNavigationContainer(
@@ -187,7 +190,12 @@ struct ContactInfoView: View {
                                         Button(action: {
                                             useLocation.toggle()
                                             if useLocation {
-                                                showLocationAlert = true
+                                                // If denied, prompt to open settings
+                                                if locationManager.authorizationStatus == .denied {
+                                                    didPromptSettings = true
+                                                } else {
+                                                    showLocationAlert = true
+                                                }
                                             }
                                         }) {
                                             HStack {
@@ -195,6 +203,11 @@ struct ContactInfoView: View {
                                                     .foregroundColor(.accentColor)
                                                 Text("Use My Location to autofill address")
                                                     .foregroundColor(.primary)
+                                                if isAutofillingLocation {
+                                                    ProgressView()
+                                                        .scaleEffect(0.8)
+                                                        .padding(.leading, 4)
+                                                }
                                             }
                                             .padding(.vertical, 8)
                                         }
@@ -220,7 +233,21 @@ struct ContactInfoView: View {
         } message: {
             Text("We can use your location to autofill your shipping address.")
         }
+        .alert("Location Permission Denied", isPresented: $didPromptSettings) {
+            Button("Open Settings") {
+                openAppSettings()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Location access is denied. Please enable it in Settings to autofill your address.")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // Refresh status when returning from settings
+            locationManager.authorizationStatus = CLLocationManager.authorizationStatus()
+        }
         .onChange(of: locationManager.userLocation) { location in
+            autofillTimeoutTask?.cancel()
+            isAutofillingLocation = false
             guard let location = location else { return }
             let geocoder = CLGeocoder()
             geocoder.reverseGeocodeLocation(location) { placemarks, error in
@@ -229,11 +256,41 @@ struct ContactInfoView: View {
                     viewModel.city = placemark.locality ?? ""
                     viewModel.state = placemark.administrativeArea ?? ""
                     viewModel.zip = placemark.postalCode ?? ""
-                    // Optionally fill aptNumber if available
                     viewModel.aptNumber = placemark.subThoroughfare ?? ""
                 } else if let error = error {
                     locationError = error.localizedDescription
                 }
+            }
+        }
+        .onChange(of: showLocationAlert) { show in
+            if show {
+                // When user agrees to autofill, start loading and timeout
+                isAutofillingLocation = true
+                autofillTimeoutTask?.cancel()
+                let task = DispatchWorkItem {
+                    isAutofillingLocation = false
+                    locationError = "Location lookup timed out. Please try again."
+                }
+                autofillTimeoutTask = task
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: task)
+            } else {
+                isAutofillingLocation = false
+                autofillTimeoutTask?.cancel()
+            }
+        }
+        .onChange(of: locationManager.authorizationStatus) { status in
+            if useLocation && isAutofillingLocation &&
+                (status == .authorizedWhenInUse || status == .authorizedAlways) {
+                // Start loading and timeout again
+                isAutofillingLocation = true
+                autofillTimeoutTask?.cancel()
+                let task = DispatchWorkItem {
+                    isAutofillingLocation = false
+                    locationError = "Location lookup timed out. Please try again."
+                }
+                autofillTimeoutTask = task
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: task)
+                locationManager.requestLocation()
             }
         }
         .alert("Location Error", isPresented: .constant(locationError != nil)) {
