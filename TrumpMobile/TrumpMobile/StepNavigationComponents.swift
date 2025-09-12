@@ -82,21 +82,23 @@ struct StepNavigationContainer<Content: View>: View {
                     
                     Spacer()
                     
-                    // Cancel button on right
-                    Button(action: {
-                        print("DEBUG: Cancel button tapped in StepNavigationContainer")
-                        if cancelAction != nil {
-                            showCancelConfirmation = true
-                        } else {
-                            print("DEBUG: cancelAction is nil in StepNavigationContainer when tapped")
+                    // Cancel button on right - hidden in step 6
+                    if currentStep != 6 {
+                        Button(action: {
+                            print("DEBUG: Cancel button tapped in StepNavigationContainer")
+                            if cancelAction != nil {
+                                showCancelConfirmation = true
+                            } else {
+                                print("DEBUG: cancelAction is nil in StepNavigationContainer when tapped")
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(disableCancelButton ? Color.clear : Color.accentGold)
+                                .padding()
                         }
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(disableCancelButton ? Color.clear : Color.accentGold)
-                            .padding()
+                        .disabled(disableCancelButton)
                     }
-                    .disabled(disableCancelButton)
                 }
                 
                 // Content area (flexible)

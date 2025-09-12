@@ -127,6 +127,22 @@ struct OrderFlowView: View {
             print("DEBUG: OrderFlowView has currentOrder: \(currentOrder != nil ? "yes" : "no")")
             print("DEBUG: OrderFlowView has viewModel.orderId: \(viewModel.orderId ?? "nil")")
             
+            // Set up the view model with the orderId and reset order-specific fields
+            if let orderId = currentOrder?.id {
+                print("🔄 Setting orderId in viewModel: \(orderId)")
+                viewModel.orderId = orderId
+                viewModel.userId = Auth.auth().currentUser?.uid
+                
+                // Reset order-specific fields to ensure clean start for new order
+                viewModel.resetOrderSpecificFields()
+                // Restore the orderId since resetOrderSpecificFields clears it
+                viewModel.orderId = orderId
+            } else {
+                // If no orderId, ensure all order fields are cleared
+                viewModel.resetOrderSpecificFields()
+                viewModel.userId = Auth.auth().currentUser?.uid
+            }
+            
             // Testing the handleCancelOrder method is accessible
             print("DEBUG: Testing if handleCancelOrder is accessible in onAppear")
             let testCancelClosure: () -> Void = {

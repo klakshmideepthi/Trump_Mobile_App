@@ -39,6 +39,34 @@ class UserRegistrationViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
     
+    // Method to reset all order-specific fields for new orders
+    func resetOrderSpecificFields() {
+        print("🔄 Resetting order-specific fields")
+        
+        // Reset device-related fields
+        deviceBrand = ""
+        deviceModel = ""
+        imei = ""
+        deviceIsCompatible = false
+        
+        // Reset SIM and number selection
+        simType = ""
+        numberType = ""
+        selectedPhoneNumber = ""
+        
+        // Reset billing information
+        creditCardNumber = ""
+        billingDetails = ""
+        address = ""
+        country = "USA"
+        
+        // Clear the orderId to ensure a new one is created
+        orderId = nil
+        UserDefaults.standard.removeObject(forKey: "currentOrderId")
+        
+        print("✅ Order-specific fields reset complete")
+    }
+    
     // Save current step data to Firebase
     func saveCurrentStepData(stepData: [String: Any], completion: @escaping (Bool) -> Void) {
         isLoading = true
@@ -269,24 +297,8 @@ class UserRegistrationViewModel: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // Clear all order-specific fields
-            self.deviceBrand = ""
-            self.deviceModel = ""
-            self.imei = ""
-            self.simType = ""
-            self.numberType = ""
-            self.selectedPhoneNumber = ""
-            self.creditCardNumber = ""
-            self.billingDetails = ""
-            self.deviceIsCompatible = false
-            
-            // Keep address and country as they might be the same for billing
-            // self.address = ""
-            // self.country = "USA"
-            
-            // Clear the orderId to ensure a new one is created
-            self.orderId = nil
-            UserDefaults.standard.removeObject(forKey: "currentOrderId")
+            // Use the new reset method for cleaner code
+            self.resetOrderSpecificFields()
         }
         
         // When all data is loaded

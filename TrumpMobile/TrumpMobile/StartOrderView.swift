@@ -247,7 +247,7 @@ struct StartOrderView: View {
                 // Track completion for copying operations
                 let dispatchGroup = DispatchGroup()
                 
-                // Step 2: Copy contact info to the order
+                // Step 2: Copy contact info to the order (for convenience)
                 dispatchGroup.enter()
                 FirebaseManager.shared.copyContactInfoToOrder(userId: userId, orderId: orderId) { success, error in
                     if let error = error {
@@ -256,7 +256,7 @@ struct StartOrderView: View {
                     dispatchGroup.leave()
                 }
                 
-                // Step 3: Copy shipping address to the order
+                // Step 3: Copy shipping address to the order (for convenience)
                 dispatchGroup.enter()
                 FirebaseManager.shared.copyShippingAddressToOrder(userId: userId, orderId: orderId) { success, error in
                     if let error = error {
@@ -269,6 +269,7 @@ struct StartOrderView: View {
                 dispatchGroup.notify(queue: .main) {
                     isLoading = false
                     // Navigate to next screen with the order ID
+                    // This will trigger a fresh view model that loads only basic user info
                     onStart(orderId)
                 }
             }
