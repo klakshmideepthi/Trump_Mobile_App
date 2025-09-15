@@ -137,10 +137,17 @@ struct ContentView: View {
                 }
               )
             case 6:
-              OrderCompletionView(
+              NumberPortingView(
                 viewModel: viewModel,
+                onNext: { 
+                    // Reset order-specific fields and go to home
+                    viewModel.resetOrderSpecificFields()
+                    registrationStep = 0
+                    // Also update navigation state
+                    navigationState.navigateTo(.startNewOrder)
+                },
                 onBack: { registrationStep = 5 },
-                onGoToHome: { 
+                onCancel: { 
                     // Reset order-specific fields and go to home
                     viewModel.resetOrderSpecificFields()
                     registrationStep = 0

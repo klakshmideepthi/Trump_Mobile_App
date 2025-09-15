@@ -27,7 +27,7 @@ struct SimSelectionView: View {
             // Button section with vertical layout for better mobile experience
             VStack(spacing: 12) {
                 Button(action: {
-                    viewModel.simType = "E-sim"
+                    viewModel.simType = "eSIM"
                 }) {
                     Text("I want eSIM")
                         .font(.system(size: 18, weight: .medium))
@@ -47,7 +47,7 @@ struct SimSelectionView: View {
                                 .background(
                                     RoundedRectangle(cornerRadius: 25)
                                         .fill(
-                                            viewModel.simType == "E-sim" ?
+                                            viewModel.simType == "eSIM" ?
                                             LinearGradient(
                                                 gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
                                                 startPoint: .leading,
@@ -61,7 +61,7 @@ struct SimSelectionView: View {
                                         )
                                 )
                         )
-                        .foregroundColor(viewModel.simType == "E-sim" ? .white : .primary)
+                        .foregroundColor(viewModel.simType == "eSIM" ? .white : .primary)
                 }
                 
                 Button(action: {

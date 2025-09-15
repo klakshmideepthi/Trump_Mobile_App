@@ -109,10 +109,14 @@ struct OrderFlowView: View {
                         onBack: { handleBackAction() }
                     )
                 case 6:
-                    OrderCompletionView(
+                    NumberPortingView(
                         viewModel: viewModel,
+                        onNext: { 
+                            // Reset to start a new order
+                            navigationState.navigateTo(.startNewOrder)
+                        },
                         onBack: { handleBackAction() },
-                        onGoToHome: { 
+                        onCancel: { 
                             // Reset to start a new order
                             navigationState.navigateTo(.startNewOrder)
                         }
@@ -126,17 +130,15 @@ struct OrderFlowView: View {
             print("DEBUG: OrderFlowView appeared with currentStep: \(currentStep)")
             print("DEBUG: OrderFlowView has currentOrder: \(currentOrder != nil ? "yes" : "no")")
             print("DEBUG: OrderFlowView has viewModel.orderId: \(viewModel.orderId ?? "nil")")
-            
-            // Set up the view model with the orderId and reset order-specific fields
-            if let orderId = currentOrder?.id {
-                print("🔄 Setting orderId in viewModel: \(orderId)")
-                // Always reset order-specific fields first
+
+            // Only reset order-specific fields when starting a new order (step 1 and no currentOrder)
+            if currentStep == 1 && currentOrder == nil {
+                print("🔄 Resetting order-specific fields for new order")
                 viewModel.resetOrderSpecificFields()
-                viewModel.orderId = orderId
                 viewModel.userId = Auth.auth().currentUser?.uid
-            } else {
-                // If no orderId, ensure all order fields are cleared
-                viewModel.resetOrderSpecificFields()
+            } else if let orderId = currentOrder?.id {
+                print("🔄 Setting orderId in viewModel: \(orderId)")
+                viewModel.orderId = orderId
                 viewModel.userId = Auth.auth().currentUser?.uid
             }
             
@@ -192,8 +194,9 @@ struct OrderFlowView: View {
         if currentStep < 6 {
             currentStep += 1
         } else {
-            // Complete order flow
-            navigationState.navigateTo(.startNewOrder)
+            // We're at step 6 - let the step handle its own completion logic
+            // Don't automatically navigate away
+            print("DEBUG: At step 6, letting step handle its own completion")
         }
     }
 }

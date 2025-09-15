@@ -37,6 +37,13 @@ class UserRegistrationViewModel: ObservableObject {
         simType = ""
         numberType = ""
         selectedPhoneNumber = ""
+        portInAccountNumber = ""
+        portInPin = ""
+        portInCurrentCarrier = ""
+        portInAccountHolderName = ""
+        portInBillingZip = ""
+        isForThisDevice = true
+        showQRCode = false
         creditCardNumber = ""
         billingDetails = ""
         address = ""
@@ -70,6 +77,15 @@ class UserRegistrationViewModel: ObservableObject {
     // Step 5
     @Published var numberType: String = ""
     @Published var selectedPhoneNumber: String = ""
+    // Port-in related properties
+    @Published var portInAccountNumber: String = ""
+    @Published var portInPin: String = ""
+    @Published var portInCurrentCarrier: String = ""
+    @Published var portInAccountHolderName: String = ""
+    @Published var portInBillingZip: String = ""
+    // eSIM related properties
+    @Published var isForThisDevice: Bool = true
+    @Published var showQRCode: Bool = false
     // Step 6
     @Published var creditCardNumber: String = ""
     @Published var billingDetails: String = ""
@@ -94,8 +110,20 @@ class UserRegistrationViewModel: ObservableObject {
         
         // Reset SIM and number selection
         simType = ""
-        numberType = ""
+        // DO NOT reset numberType until order is actually completed
+        // numberType = "" // Keep this for step 6 logic
         selectedPhoneNumber = ""
+        
+        // Reset port-in related fields
+        portInAccountNumber = ""
+        portInPin = ""
+        portInCurrentCarrier = ""
+        portInAccountHolderName = ""
+        portInBillingZip = ""
+        
+        // Reset eSIM related fields
+        isForThisDevice = true
+        showQRCode = false
         
         // Reset billing information
         creditCardNumber = ""
@@ -106,7 +134,46 @@ class UserRegistrationViewModel: ObservableObject {
         // Do NOT clear orderId here; let completeOrder handle it after completion
         UserDefaults.standard.removeObject(forKey: "currentOrderId")
         
-        print("✅ Order-specific fields reset complete")
+        print("✅ Order-specific fields reset complete (preserving numberType: \(numberType))")
+    }
+    
+    // Method to completely reset ALL fields including numberType after order completion
+    func completeOrderReset() {
+        print("🔄 Complete order reset including numberType")
+        
+        // Reset device-related fields
+        deviceBrand = ""
+        deviceModel = ""
+        imei = ""
+        deviceIsCompatible = false
+        
+        // Reset SIM and number selection (including numberType)
+        simType = ""
+        numberType = "" // Now we reset this too
+        selectedPhoneNumber = ""
+        
+        // Reset port-in related fields
+        portInAccountNumber = ""
+        portInPin = ""
+        portInCurrentCarrier = ""
+        portInAccountHolderName = ""
+        portInBillingZip = ""
+        
+        // Reset eSIM related fields
+        isForThisDevice = true
+        showQRCode = false
+        
+        // Reset billing information
+        creditCardNumber = ""
+        billingDetails = ""
+        address = ""
+        country = "USA"
+        
+        // Clear orderId and UserDefaults
+        orderId = nil
+        UserDefaults.standard.removeObject(forKey: "currentOrderId")
+        
+        print("✅ Complete order reset finished")
     }
     
     // Save current step data to Firebase
@@ -607,12 +674,27 @@ class UserRegistrationViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        let numberData: [String: Any] = [
+        var numberData: [String: Any] = [
             "userId": userId,
             "numberType": numberType,
             "selectedPhoneNumber": selectedPhoneNumber,
             "updatedAt": FieldValue.serverTimestamp()
         ]
+        
+        // Add port-in data if transferring existing number
+        if numberType == "Existing" {
+            numberData["portInAccountNumber"] = portInAccountNumber
+            numberData["portInPin"] = portInPin
+            numberData["portInCurrentCarrier"] = portInCurrentCarrier
+            numberData["portInAccountHolderName"] = portInAccountHolderName
+            numberData["portInBillingZip"] = portInBillingZip
+        }
+        
+        // Add eSIM data if applicable
+        if simType == "eSIM" && numberType == "New" {
+            numberData["isForThisDevice"] = isForThisDevice
+            numberData["showQRCode"] = showQRCode
+        }
         
         // Get or create order ID
         let orderId = self.orderId ?? "current"
@@ -824,9 +906,8 @@ class UserRegistrationViewModel: ObservableObject {
                     completion(false)
                 } else {
                     print("✅ Successfully completed order")
-                    // After marking as completed, reset order-specific fields and clear orderId
-                    self.resetOrderSpecificFields()
-                    self.orderId = nil
+                    // After marking as completed, do complete reset including numberType
+                    self.completeOrderReset()
                     completion(true)
                 }
             }

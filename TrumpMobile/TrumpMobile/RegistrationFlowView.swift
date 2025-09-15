@@ -89,15 +89,19 @@ struct RegistrationFlowView: View {
                         step = .numberSelection
                     })
                 case .orderCompletion:
-                    OrderCompletionView(
+                    NumberPortingView(
                         viewModel: viewModel,
-                        onBack: {
-                            step = .billingInfo
-                        },
-                        onGoToHome: {
+                        onNext: {
                             // This would navigate back to the very beginning
                             // We need a way to completely exit the flow
                             // For now, we'll set it back to the first step
+                            step = .createAccount
+                        },
+                        onBack: {
+                            step = .billingInfo
+                        },
+                        onCancel: {
+                            // This would navigate back to the very beginning
                             step = .createAccount
                         }
                     )

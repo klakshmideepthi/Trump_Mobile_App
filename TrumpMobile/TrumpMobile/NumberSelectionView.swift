@@ -124,13 +124,25 @@ struct NumberSelectionView: View {
                         .foregroundColor(.primary)
                         .padding(.top, 6)
                         
-                    TextField("(000) 000-0000", text: $viewModel.selectedPhoneNumber)
+                    TextField("(000) 000-0000", text: Binding(
+                        get: { formatPhoneNumber(viewModel.selectedPhoneNumber) },
+                        set: { newValue in
+                            // Remove all non-numeric characters
+                            let digits = newValue.filter { $0.isNumber }
+                            // Limit to 10 digits
+                            viewModel.selectedPhoneNumber = String(digits.prefix(10))
+                        }
+                    ))
                         .font(.system(size: 16))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(.systemGray3), lineWidth: 1)
+                                .stroke(
+                                    viewModel.selectedPhoneNumber.count == 10 ? 
+                                    Color.accentGold : Color(.systemGray3), 
+                                    lineWidth: viewModel.selectedPhoneNumber.count == 10 ? 2 : 1
+                                )
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(Color(.systemBackground))
@@ -153,7 +165,7 @@ struct NumberSelectionView: View {
                     totalSteps: 6,
                     nextButtonText: "Next Step",
                     nextButtonDisabled: viewModel.numberType.isEmpty || 
-                                  (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.isEmpty),
+                                  (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.count != 10),
                     nextButtonAction: {
                         // Save number selection to orders collection
                         viewModel.saveNumberSelection { success in
@@ -178,5 +190,29 @@ struct NumberSelectionView: View {
         } else {
             return AnyView(contentView)
         }
+    }
+    
+    // Helper function to format phone number
+    private func formatPhoneNumber(_ number: String) -> String {
+        let digits = number.filter { $0.isNumber }
+        
+        if digits.count >= 10 {
+            let area = String(digits.prefix(3))
+            let exchange = String(digits.dropFirst(3).prefix(3))
+            let number = String(digits.dropFirst(6).prefix(4))
+            return "(\(area)) \(exchange)-\(number)"
+        } else if digits.count >= 6 {
+            let area = String(digits.prefix(3))
+            let exchange = String(digits.dropFirst(3))
+            return "(\(area)) \(exchange)"
+        } else if digits.count >= 3 {
+            let area = String(digits.prefix(3))
+            let remaining = String(digits.dropFirst(3))
+            return "(\(area)) \(remaining)"
+        } else if digits.count > 0 {
+            return "(\(digits)"
+        }
+        
+        return digits
     }
 }
