@@ -8,12 +8,14 @@
 
 import SwiftUI
 import FirebaseAuth
+import FirebaseAnalytics
 // Import color theme extension
 // import Color_Theme
 
 
 struct ContentView: View {
   @StateObject private var viewModel = UserRegistrationViewModel()
+  @StateObject private var notificationManager = NotificationManager.shared
   @State private var isSignedIn: Bool = false
   @State private var isNewAccount = false
   @State private var registrationStep: Int = 0 // 0 = Start Order View
@@ -178,6 +180,11 @@ struct ContentView: View {
       .padding()
     }
     .onAppear {
+      // Request notification permission when app starts
+      notificationManager.requestPermission()
+      
+      // Log app opened event for FIAM
+      notificationManager.logAppOpened()
 
       // Set up auth state listener when view appears
       authStateListener = Auth.auth().addStateDidChangeListener { auth, user in
@@ -186,6 +193,11 @@ struct ContentView: View {
         // If user is signed in
         if user != nil {
           isSignedIn = true
+          
+          // Send welcome notification for new users
+          DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            notificationManager.sendWelcomeNotification()
+          }
           
           // Load user data if necessary
           viewModel.userId = user?.uid

@@ -12,6 +12,10 @@
 		D8068D942E712FE100F02D68 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D8068D932E712FE100F02D68 /* GoogleSignIn */; };
 		D8068D962E712FE100F02D68 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = D8068D952E712FE100F02D68 /* GoogleSignInSwift */; };
 		D8068D9C2E713C2200F02D68 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D8068D9B2E713C2200F02D68 /* FirebaseFirestore */; };
+		D8068E212E77D0E100F02D68 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D8068E202E77D0E100F02D68 /* FirebaseCore */; };
+		D8068E232E77D0F300F02D68 /* FirebaseInAppMessaging-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = D8068E222E77D0F300F02D68 /* FirebaseInAppMessaging-Beta */; };
+		D8068E252E77D28300F02D68 /* FirebaseInstallations in Frameworks */ = {isa = PBXBuildFile; productRef = D8068E242E77D28300F02D68 /* FirebaseInstallations */; };
+		D8068E292E77D65200F02D68 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D8068E282E77D65200F02D68 /* FirebaseAnalytics */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,10 +78,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				D8068D8A2E70F96A00F02D68 /* FirebaseDatabase in Frameworks */,
+				D8068E232E77D0F300F02D68 /* FirebaseInAppMessaging-Beta in Frameworks */,
 				D8068D912E712F7900F02D68 /* FirebaseAuth in Frameworks */,
+				D8068E252E77D28300F02D68 /* FirebaseInstallations in Frameworks */,
 				D8068D942E712FE100F02D68 /* GoogleSignIn in Frameworks */,
 				D8068D9C2E713C2200F02D68 /* FirebaseFirestore in Frameworks */,
+				D8068E212E77D0E100F02D68 /* FirebaseCore in Frameworks */,
 				D8068D962E712FE100F02D68 /* GoogleSignInSwift in Frameworks */,
+				D8068E292E77D65200F02D68 /* FirebaseAnalytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,6 +159,10 @@
 				D8068D932E712FE100F02D68 /* GoogleSignIn */,
 				D8068D952E712FE100F02D68 /* GoogleSignInSwift */,
 				D8068D9B2E713C2200F02D68 /* FirebaseFirestore */,
+				D8068E202E77D0E100F02D68 /* FirebaseCore */,
+				D8068E222E77D0F300F02D68 /* FirebaseInAppMessaging-Beta */,
+				D8068E242E77D28300F02D68 /* FirebaseInstallations */,
+				D8068E282E77D65200F02D68 /* FirebaseAnalytics */,
 			);
 			productName = TrumpMobile;
 			productReference = D8068D4D2E70BF7C00F02D68 /* TrumpMobile.app */;
@@ -654,6 +666,26 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		D8068E202E77D0E100F02D68 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		D8068E222E77D0F300F02D68 /* FirebaseInAppMessaging-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseInAppMessaging-Beta";
+		};
+		D8068E242E77D28300F02D68 /* FirebaseInstallations */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseInstallations;
+		};
+		D8068E282E77D65200F02D68 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D8068D882E70F96A00F02D68 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,11 +1,13 @@
 import SwiftUI
 import FirebaseAuth
+import FirebaseAnalytics
 
 struct OrderFlowView: View {
     @State private var currentStep = 1
     @State private var currentOrder: Order?
     @EnvironmentObject private var navigationState: NavigationState
     @StateObject private var viewModel = UserRegistrationViewModel()
+    @StateObject private var notificationManager = NotificationManager.shared
     private let orderManager = FirebaseOrderManager()
     
     init(startStep: Int = 1, orderId: String? = nil) {
@@ -131,11 +133,14 @@ struct OrderFlowView: View {
             print("DEBUG: OrderFlowView has currentOrder: \(currentOrder != nil ? "yes" : "no")")
             print("DEBUG: OrderFlowView has viewModel.orderId: \(viewModel.orderId ?? "nil")")
 
-            // Only reset order-specific fields when starting a new order (step 1 and no currentOrder)
+            // Log order started event for FIAM when starting a new order
             if currentStep == 1 && currentOrder == nil {
                 print("🔄 Resetting order-specific fields for new order")
                 viewModel.resetOrderSpecificFields()
                 viewModel.userId = Auth.auth().currentUser?.uid
+                
+                // Log analytics event for new order
+                notificationManager.logOrderStarted()
             } else if let orderId = currentOrder?.id {
                 print("🔄 Setting orderId in viewModel: \(orderId)")
                 viewModel.orderId = orderId
@@ -191,12 +196,20 @@ struct OrderFlowView: View {
     }
     
     private func handleNextAction() {
+        // Log step completion before moving to next step
+        notificationManager.logStepCompleted(step: currentStep)
+        
         if currentStep < 6 {
             currentStep += 1
         } else {
             // We're at step 6 - let the step handle its own completion logic
             // Don't automatically navigate away
             print("DEBUG: At step 6, letting step handle its own completion")
+            
+            // Log order completed event
+            notificationManager.logOrderCompleted()
+            print("DEBUG: At step 6, letting step handle its own completion")
+
         }
     }
 }

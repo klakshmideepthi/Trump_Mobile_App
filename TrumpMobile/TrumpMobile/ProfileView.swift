@@ -5,6 +5,7 @@ struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var userRegistrationViewModel: UserRegistrationViewModel
     @EnvironmentObject var contactInfoDetailViewModel: ContactInfoDetailViewModel
+    @StateObject private var notificationManager = NotificationManager.shared
     
     var body: some View {
         NavigationView {
@@ -34,6 +35,48 @@ struct ProfileView: View {
                         Label("Terms and Conditions", systemImage: "doc.text")
                     }
                 }
+                
+                #if DEBUG
+                Section(header: Text("🔔 Notification Testing")) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Firebase ID:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(notificationManager.firebaseInstallationID)
+                        
+                        Text("Permission: \(notificationManager.permissionGranted ? "✅ Granted" : "❌ Denied")")
+                            .font(.caption)
+                            .foregroundColor(notificationManager.permissionGranted ? .green : .red)
+                            .padding(.top, 4)
+                    }
+                    .padding(.vertical, 4)
+                    
+                    Button(action: {
+                        notificationManager.sendWelcomeNotification()
+                    }) {
+                        Label("Test Welcome Notification", systemImage: "bell")
+                    }
+                    
+                    Button(action: {
+                        notificationManager.sendOrderReminderNotification()
+                    }) {
+                        Label("Test Order Reminder", systemImage: "clock")
+                    }
+                    
+                    Button(action: {
+                        notificationManager.sendSimShippingNotification()
+                    }) {
+                        Label("Test SIM Shipping", systemImage: "box")
+                    }
+                    
+                    Button(action: {
+                        notificationManager.logUserEngagement()
+                    }) {
+                        Label("Log Engagement Event", systemImage: "chart.bar")
+                    }
+                }
+                #endif
                 
                 Section {
                     Button(action: {

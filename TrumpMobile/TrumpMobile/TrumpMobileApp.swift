@@ -7,12 +7,17 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseAuth
+import FirebaseAnalytics
+import FirebaseInAppMessaging
 
 
 class AppDelegate: NSObject, UIApplicationDelegate {
   func application(_ application: UIApplication,
                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
     FirebaseApp.configure()
+    
+    // Enable debug mode for faster FIAM testing
+    UserDefaults.standard.set(true, forKey: "FIRAnalyticsDebugEnabled")
     
     // Firebase Auth persistence is enabled by default
     // No need to explicitly enable it
