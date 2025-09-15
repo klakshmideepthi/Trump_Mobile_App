@@ -35,17 +35,10 @@ struct TrumpMobileApp: App {
   @StateObject private var userRegistrationViewModel = UserRegistrationViewModel()
   @StateObject private var contactInfoDetailViewModel = ContactInfoDetailViewModel()
 
-  init() {
-    print("DEBUG: TrumpMobileApp initializing")
-  }
-
   var body: some Scene {
     WindowGroup {
       NavigationStack {
         SplashView()
-          .onAppear {
-            print("DEBUG: SplashView appeared in TrumpMobileApp")
-          }
       }
       .environmentObject(navigationState)
       .environmentObject(userRegistrationViewModel)
