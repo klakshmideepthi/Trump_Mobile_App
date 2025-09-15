@@ -8,8 +8,7 @@ struct ProfileView: View {
     @StateObject private var notificationManager = NotificationManager.shared
     
     var body: some View {
-        NavigationView {
-            List {
+        List {
                 Section(header: Text("Account")) {
                     NavigationLink(destination: ContactInfoDetailView()) {
                         Label("Contact Information", systemImage: "person.fill")
@@ -77,37 +76,9 @@ struct ProfileView: View {
                     }
                 }
                 #endif
-                
-                Section {
-                    Button(action: {
-                        do {
-                            try Auth.auth().signOut()
-                            userRegistrationViewModel.resetAllUserData()
-                            userRegistrationViewModel.logout()
-                            contactInfoDetailViewModel.reset()
-                        } catch {
-                            print("Error signing out: \(error.localizedDescription)")
-                        }
-                    }) {
-                        HStack {
-                            Spacer()
-                            Text("Logout")
-                                .foregroundColor(.red)
-                            Spacer()
-                        }
-                    }
-                }
             }
             .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-            }
-        }
+            .navigationBarTitleDisplayMode(.large)
     }
 }
 

@@ -33,7 +33,7 @@ struct StartOrderView: View {
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var showInternationalDetails = false
-    @State private var showProfileView = false
+    @State private var isMenuOpen = false
     
     var body: some View {
         return ZStack {
@@ -41,7 +41,7 @@ struct StartOrderView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        // Header with logo and profile button
+                        // Header with logo and hamburger menu
                         HStack {
                             Image("Trump_Mobile_logo_gold")
                                 .resizable()
@@ -49,9 +49,11 @@ struct StartOrderView: View {
                                 .frame(height: 50)
                             Spacer()
                             Button(action: {
-                                showProfileView = true
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isMenuOpen = true
+                                }
                             }) {
-                                Image(systemName: "person.crop.circle")
+                                Image(systemName: "line.3.horizontal")
                                     .font(.system(size: 30))
                                     .foregroundStyle(
                                         LinearGradient(
@@ -60,9 +62,6 @@ struct StartOrderView: View {
                                             endPoint: .trailing
                                         )
                                     )
-                            }
-                            .sheet(isPresented: $showProfileView) {
-                                ProfileView()
                             }
                         }
                         .padding(.horizontal)
@@ -203,6 +202,10 @@ struct StartOrderView: View {
                     InternationalLongDistanceView()
                 }
             }
+            
+            // Hamburger menu overlay
+            HamburgerMenuView(isMenuOpen: $isMenuOpen)
+            
             // Loading overlay (no dimming)
             if isLoading {
                 VStack {

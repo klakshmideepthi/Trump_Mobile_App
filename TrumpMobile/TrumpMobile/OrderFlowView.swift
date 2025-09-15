@@ -4,17 +4,17 @@ import FirebaseAnalytics
 
 struct OrderFlowView: View {
     @State private var currentStep = 1
-    @State private var currentOrder: Order?
+    @State private var currentOrder: FlowOrder?
     @EnvironmentObject private var navigationState: NavigationState
     @StateObject private var viewModel = UserRegistrationViewModel()
     @StateObject private var notificationManager = NotificationManager.shared
-    private let orderManager = FirebaseOrderManager()
+    private let orderManager = FirebaseOrderManager.shared
     
     init(startStep: Int = 1, orderId: String? = nil) {
         print("DEBUG: OrderFlowView initializing with startStep: \(startStep), orderId: \(orderId ?? "nil")")
         _currentStep = State(initialValue: startStep)
         if let id = orderId {
-            _currentOrder = State(initialValue: Order(id: id))
+            _currentOrder = State(initialValue: FlowOrder(id: id))
             print("DEBUG: OrderFlowView setting currentOrder with ID: \(id)")
         }
     }
@@ -214,8 +214,8 @@ struct OrderFlowView: View {
     }
 }
 
-// Simple Order model
-struct Order: Identifiable {
+// Simple Order model for flow tracking
+struct FlowOrder: Identifiable {
     let id: String
     // Add other properties as needed
 }
