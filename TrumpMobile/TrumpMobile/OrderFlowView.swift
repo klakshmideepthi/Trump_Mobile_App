@@ -139,12 +139,23 @@ struct OrderFlowView: View {
                 viewModel.resetOrderSpecificFields()
                 viewModel.userId = Auth.auth().currentUser?.uid
                 
+                // Check if we have a valid order ID - if not, show error
+                if viewModel.orderId == nil {
+                    viewModel.errorMessage = "There's a problem with loading the order. Please try again."
+                    print("❌ No order ID available for new order flow")
+                    return
+                }
+                
                 // Log analytics event for new order
                 notificationManager.logOrderStarted()
             } else if let orderId = currentOrder?.id {
                 print("🔄 Setting orderId in viewModel: \(orderId)")
                 viewModel.orderId = orderId
                 viewModel.userId = Auth.auth().currentUser?.uid
+            } else {
+                // If we're not at step 1 and don't have an order ID, this is an error
+                viewModel.errorMessage = "There's a problem with loading the order. Please try again."
+                print("❌ No order ID available for continuing order flow")
             }
             
             // Testing the handleCancelOrder method is accessible

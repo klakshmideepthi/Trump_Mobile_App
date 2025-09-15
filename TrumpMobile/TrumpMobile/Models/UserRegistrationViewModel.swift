@@ -4,6 +4,25 @@ import FirebaseAuth
 import FirebaseFirestore
 
 class UserRegistrationViewModel: ObservableObject {
+    @Published var previousOrders: [TrumpOrder] = []
+    // Fetch previous orders for the current user
+    // Calls completion with an array of orders (empty if none)
+    func fetchPreviousOrders(completion: @escaping ([Any]?) -> Void) {
+        guard let userId = userId else {
+            completion(nil)
+            return
+        }
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).collection("orders").getDocuments { snapshot, error in
+            if let error = error {
+                print("❌ Error fetching previous orders: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            let orders = snapshot?.documents ?? []
+            completion(orders)
+        }
+    }
     // Logout function to clear user session and data
     func logout() {
         // Sign out from Firebase Auth
@@ -516,11 +535,12 @@ class UserRegistrationViewModel: ObservableObject {
         dispatchGroup.enter()
         print("🔄 Saving to orders collection...")
         
-        // Get or create order ID
-        let orderId = self.orderId ?? "current"
-        if self.orderId == nil {
-            self.orderId = orderId
-            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        // Check if order ID exists - if not, this is an error
+        guard let orderId = self.orderId else {
+            print("❌ Error: No order ID available for saving contact info")
+            saveErrors.append("Order ID not available - please restart order process")
+            dispatchGroup.leave()
+            return
         }
         
         let db = Firestore.firestore()
@@ -596,11 +616,13 @@ class UserRegistrationViewModel: ObservableObject {
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        // Get or create order ID
-        let orderId = self.orderId ?? "current"
-        if self.orderId == nil {
-            self.orderId = orderId
-            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        // Check if order ID exists - if not, this is an error
+        guard let orderId = self.orderId else {
+            self.isLoading = false
+            self.errorMessage = "Order ID not available - please restart order process"
+            print("❌ Error: No order ID available for saving device info")
+            completion(false)
+            return
         }
         
         // Save directly to orders collection
@@ -638,11 +660,13 @@ class UserRegistrationViewModel: ObservableObject {
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        // Get or create order ID
-        let orderId = self.orderId ?? "current"
-        if self.orderId == nil {
-            self.orderId = orderId
-            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        // Check if order ID exists - if not, this is an error
+        guard let orderId = self.orderId else {
+            self.isLoading = false
+            self.errorMessage = "Order ID not available - please restart order process"
+            print("❌ Error: No order ID available for saving SIM selection")
+            completion(false)
+            return
         }
         
         // Save directly to orders collection
@@ -696,11 +720,13 @@ class UserRegistrationViewModel: ObservableObject {
             numberData["showQRCode"] = showQRCode
         }
         
-        // Get or create order ID
-        let orderId = self.orderId ?? "current"
-        if self.orderId == nil {
-            self.orderId = orderId
-            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        // Check if order ID exists - if not, this is an error
+        guard let orderId = self.orderId else {
+            self.isLoading = false
+            self.errorMessage = "Order ID not available - please restart order process"
+            print("❌ Error: No order ID available for saving number selection")
+            completion(false)
+            return
         }
         
         // Save directly to orders collection
@@ -772,11 +798,12 @@ class UserRegistrationViewModel: ObservableObject {
         dispatchGroup.enter()
         print("🔄 Saving to orders collection...")
         
-        // Get or create order ID
-        let orderId = self.orderId ?? "current"
-        if self.orderId == nil {
-            self.orderId = orderId
-            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        // Check if order ID exists - if not, this is an error
+        guard let orderId = self.orderId else {
+            print("❌ Error: No order ID available for saving shipping address")
+            saveErrors.append("Order ID not available - please restart order process")
+            dispatchGroup.leave()
+            return
         }
         
         let db = Firestore.firestore()
@@ -850,11 +877,13 @@ class UserRegistrationViewModel: ObservableObject {
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        // Get or create order ID
-        let orderId = self.orderId ?? "current"
-        if self.orderId == nil {
-            self.orderId = orderId
-            UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+        // Check if order ID exists - if not, this is an error
+        guard let orderId = self.orderId else {
+            self.isLoading = false
+            self.errorMessage = "Order ID not available - please restart order process"
+            print("❌ Error: No order ID available for saving billing info")
+            completion(false)
+            return
         }
         
         // Save directly to orders collection

@@ -19,6 +19,13 @@ class NavigationState: ObservableObject {
         }
     }
     
+    // Add new published properties for sheet presentations
+    @Published var showPreviousOrders: Bool = false
+    @Published var showContactInfoDetail: Bool = false
+    @Published var showInternationalLongDistance: Bool = false
+    @Published var showPrivacyPolicy: Bool = false
+    @Published var showTermsAndConditions: Bool = false
+    
     init() {
         print("DEBUG: NavigationState initialized with destination: \(currentDestination)")
     }
@@ -44,5 +51,20 @@ class NavigationState: ObservableObject {
             self.navigateTo(.home)
             print("DEBUG: After navigateTo(.home) call in handleOrderCancellation")
         }
+    }
+    
+    // Reset all navigation states to initial values
+    func resetNavigation() {
+        showPreviousOrders = false
+        showContactInfoDetail = false
+        showInternationalLongDistance = false
+        showPrivacyPolicy = false
+        showTermsAndConditions = false
+    }
+    
+    // Reset to login state
+    func resetToLogin() {
+        currentDestination = .startNewOrder
+        resetNavigation()
     }
 }

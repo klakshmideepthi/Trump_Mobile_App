@@ -8,7 +8,6 @@ import GoogleSignIn
 
 struct LoginView: View {
     var onSignIn: (() -> Void)? = nil
-    var onNewAccount: (() -> Void)? = nil
 
     @State private var email: String = ""
     @State private var password: String = ""
@@ -105,7 +104,6 @@ struct LoginView: View {
             .sheet(isPresented: $showRegistration) {
                 CreateAccountView(viewModel: viewModel, onAccountCreated: {
                     showRegistration = false
-                    onNewAccount?()
                 })
             }
             .alert(isPresented: $showError) {

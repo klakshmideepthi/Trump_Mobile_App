@@ -34,6 +34,7 @@ struct StartOrderView: View {
     @State private var errorMessage: String? = nil
     @State private var showInternationalDetails = false
     @State private var isMenuOpen = false
+    @EnvironmentObject private var navigationState: NavigationState
     
     var body: some View {
         return ZStack {
@@ -201,6 +202,27 @@ struct StartOrderView: View {
                 NavigationView {
                     InternationalLongDistanceView()
                 }
+            }
+            .sheet(isPresented: $navigationState.showPreviousOrders) {
+                NavigationView {
+                    PreviousOrdersView(orders: [])
+                }
+            }
+            .sheet(isPresented: $navigationState.showContactInfoDetail) {
+                NavigationView {
+                    ContactInfoDetailView()
+                }
+            }
+            .sheet(isPresented: $navigationState.showInternationalLongDistance) {
+                NavigationView {
+                    InternationalLongDistanceView()
+                }
+            }
+            .sheet(isPresented: $navigationState.showPrivacyPolicy) {
+                PrivacyPolicyView()
+            }
+            .sheet(isPresented: $navigationState.showTermsAndConditions) {
+                TermsAndConditionsView()
             }
             
             // Hamburger menu overlay

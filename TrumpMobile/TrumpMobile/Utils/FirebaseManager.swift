@@ -214,8 +214,12 @@ class FirebaseManager {
     
     // Save billing address directly to orders
     func saveBillingAddress(userId: String, addressData: [String: Any], completion: @escaping (Bool, Error?) -> Void) {
-        // Get the current order ID or use a default one
-        let orderId = UserDefaults.standard.string(forKey: "currentOrderId") ?? "current"
+        // Get the current order ID - if none exists, this is an error
+        guard let orderId = UserDefaults.standard.string(forKey: "currentOrderId") else {
+            let error = NSError(domain: "FirebaseManager", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Order ID not available - please restart order process"])
+            completion(false, error)
+            return
+        }
         
         // Ensure userId is included in the data for Firestore security rules
         var dataWithUserId = addressData
@@ -280,8 +284,12 @@ class FirebaseManager {
     
     // Get billing address from orders
     func getBillingAddress(userId: String, completion: @escaping ([String: Any]?, Error?) -> Void) {
-        // Get the current order ID or use a default one
-        let orderId = UserDefaults.standard.string(forKey: "currentOrderId") ?? "current"
+        // Get the current order ID - if none exists, this is an error
+        guard let orderId = UserDefaults.standard.string(forKey: "currentOrderId") else {
+            let error = NSError(domain: "FirebaseManager", code: 1002, userInfo: [NSLocalizedDescriptionKey: "Order ID not available - please restart order process"])
+            completion(nil, error)
+            return
+        }
         
         // Get billing info from the order document
         db.collection("users").document(userId)

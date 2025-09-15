@@ -7,6 +7,7 @@ struct HamburgerMenuView: View {
     @State private var showLogoutAlert = false
     @EnvironmentObject var userRegistrationViewModel: UserRegistrationViewModel
     @EnvironmentObject var contactInfoDetailViewModel: ContactInfoDetailViewModel
+    @EnvironmentObject var navigationState: NavigationState
 
     // Persist the user's color scheme preference
     @AppStorage("isDarkMode") private var isDarkMode: Bool = false
@@ -57,27 +58,80 @@ struct HamburgerMenuView: View {
                         // Menu items
                         ScrollView {
                             VStack(alignment: .leading, spacing: 0) {
+                                // Contact Information (Direct access)
+                                Button {
+                                    navigationState.showContactInfoDetail = true
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isMenuOpen = false
+                                    }
+                                } label: {
+                                    MenuItemView(icon: "person.circle", title: "Contact Information")
+                                }
+                                
+                                Divider()
+                                    .padding(.horizontal, 20)
+                                
                                 // Previous Orders
-                                NavigationLink(destination: PreviousOrdersView(orders: orders)) {
-                                    MenuItemView(icon: "bag", title: "Previous Orders")
+                                Button {
+                                    navigationState.showPreviousOrders = true
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isMenuOpen = false
+                                    }
+                                } label: {
+                                    MenuItemView(icon: "clock.arrow.circlepath", title: "Previous Orders")
                                 }
                                 
                                 Divider()
                                     .padding(.horizontal, 20)
                                 
-                                // Profile
-                                NavigationLink(destination: ProfileView()) {
-                                    MenuItemView(icon: "person", title: "Profile")
+                                // International Long Distance
+                                Button {
+                                    navigationState.showInternationalLongDistance = true
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isMenuOpen = false
+                                    }
+                                } label: {
+                                    MenuItemView(icon: "globe", title: "International Long Distance")
+                                }
+                                
+                                // Divider for legal section
+                                Divider()
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 10)
+                                
+                                // Privacy Policy
+                                Button {
+                                    navigationState.showPrivacyPolicy = true
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isMenuOpen = false
+                                    }
+                                } label: {
+                                    MenuItemView(icon: "lock.shield", title: "Privacy Policy")
                                 }
                                 
                                 Divider()
                                     .padding(.horizontal, 20)
+                                
+                                // Terms and Conditions
+                                Button {
+                                    navigationState.showTermsAndConditions = true
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isMenuOpen = false
+                                    }
+                                } label: {
+                                    MenuItemView(icon: "doc.text", title: "Terms & Conditions")
+                                }
+                                
+                                // Divider before logout
+                                Divider()
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 10)
                                 
                                 // Logout
                                 Button {
                                     showLogoutAlert = true
                                 } label: {
-                                    MenuItemView(icon: "arrow.right.square", title: "Logout")
+                                    MenuItemView(icon: "arrow.right.square", title: "Logout", isDestructive: true)
                                 }
 
                                 // Light/Dark mode toggle
@@ -87,7 +141,8 @@ struct HamburgerMenuView: View {
                                     Toggle(isDarkMode ? "Dark Mode" : "Light Mode", isOn: $isDarkMode)
                                         .toggleStyle(SwitchToggleStyle())
                                 }
-                                .padding(.horizontal)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
                             }
                         }
                         
@@ -147,17 +202,18 @@ struct HamburgerMenuView: View {
 struct MenuItemView: View {
     let icon: String
     let title: String
+    var isDestructive: Bool = false
     
     var body: some View {
         HStack(spacing: 15) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundColor(.accentColor)
+                .foregroundColor(isDestructive ? .red : .accentColor)
                 .frame(width: 24, height: 24)
             
             Text(title)
                 .font(.body)
-                .foregroundColor(.primary)
+                .foregroundColor(isDestructive ? .red : .primary)
             
             Spacer()
             

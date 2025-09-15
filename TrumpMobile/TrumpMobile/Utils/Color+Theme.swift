@@ -3,10 +3,10 @@ import SwiftUI
 extension Color {
     static let accentGold = Color("AccentColor")
     static let accentGold2 = Color("AccentColor2")
-    // Use unique property names to avoid redeclaration
+    static let trumpPrimary = Color("TrumpPrimary")
     static let trumpBackground = Color("BackgroundColor")
     static let trumpText = Color("TextColor")
-    static let trumpSecondary = Color("SecondaryCustom") // Renamed to avoid conflict
+    static let trumpSecondary = Color("SecondaryCustom")
     
     // Adaptive colors for forms and UI elements
     static let adaptiveBackground = Color(.systemBackground)

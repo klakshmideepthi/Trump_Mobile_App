@@ -19,6 +19,12 @@ struct CreateAccountView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
+                Image("Trump_Mobile_logo_gold")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .padding(.top, 40)
+
                 VStack(spacing: 16) {
                     TextField("Email", text: $viewModel.email)
                         .keyboardType(.emailAddress)
@@ -27,19 +33,19 @@ struct CreateAccountView: View {
                         .padding()
                         .background(Color(.secondarySystemBackground))
                         .cornerRadius(8)
-                    
+
                     SecureField("Password", text: $viewModel.password)
                         .padding()
                         .background(Color(.secondarySystemBackground))
                         .cornerRadius(8)
-                    
+
                     SecureField("Confirm Password", text: $viewModel.confirmPassword)
                         .padding()
                         .background(Color(.secondarySystemBackground))
                         .cornerRadius(8)
                 }
                 .padding(.horizontal)
-                
+
                 Button {
                     createAccount()
                 } label: {
@@ -51,14 +57,14 @@ struct CreateAccountView: View {
                         .cornerRadius(8)
                 }
                 .padding(.horizontal)
-                
+
                 HStack {
                     Rectangle().frame(height: 1).foregroundColor(.gray.opacity(0.4))
                     Text("OR").foregroundColor(.gray)
                     Rectangle().frame(height: 1).foregroundColor(.gray.opacity(0.4))
                 }
                 .padding(.horizontal)
-                
+
                 Button {
                     signUpWithGoogle()
                 } label: {
@@ -73,7 +79,7 @@ struct CreateAccountView: View {
                     .cornerRadius(8)
                 }
                 .padding(.horizontal)
-                
+
                 // Apple Sign Up Button
                 SignInWithAppleButton { request in
                     let nonce = randomNonceString()
@@ -87,13 +93,13 @@ struct CreateAccountView: View {
                 .frame(height: 50)
                 .cornerRadius(8)
                 .padding(.horizontal)
-                
+
                 HStack(spacing: 4) {
                     Text("Already have an account?")
                     Button("Sign In") { dismiss() }
                 }
                 .padding(.top, 8)
-                
+
                 Spacer()
             }
             .navigationTitle("Create Account")
