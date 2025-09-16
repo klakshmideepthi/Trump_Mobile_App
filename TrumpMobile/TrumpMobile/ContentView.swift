@@ -40,10 +40,15 @@ struct ContentView: View {
             if isNewAccount {
               StartOrderView(
                 onStart: { orderId in
-                  viewModel.resetOrderSpecificFields()
-                  if let orderId = orderId {
-                    viewModel.orderId = orderId
+                  // Only proceed if we have a valid order ID
+                  guard let orderId = orderId, !orderId.isEmpty else {
+                    print("❌ ContentView: Cannot proceed without valid order ID from StartOrderView")
+                    return
                   }
+                  
+                  print("✅ ContentView: Proceeding with order ID from StartOrderView: \(orderId)")
+                  viewModel.resetOrderSpecificFields()
+                  viewModel.orderId = orderId
                   orderStep = 1
                 },
                 onLogout: {
@@ -59,10 +64,15 @@ struct ContentView: View {
               ExistingUserStartOrderView(
                 previousOrders: viewModel.previousOrders,
                 onStart: { orderId in
-                  viewModel.resetOrderSpecificFields()
-                  if let orderId = orderId {
-                    viewModel.orderId = orderId
+                  // Only proceed if we have a valid order ID
+                  guard let orderId = orderId, !orderId.isEmpty else {
+                    print("❌ ContentView: Cannot proceed without valid order ID")
+                    return
                   }
+                  
+                  print("✅ ContentView: Proceeding with order ID: \(orderId)")
+                  viewModel.resetOrderSpecificFields()
+                  viewModel.orderId = orderId
                   orderStep = 1
                 },
                 onLogout: {
@@ -165,9 +175,15 @@ struct ContentView: View {
           default:
             StartOrderView(
               onStart: { orderId in
-                if let orderId = orderId {
-                  viewModel.orderId = orderId
+                // Only proceed if we have a valid order ID
+                guard let orderId = orderId, !orderId.isEmpty else {
+                  print("❌ ContentView: Cannot proceed without valid order ID from default StartOrderView")
+                  return
                 }
+                
+                print("✅ ContentView: Proceeding with order ID from default StartOrderView: \(orderId)")
+                viewModel.resetOrderSpecificFields()
+                viewModel.orderId = orderId
                 orderStep = 1
               },
               onLogout: {

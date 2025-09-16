@@ -9,6 +9,8 @@ struct ExistingUserStartOrderView: View {
     @State private var isMenuOpen = false
     @State private var loadedOrders: [TrumpOrder] = []
     @State private var isLoading = true
+    @State private var isCreatingOrder = false
+    @State private var errorMessage: String?
     @EnvironmentObject private var navigationState: NavigationState
     
     var body: some View {
@@ -16,9 +18,7 @@ struct ExistingUserStartOrderView: View {
             Color.trumpBackground.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Header with logo and hamburger menu
                 HStack {
-                    // Trump Mobile Logo
                     Image("Trump_Mobile_logo_gold")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -122,26 +122,46 @@ struct ExistingUserStartOrderView: View {
                 
                 // Fixed bottom button
                 VStack {
+                    // Error message if order creation fails
+                    if let errorMessage = errorMessage {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                    }
+                    
                     Button(action: {
-                        onStart?(nil)
+                        createNewOrderAndStart()
                     }) {
-                        Text("Start a New Order")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                        HStack {
+                            if isCreatingOrder {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                                Text("Creating Order...")
+                            } else {
+                                Text("Start a New Order")
+                            }
+                        }
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
-                            .foregroundColor(.white)
-                            .cornerRadius(25)
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(25)
+                        .opacity(isCreatingOrder ? 0.7 : 1.0)
                     }
                     .padding(.horizontal)
                     .padding(.bottom, 20)
+                    .disabled(isCreatingOrder)
                 }
             }
             .background(Color.trumpBackground.ignoresSafeArea(edges: .bottom))
@@ -178,6 +198,48 @@ struct ExistingUserStartOrderView: View {
                 loadOrdersDirectly()
             } else {
                 isLoading = false
+            }
+        }
+    }
+    
+    private func createNewOrderAndStart() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("❌ No authenticated user")
+            errorMessage = "Authentication error. Please log in again."
+            return
+        }
+        
+        // Clear any previous error message
+        errorMessage = nil
+        isCreatingOrder = true
+        
+        print("🔄 Creating new order for userId: \(userId)")
+        
+        // Create order first, then start the flow
+        FirebaseManager.shared.createNewOrder(userId: userId) { orderId, error in
+            DispatchQueue.main.async {
+                self.isCreatingOrder = false
+                
+                if let error = error {
+                    print("❌ Failed to create order: \(error.localizedDescription)")
+                    self.errorMessage = "Failed to create order. Please try again."
+                    return
+                }
+                
+                guard let orderId = orderId else {
+                    print("❌ No order ID returned")
+                    self.errorMessage = "Order creation failed. Please try again."
+                    return
+                }
+                
+                print("✅ Order created with ID: \(orderId)")
+                print("🚀 Starting order flow with orderId: \(orderId)")
+                
+                // Store order ID in UserDefaults for persistence
+                UserDefaults.standard.set(orderId, forKey: "currentOrderId")
+                
+                // Now start the order flow with the order ID
+                self.onStart?(orderId)
             }
         }
     }
