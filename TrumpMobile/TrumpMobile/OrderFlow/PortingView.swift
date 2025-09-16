@@ -176,13 +176,6 @@ struct PortingView: View {
                     text: $viewModel.portInPin,
                     isSecure: true
                 )
-                
-                CustomTextField(
-                    title: "Billing ZIP Code",
-                    placeholder: "ZIP code on current account",
-                    text: $viewModel.portInBillingZip
-                )
-                .keyboardType(.numberPad)
             }
             
             // Important information box
@@ -223,8 +216,7 @@ struct PortingView: View {
         !viewModel.portInAccountHolderName.isEmpty &&
         !viewModel.portInCurrentCarrier.isEmpty &&
         !viewModel.portInAccountNumber.isEmpty &&
-        !viewModel.portInPin.isEmpty &&
-        !viewModel.portInBillingZip.isEmpty
+        !viewModel.portInPin.isEmpty
     }
     
     private func savePortInDataAndContinue() {

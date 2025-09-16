@@ -307,7 +307,7 @@ class FirebaseManager {
                 
                 // Extract only billing-related fields
                 var billingData: [String: Any] = [:]
-                let billingFields = ["address", "country", "creditCardNumber", "billingDetails", "billingZipCode", "billingCity", "billingState"]
+                let billingFields = ["address", "country", "creditCardNumber", "billingDetails", "billingCity", "billingState"]
                 
                 for field in billingFields {
                     if let value = data[field] {

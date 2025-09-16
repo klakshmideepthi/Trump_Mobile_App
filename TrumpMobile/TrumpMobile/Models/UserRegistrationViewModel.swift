@@ -60,7 +60,6 @@ class UserRegistrationViewModel: ObservableObject {
         portInPin = ""
         portInCurrentCarrier = ""
         portInAccountHolderName = ""
-        portInBillingZip = ""
         isForThisDevice = true
         showQRCode = false
         creditCardNumber = ""
@@ -101,7 +100,6 @@ class UserRegistrationViewModel: ObservableObject {
     @Published var portInPin: String = ""
     @Published var portInCurrentCarrier: String = ""
     @Published var portInAccountHolderName: String = ""
-    @Published var portInBillingZip: String = ""
     // eSIM related properties
     @Published var isForThisDevice: Bool = true
     @Published var showQRCode: Bool = false
@@ -138,7 +136,6 @@ class UserRegistrationViewModel: ObservableObject {
         portInPin = ""
         portInCurrentCarrier = ""
         portInAccountHolderName = ""
-        portInBillingZip = ""
         
         // Reset eSIM related fields
         isForThisDevice = true
@@ -176,7 +173,6 @@ class UserRegistrationViewModel: ObservableObject {
         portInPin = ""
         portInCurrentCarrier = ""
         portInAccountHolderName = ""
-        portInBillingZip = ""
         
         // Reset eSIM related fields
         isForThisDevice = true
@@ -711,7 +707,6 @@ class UserRegistrationViewModel: ObservableObject {
             numberData["portInPin"] = portInPin
             numberData["portInCurrentCarrier"] = portInCurrentCarrier
             numberData["portInAccountHolderName"] = portInAccountHolderName
-            numberData["portInBillingZip"] = portInBillingZip
         }
         
         // Add eSIM data if applicable
