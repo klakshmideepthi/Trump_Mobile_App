@@ -60,6 +60,7 @@ class UserRegistrationViewModel: ObservableObject {
         portInPin = ""
         portInCurrentCarrier = ""
         portInAccountHolderName = ""
+        portInSkipped = false
         isForThisDevice = true
         showQRCode = false
         creditCardNumber = ""
@@ -100,6 +101,7 @@ class UserRegistrationViewModel: ObservableObject {
     @Published var portInPin: String = ""
     @Published var portInCurrentCarrier: String = ""
     @Published var portInAccountHolderName: String = ""
+    @Published var portInSkipped: Bool = false
     // eSIM related properties
     @Published var isForThisDevice: Bool = true
     @Published var showQRCode: Bool = false
@@ -136,6 +138,7 @@ class UserRegistrationViewModel: ObservableObject {
         portInPin = ""
         portInCurrentCarrier = ""
         portInAccountHolderName = ""
+        portInSkipped = false
         
         // Reset eSIM related fields
         isForThisDevice = true
@@ -173,6 +176,7 @@ class UserRegistrationViewModel: ObservableObject {
         portInPin = ""
         portInCurrentCarrier = ""
         portInAccountHolderName = ""
+        portInSkipped = false
         
         // Reset eSIM related fields
         isForThisDevice = true
@@ -698,6 +702,7 @@ class UserRegistrationViewModel: ObservableObject {
             "userId": userId,
             "numberType": numberType,
             "selectedPhoneNumber": selectedPhoneNumber,
+            "portInSkipped": portInSkipped,
             "updatedAt": FieldValue.serverTimestamp()
         ]
         

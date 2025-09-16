@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PortingView: View {
     @ObservedObject var viewModel: UserRegistrationViewModel
+    @EnvironmentObject private var navigationState: NavigationState
     var onNext: () -> Void
     var onBack: (() -> Void)? = nil
     var onCancel: (() -> Void)? = nil
@@ -208,6 +209,28 @@ struct PortingView: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.accentGold2.opacity(0.3), lineWidth: 1)
             )
+            
+            // Skip for Now button
+            Button(action: {
+                skipPortingAndContinue()
+            }) {
+                HStack {
+                    Text("Skip for Now")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Image(systemName: "arrow.right")
+                        .font(.caption)
+                }
+                .foregroundColor(Color.adaptiveSecondaryText)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 24)
+                .background(Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.adaptiveSecondaryText.opacity(0.3), lineWidth: 1)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
         }
     }
     
@@ -227,6 +250,24 @@ struct PortingView: View {
             } else {
                 // Handle error - you might want to show an alert
                 print("Failed to save port-in information")
+            }
+        }
+    }
+    
+    private func skipPortingAndContinue() {
+        // Set portInSkipped to true and navigate directly to home
+        viewModel.portInSkipped = true
+
+        // Save the skip flag to Firebase
+        viewModel.saveNumberSelection { success in
+            if success {
+                // Navigate directly to home instead of continuing to SIM setup
+                DispatchQueue.main.async {
+                    navigationState.navigateTo(.home)
+                }
+            } else {
+                // Handle error - you might want to show an alert
+                print("Failed to save skip porting information")
             }
         }
     }

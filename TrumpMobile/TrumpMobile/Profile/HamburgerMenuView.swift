@@ -8,9 +8,6 @@ struct HamburgerMenuView: View {
     @EnvironmentObject var userRegistrationViewModel: UserRegistrationViewModel
     @EnvironmentObject var contactInfoDetailViewModel: ContactInfoDetailViewModel
     @EnvironmentObject var navigationState: NavigationState
-
-    // Persist the user's color scheme preference
-    @AppStorage("isDarkMode") private var isDarkMode: Bool = false
     
     var body: some View {
         ZStack {
@@ -133,16 +130,6 @@ struct HamburgerMenuView: View {
                                 } label: {
                                     MenuItemView(icon: "arrow.right.square", title: "Logout", isDestructive: true)
                                 }
-
-                                // Light/Dark mode toggle
-                                HStack {
-                                    Image(systemName: isDarkMode ? "moon.fill" : "sun.max.fill")
-                                        .foregroundColor(isDarkMode ? .yellow : .orange)
-                                    Toggle(isDarkMode ? "Dark Mode" : "Light Mode", isOn: $isDarkMode)
-                                        .toggleStyle(SwitchToggleStyle())
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
                             }
                         }
                         
@@ -157,8 +144,6 @@ struct HamburgerMenuView: View {
                 }
             }
         }
-        // Apply the color scheme based on the toggle
-        .preferredColorScheme(isDarkMode ? .dark : .light)
         .onAppear {
             loadOrders()
         }
