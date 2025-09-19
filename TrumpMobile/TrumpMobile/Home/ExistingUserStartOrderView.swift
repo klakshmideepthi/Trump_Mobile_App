@@ -84,7 +84,10 @@ struct ExistingUserStartOrderView: View {
 
                 VStack(spacing: 12) {
                   ForEach(ordersToShow.prefix(3), id: \.id) { order in
-                    OrderCardView(order: order)
+                    NavigationLink(destination: OrderDetailView(orderId: order.id)) {
+                      OrderCardView(order: order)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                   }
                 }
 
@@ -535,32 +538,50 @@ struct IncompleteOrderCard: View {
         .padding(.top, 4)
       }
 
-      Spacer()  // Push button to bottom
+      Spacer()  // Push buttons to bottom
 
-      // Complete setup button
-      Button(action: {
-        onComplete(order.id)
-      }) {
-        HStack {
-          Image(systemName: "checkmark.circle.fill")
-          Text("Complete Setup")
-            .fontWeight(.medium)
+      // Action buttons
+      VStack(spacing: 8) {
+        // View Details button
+        NavigationLink(destination: OrderDetailView(orderId: order.id)) {
+          HStack {
+            Image(systemName: "info.circle")
+            Text("View Details")
+              .fontWeight(.medium)
+          }
+          .foregroundColor(.accentGold)
+          .padding(.vertical, 10)
+          .frame(maxWidth: .infinity)
+          .background(Color.accentGold.opacity(0.1))
+          .cornerRadius(8)
         }
-        .foregroundColor(.white)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity)
-        .background(
-          LinearGradient(
-            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-            startPoint: .leading,
-            endPoint: .trailing
+        .buttonStyle(PlainButtonStyle())
+
+        // Complete setup button
+        Button(action: {
+          onComplete(order.id)
+        }) {
+          HStack {
+            Image(systemName: "checkmark.circle.fill")
+            Text("Complete Setup")
+              .fontWeight(.medium)
+          }
+          .foregroundColor(.white)
+          .padding(.vertical, 12)
+          .frame(maxWidth: .infinity)
+          .background(
+            LinearGradient(
+              gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+              startPoint: .leading,
+              endPoint: .trailing
+            )
           )
-        )
-        .cornerRadius(10)
+          .cornerRadius(10)
+        }
       }
     }
     .padding()
-    .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 320)  // Consistent card height
+    .frame(maxWidth: .infinity, minHeight: 320, maxHeight: 360)  // Adjusted height for two buttons
     .background(Color(.systemBackground))
     .cornerRadius(12)
     .overlay(
@@ -609,6 +630,12 @@ struct OrderCardView: View {
           }
         }
       }
+
+      // Add arrow to indicate it's tappable
+      Image(systemName: "chevron.right")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .opacity(0.7)
     }
     .padding(12)
     .background(Color(.systemGray5).opacity(0.3))

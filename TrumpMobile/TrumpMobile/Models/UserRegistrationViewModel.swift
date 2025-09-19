@@ -5,36 +5,74 @@ import SwiftUI
 
 class UserRegistrationViewModel: ObservableObject {
   @Published var previousOrders: [TrumpOrder] = []
+
+  // Helper method to get current user identifier for logging
+  private func getCurrentUserIdentifier() -> String {
+    let name = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+    let identifier = name.isEmpty ? (email.isEmpty ? "Unknown User" : email) : name
+    return "\(identifier) (ID: \(userId ?? "nil"))"
+  }
   // Fetch previous orders for the current user
   // Calls completion with an array of orders (empty if none)
   func fetchPreviousOrders(completion: @escaping ([Any]?) -> Void) {
+    let userIdentifier = getCurrentUserIdentifier()
+    DebugLogger.shared.logUserInfoRetrieval(
+      for: userIdentifier, context: "Fetching previous orders")
+
     guard let userId = userId else {
+      DebugLogger.shared.log(
+        "No userId available for fetching previous orders", category: "UserRegistration")
       completion(nil)
       return
     }
+
     let db = Firestore.firestore()
     db.collection("users").document(userId).collection("orders").getDocuments { snapshot, error in
       if let error = error {
         print("❌ Error fetching previous orders: \(error.localizedDescription)")
+        DebugLogger.shared.log(
+          "Error fetching previous orders for \(userIdentifier): \(error.localizedDescription)",
+          category: "UserRegistration")
         completion(nil)
         return
       }
       let orders = snapshot?.documents ?? []
+      DebugLogger.shared.log(
+        "Successfully fetched \(orders.count) previous orders for \(userIdentifier)",
+        category: "UserRegistration")
       completion(orders)
     }
   }
-  // Logout function to clear user session and data
-  func logout() {
-    // Sign out from Firebase Auth
+  // Centralized logout function with completion handling
+  func logout(completion: @escaping (Bool) -> Void) {
+    print("🔄 Starting logout process")
+
     do {
+      // Sign out from Firebase Auth
       try Auth.auth().signOut()
-    } catch {
-      print("❌ Error signing out: \(error.localizedDescription)")
+      print("✅ Successfully signed out from Firebase")
+
+      // Reset all user data
+      resetAllUserData()
+
+      // Remove persisted orderId
+      UserDefaults.standard.removeObject(forKey: "currentOrderId")
+
+      print("✅ Logout completed successfully")
+      completion(true)
+
+    } catch let error {
+      print("❌ Error during logout: \(error.localizedDescription)")
+      // Still reset local data even if Firebase signout fails
+      resetAllUserData()
+      UserDefaults.standard.removeObject(forKey: "currentOrderId")
+      completion(false)
     }
-    // Reset all user data
-    resetAllUserData()
-    // Remove persisted orderId
-    UserDefaults.standard.removeObject(forKey: "currentOrderId")
+  }
+
+  // Legacy logout method for backward compatibility
+  func logout() {
+    logout { _ in }
   }
   // Reset all user-specific data (call on logout)
   func resetAllUserData() {
@@ -72,6 +110,11 @@ class UserRegistrationViewModel: ObservableObject {
     orderId = nil
     isLoading = false
     errorMessage = nil
+  }
+
+  // Reset method specifically for logout (alias for resetAllUserData)
+  func reset() {
+    resetAllUserData()
   }
   // Step 1
   @Published var accountType: String = ""
@@ -314,6 +357,8 @@ class UserRegistrationViewModel: ObservableObject {
 
   // Sign in with email
   func signIn(completion: @escaping (Bool) -> Void) {
+    DebugLogger.shared.log("Attempting sign in for email: \(email)", category: "Authentication")
+
     isLoading = true
     errorMessage = nil
 
@@ -321,6 +366,9 @@ class UserRegistrationViewModel: ObservableObject {
       guard let self = self else { return }
 
       if let error = error {
+        DebugLogger.shared.log(
+          "Sign in failed for email \(self.email): \(error.localizedDescription)",
+          category: "Authentication")
         DispatchQueue.main.async {
           self.isLoading = false
           self.errorMessage = error.localizedDescription
@@ -330,6 +378,8 @@ class UserRegistrationViewModel: ObservableObject {
       }
 
       guard let user = result?.user else {
+        DebugLogger.shared.log(
+          "Sign in failed for email \(self.email): No user returned", category: "Authentication")
         DispatchQueue.main.async {
           self.isLoading = false
           self.errorMessage = "Failed to sign in"
@@ -339,6 +389,9 @@ class UserRegistrationViewModel: ObservableObject {
       }
 
       self.userId = user.uid
+      let userIdentifier = self.getCurrentUserIdentifier()
+      DebugLogger.shared.log("Sign in successful for \(userIdentifier)", category: "Authentication")
+
       self.loadUserData { success in
         DispatchQueue.main.async {
           self.isLoading = false
@@ -351,12 +404,18 @@ class UserRegistrationViewModel: ObservableObject {
   // Load user data
   func loadUserData(completion: @escaping (Bool) -> Void) {
     guard let userId = userId else {
+      DebugLogger.shared.log(
+        "No userId available for loading user data", category: "UserRegistration")
       completion(false)
       return
     }
 
     // Get the authenticated user's email
     let authenticatedEmail = Auth.auth().currentUser?.email ?? ""
+    let userIdentifier = getCurrentUserIdentifier()
+
+    DebugLogger.shared.logUserInfoRetrieval(
+      for: userIdentifier, context: "Loading user data on sign in")
 
     isLoading = true
     errorMessage = nil
@@ -441,13 +500,28 @@ class UserRegistrationViewModel: ObservableObject {
 
   // Save contact information to contactInfo, shippingAddress, and orders collections
   func saveContactInfo(completion: @escaping (Bool) -> Void) {
+    let userIdentifier = getCurrentUserIdentifier()
+
     print(
       "🔍 saveContactInfo called with firstName: \(firstName), lastName: \(lastName), phoneNumber: \(phoneNumber)"
     )
 
+    DebugLogger.shared.logUserAction(
+      "Saving Contact Info",
+      for: [
+        "firstName": firstName,
+        "lastName": lastName,
+        "phoneNumber": phoneNumber,
+        "email": email,
+        "userId": userId ?? "nil",
+      ])
+
     guard let userId = userId else {
       errorMessage = "User ID not available"
       print("❌ Error: User ID not available")
+      DebugLogger.shared.log(
+        "Error: User ID not available when saving contact info for \(userIdentifier)",
+        category: "UserRegistration")
       completion(false)
       return
     }

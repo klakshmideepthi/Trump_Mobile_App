@@ -3,6 +3,8 @@ import SwiftUI
 
 class NavigationState: ObservableObject {
   enum Destination: CustomStringConvertible {
+    case splash
+    case login
     case startNewOrder
     case orderFlow
     case orderDetails
@@ -11,6 +13,8 @@ class NavigationState: ObservableObject {
 
     var description: String {
       switch self {
+      case .splash: return "splash"
+      case .login: return "login"
       case .startNewOrder: return "startNewOrder"
       case .orderFlow: return "orderFlow"
       case .orderDetails: return "orderDetails"
@@ -19,7 +23,8 @@ class NavigationState: ObservableObject {
     }
   }
 
-  // Add new published properties for sheet presentations
+  // Add published property for splash state
+  @Published var showSplash: Bool = false
   @Published var showPreviousOrders: Bool = false
   @Published var showContactInfoDetail: Bool = false
   @Published var showInternationalLongDistance: Bool = false
@@ -55,6 +60,7 @@ class NavigationState: ObservableObject {
 
   // Reset all navigation states to initial values
   func resetNavigation() {
+    showSplash = false
     showPreviousOrders = false
     showContactInfoDetail = false
     showInternationalLongDistance = false
@@ -62,9 +68,31 @@ class NavigationState: ObservableObject {
     showTermsAndConditions = false
   }
 
-  // Reset to login state
+  // Reset to login state after logout
   func resetToLogin() {
-    currentDestination = .startNewOrder
+    print("DEBUG: NavigationState.resetToLogin called")
+    currentDestination = .login
+    showSplash = true
     resetNavigation()
+  }
+  
+  // New method to show splash screen
+  func showSplashScreen() {
+    print("DEBUG: NavigationState.showSplashScreen called")
+    currentDestination = .splash
+    showSplash = true
+    resetNavigation()
+  }
+
+  // Reset all state when user logs out
+  func reset() {
+    print("DEBUG: NavigationState.reset called")
+    currentDestination = .splash
+    showSplash = false
+    showPreviousOrders = false
+    showContactInfoDetail = false
+    showInternationalLongDistance = false
+    showPrivacyPolicy = false
+    showTermsAndConditions = false
   }
 }

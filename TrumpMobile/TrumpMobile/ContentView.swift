@@ -43,12 +43,7 @@ struct ContentView: View {
                 orderStep = 1
               },
               onLogout: {
-                do {
-                  try Auth.auth().signOut()
-                  isSignedIn = false
-                } catch {
-                  print("Error signing out: \(error.localizedDescription)")
-                }
+                handleLogout()
               }
             )
           } else {
@@ -67,12 +62,7 @@ struct ContentView: View {
                 orderStep = 1
               },
               onLogout: {
-                do {
-                  try Auth.auth().signOut()
-                  isSignedIn = false
-                } catch {
-                  print("Error signing out: \(error.localizedDescription)")
-                }
+                handleLogout()
               }
             )
           }
@@ -198,7 +188,13 @@ struct ContentView: View {
                 isNewAccount = true
               }
             }
-          } 
+          }
+        }
+      }
+      .onDisappear {
+        // Remove auth state listener when view disappears
+        if let handle = authStateListener {
+          Auth.auth().removeStateDidChangeListener(handle)
         }
       }
       .onChange(of: navigationState.currentDestination) { _, newDestination in
@@ -226,6 +222,34 @@ struct ContentView: View {
             break
           }
         }
+      }
+    }
+  }
+
+  private func handleLogout() {
+    print("🔄 ContentView handleLogout called")
+
+    // Remove auth state listener before logout
+    if let handle = authStateListener {
+      Auth.auth().removeStateDidChangeListener(handle)
+      authStateListener = nil
+    }
+
+    viewModel.logout { success in
+      DispatchQueue.main.async {
+        if success {
+          print("✅ Logout successful, updating UI state")
+        } else {
+          print("⚠️ Logout had issues but continuing with UI reset")
+        }
+
+        // Reset UI state
+        self.isSignedIn = false
+        self.isNewAccount = true
+        self.orderStep = 0
+
+        // Trigger splash screen display
+        self.navigationState.showSplashScreen()
       }
     }
   }

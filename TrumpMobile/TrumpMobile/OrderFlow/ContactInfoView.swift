@@ -27,6 +27,22 @@ struct ContactInfoView: View {
         || viewModel.phoneNumber.isEmpty || isLoading,
       nextButtonAction: {
         print("📲 Next button tapped in ContactInfoView")
+
+        // Log user information being submitted
+        DebugLogger.shared.logUserAction(
+          "Submitting Contact Information",
+          for: [
+            "firstName": viewModel.firstName,
+            "lastName": viewModel.lastName,
+            "phoneNumber": viewModel.phoneNumber,
+            "email": viewModel.email,
+            "street": viewModel.street,
+            "city": viewModel.city,
+            "state": viewModel.state,
+            "zip": viewModel.zip,
+            "userId": viewModel.userId ?? "nil",
+          ])
+
         // This is the critical fix - make sure we save before continuing
         if let userId = viewModel.userId ?? Auth.auth().currentUser?.uid {
           print("👤 Using userId: \(userId)")
@@ -35,14 +51,22 @@ struct ContactInfoView: View {
           viewModel.saveContactInfo { success in
             if success {
               print("✅ Contact info saved successfully, calling onNext")
+              DebugLogger.shared.log(
+                "Contact info saved successfully for user \(viewModel.firstName) \(viewModel.lastName)",
+                category: "ContactInfo")
               onNext()
             } else {
               print("❌ Failed to save contact info: \(viewModel.errorMessage ?? "Unknown error")")
+              DebugLogger.shared.log(
+                "Failed to save contact info: \(viewModel.errorMessage ?? "Unknown error")",
+                category: "ContactInfo")
               errorMessage = viewModel.errorMessage ?? "Failed to save contact information"
             }
           }
         } else {
           print("❌ No userId available")
+          DebugLogger.shared.log(
+            "No userId available for contact info submission", category: "ContactInfo")
           errorMessage = "User ID not available. Please log in again."
         }
       },
@@ -304,7 +328,15 @@ struct ContactInfoView: View {
   }
 
   func loadUserData() {
-    guard let user = Auth.auth().currentUser else { return }
+    guard let user = Auth.auth().currentUser else {
+      DebugLogger.shared.log(
+        "No authenticated user found when loading contact info", category: "ContactInfo")
+      return
+    }
+
+    let userEmail = user.email ?? "Unknown"
+    DebugLogger.shared.logUserInfoRetrieval(
+      for: userEmail, context: "Loading contact info and shipping address")
 
     isLoading = true
     let db = Firestore.firestore()

@@ -24,13 +24,34 @@ struct BillingInfoView: View {
       nextButtonDisabled: creditCardNumber.isEmpty || expirationDate.isEmpty || cvv.isEmpty
         || !agreeE911 || !agreeRecurringCharge || !agreePrivacyTerms,
       nextButtonAction: {
+        // Log billing information submission
+        DebugLogger.shared.logUserAction(
+          "Submitting Billing Information",
+          for: [
+            "firstName": viewModel.firstName,
+            "lastName": viewModel.lastName,
+            "email": viewModel.email,
+            "creditCardNumber": String(creditCardNumber.prefix(4)) + "****",  // Only log first 4 digits for security
+            "expirationDate": expirationDate,
+            "userId": viewModel.userId ?? "nil",
+            "agreeE911": agreeE911 ? "Yes" : "No",
+            "agreeRecurringCharge": agreeRecurringCharge ? "Yes" : "No",
+            "agreePrivacyTerms": agreePrivacyTerms ? "Yes" : "No",
+          ])
+
         viewModel.creditCardNumber = creditCardNumber
         viewModel.billingDetails = expirationDate
         viewModel.saveBillingInfo { success in
           if success {
+            DebugLogger.shared.log(
+              "Billing info saved successfully for user \(viewModel.firstName) \(viewModel.lastName)",
+              category: "BillingInfo")
             onNext()
           } else {
             print("Failed to save billing information")
+            DebugLogger.shared.log(
+              "Failed to save billing info: \(viewModel.errorMessage ?? "Unknown error")",
+              category: "BillingInfo")
           }
         }
       },

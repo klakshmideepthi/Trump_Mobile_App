@@ -17,6 +17,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
   ) -> Bool {
     FirebaseApp.configure()
 
+    // Initialize auth state manager
+    _ = AuthStateManager.shared
+
     // Enable debug mode for faster FIAM testing
     UserDefaults.standard.set(true, forKey: "FIRAnalyticsDebugEnabled")
 

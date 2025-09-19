@@ -169,17 +169,42 @@ struct HamburgerMenuView: View {
   }
 
   private func logout() {
-    // Implement logout functionality
+    print("🔄 HamburgerMenuView logout called")
+
     do {
       try Auth.auth().signOut()
-      userRegistrationViewModel.resetAllUserData()
-      userRegistrationViewModel.logout()
+      print("✅ User signed out successfully")
+
+      // Clear any stored order data
+      UserDefaults.standard.removeObject(forKey: "currentOrderId")
+
+      // Reset view models
+      userRegistrationViewModel.reset()
       contactInfoDetailViewModel.reset()
+
+      // Reset navigation state
+      navigationState.reset()
+
+      // Close menu
       withAnimation(.easeInOut(duration: 0.3)) {
         isMenuOpen = false
       }
-    } catch {
-      print("Error signing out: \(error.localizedDescription)")
+
+      // The auth state change will be automatically detected by SplashView
+      // and navigate back to splash/login screen
+
+    } catch let signOutError as NSError {
+      print("❌ Error signing out: \(signOutError)")
+      // Still reset local data even if Firebase signout fails
+      userRegistrationViewModel.reset()
+      contactInfoDetailViewModel.reset()
+      navigationState.reset()
+      UserDefaults.standard.removeObject(forKey: "currentOrderId")
+
+      // Close menu
+      withAnimation(.easeInOut(duration: 0.3)) {
+        isMenuOpen = false
+      }
     }
   }
 }
