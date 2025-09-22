@@ -45,7 +45,7 @@ struct ContentView: View {
                 if let userId = Auth.auth().currentUser?.uid {
                   Firestore.firestore().collection("users").document(userId)
                     .collection("orders").document(orderId).getDocument { snapshot, _ in
-                      let step = (snapshot?.data()? ["currentStep"] as? Int) ?? 1
+                      let step = (snapshot?.data()?["currentStep"] as? Int) ?? 1
                       orderStep = max(1, min(6, step))
                       // Hydrate view model with saved order data once
                       viewModel.prefillFromOrder(orderId: orderId, completion: nil)
@@ -77,7 +77,7 @@ struct ContentView: View {
                 if let userId = Auth.auth().currentUser?.uid {
                   Firestore.firestore().collection("users").document(userId)
                     .collection("orders").document(orderId).getDocument { snapshot, _ in
-                      let step = (snapshot?.data()? ["currentStep"] as? Int) ?? 1
+                      let step = (snapshot?.data()?["currentStep"] as? Int) ?? 1
                       orderStep = max(1, min(6, step))
                       // Hydrate view model with saved order data once
                       viewModel.prefillFromOrder(orderId: orderId, completion: nil)
@@ -111,7 +111,8 @@ struct ContentView: View {
                 viewModel.saveDeviceInfo { success in
                   if success {
                     if let userId = viewModel.userId, let orderId = viewModel.orderId {
-                      FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 2)
+                      FirebaseOrderManager.shared.saveStepProgress(
+                        userId: userId, orderId: orderId, step: 2)
                     }
                     orderStep = 3
                   }
@@ -129,7 +130,8 @@ struct ContentView: View {
                 viewModel.saveSimSelection { success in
                   if success {
                     if let userId = viewModel.userId, let orderId = viewModel.orderId {
-                      FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 3)
+                      FirebaseOrderManager.shared.saveStepProgress(
+                        userId: userId, orderId: orderId, step: 3)
                     }
                     orderStep = 4
                   }
@@ -147,7 +149,8 @@ struct ContentView: View {
                 viewModel.saveNumberSelection { success in
                   if success {
                     if let userId = viewModel.userId, let orderId = viewModel.orderId {
-                      FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 4)
+                      FirebaseOrderManager.shared.saveStepProgress(
+                        userId: userId, orderId: orderId, step: 4)
                     }
                     orderStep = 5
                   }
@@ -165,7 +168,8 @@ struct ContentView: View {
                 viewModel.saveBillingInfo { success in
                   if success {
                     if let userId = viewModel.userId, let orderId = viewModel.orderId {
-                      FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 5)
+                      FirebaseOrderManager.shared.saveStepProgress(
+                        userId: userId, orderId: orderId, step: 5)
                     }
                     orderStep = 6
                   }
@@ -183,7 +187,8 @@ struct ContentView: View {
                 // Mark order as completed, then reset and go to home
                 viewModel.completeOrder { _ in
                   if let userId = viewModel.userId, let orderId = viewModel.orderId {
-                    FirebaseOrderManager.shared.markOrderCompleted(userId: userId, orderId: orderId, completion: nil)
+                    FirebaseOrderManager.shared.markOrderCompleted(
+                      userId: userId, orderId: orderId, completion: nil)
                   }
                   viewModel.resetOrderSpecificFields()
                   orderStep = 0

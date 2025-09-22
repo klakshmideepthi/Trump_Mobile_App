@@ -267,7 +267,8 @@ class UserRegistrationViewModel: ObservableObject {
     self.portInAccountNumber = data["portInAccountNumber"] as? String ?? self.portInAccountNumber
     self.portInPin = data["portInPin"] as? String ?? self.portInPin
     self.portInCurrentCarrier = data["portInCurrentCarrier"] as? String ?? self.portInCurrentCarrier
-    self.portInAccountHolderName = data["portInAccountHolderName"] as? String ?? self.portInAccountHolderName
+    self.portInAccountHolderName =
+      data["portInAccountHolderName"] as? String ?? self.portInAccountHolderName
 
     // eSIM
     self.isForThisDevice = data["isForThisDevice"] as? Bool ?? self.isForThisDevice

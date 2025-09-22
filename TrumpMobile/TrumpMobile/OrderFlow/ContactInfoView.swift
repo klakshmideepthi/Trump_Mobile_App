@@ -11,6 +11,7 @@ struct ContactInfoView: View {
   var onCancel: (() -> Void)? = nil
   @State private var isLoading = false
   @State private var errorMessage: String? = nil
+  // Use a single shared instance if you prefer, or keep as StateObject; here we keep StateObject
   @StateObject private var locationManager = LocationManager()
   @State private var showLocationAlert = false
   @State private var didPromptSettings = false
@@ -20,229 +21,249 @@ struct ContactInfoView: View {
   @State private var autofillTimeoutTask: DispatchWorkItem? = nil
 
   var body: some View {
-    StepNavigationContainer(
-      currentStep: 1,
-      nextButtonText: "Next Step",
-      nextButtonDisabled: viewModel.firstName.isEmpty || viewModel.lastName.isEmpty
-        || viewModel.phoneNumber.isEmpty || isLoading,
-      nextButtonAction: {
-        print("📲 Next button tapped in ContactInfoView")
+    ZStack {
+      StepNavigationContainer(
+        currentStep: 1,
+        nextButtonText: "Next Step",
+        nextButtonDisabled: viewModel.firstName.isEmpty || viewModel.lastName.isEmpty
+          || viewModel.phoneNumber.isEmpty || isLoading,
+        nextButtonAction: {
+          print("📲 Next button tapped in ContactInfoView")
 
-        // Log user information being submitted
-        DebugLogger.shared.logUserAction(
-          "Submitting Contact Information",
-          for: [
-            "firstName": viewModel.firstName,
-            "lastName": viewModel.lastName,
-            "phoneNumber": viewModel.phoneNumber,
-            "email": viewModel.email,
-            "street": viewModel.street,
-            "city": viewModel.city,
-            "state": viewModel.state,
-            "zip": viewModel.zip,
-            "userId": viewModel.userId ?? "nil",
-          ])
+          // Log user information being submitted
+          DebugLogger.shared.logUserAction(
+            "Submitting Contact Information",
+            for: [
+              "firstName": viewModel.firstName,
+              "lastName": viewModel.lastName,
+              "phoneNumber": viewModel.phoneNumber,
+              "email": viewModel.email,
+              "street": viewModel.street,
+              "city": viewModel.city,
+              "state": viewModel.state,
+              "zip": viewModel.zip,
+              "userId": viewModel.userId ?? "nil",
+            ])
 
-        // This is the critical fix - make sure we save before continuing
-        if let userId = viewModel.userId ?? Auth.auth().currentUser?.uid {
-          print("👤 Using userId: \(userId)")
-          viewModel.userId = userId  // Ensure userId is set
-          // Save contact info before continuing
-          viewModel.saveContactInfo { success in
-            if success {
-              print("✅ Contact info saved successfully, calling onNext")
-              DebugLogger.shared.log(
-                "Contact info saved successfully for user \(viewModel.firstName) \(viewModel.lastName)",
-                category: "ContactInfo")
-              if let orderId = viewModel.orderId {
-                FirebaseOrderManager.shared.saveStepProgress(
-                  userId: userId, orderId: orderId, step: 1)
-              }
-              onNext()
-            } else {
-              print("❌ Failed to save contact info: \(viewModel.errorMessage ?? "Unknown error")")
-              DebugLogger.shared.log(
-                "Failed to save contact info: \(viewModel.errorMessage ?? "Unknown error")",
-                category: "ContactInfo")
-              errorMessage = viewModel.errorMessage ?? "Failed to save contact information"
-            }
-          }
-        } else {
-          print("❌ No userId available")
-          DebugLogger.shared.log(
-            "No userId available for contact info submission", category: "ContactInfo")
-          errorMessage = "User ID not available. Please log in again."
-        }
-      },
-      backButtonAction: {},
-      cancelAction: onCancel,
-      disableBackButton: true,
-      disableCancelButton: false
-    ) {
-      VStack(alignment: .center, spacing: 12) {
-        if isLoading {
-          ProgressView()
-            .progressViewStyle(CircularProgressViewStyle())
-            .scaleEffect(1.5)
-            .padding(.top, 8)
-        }
-
-        // Always show status message if available
-        if let message = errorMessage {
-          Text(message)
-            .foregroundColor(message.contains("success") ? .green : .red)
-            .padding(.vertical, 8)
-            .padding(.horizontal, 12)
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(8)
-        }
-
-        // Form fields
-        if !isLoading {
-          // Contact Information Section
-          VStack(alignment: .leading, spacing: 12) {
-            Text("CONTACT INFORMATION")
-              .font(.headline)
-              .fontWeight(.bold)
-              .foregroundColor(Color.trumpText)
-
-            // Input fields with improved styling
-            TextField("First Name", text: $viewModel.firstName)
-              .padding()
-              .background(Color(.systemBackground))
-              .foregroundColor(.primary)
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color(.systemGray4), lineWidth: 1)
-              )
-
-            TextField("Last Name", text: $viewModel.lastName)
-              .padding()
-              .background(Color(.systemBackground))
-              .foregroundColor(.primary)
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color(.systemGray4), lineWidth: 1)
-              )
-
-            TextField("Phone Number", text: $viewModel.phoneNumber)
-              .padding()
-              .background(Color(.systemBackground))
-              .foregroundColor(.primary)
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color(.systemGray4), lineWidth: 1)
-              )
-              .keyboardType(.phonePad)
-
-            TextField("Email", text: $viewModel.email)
-              .padding()
-              .background(Color(.systemBackground))
-              .foregroundColor(.primary)
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color(.systemGray4), lineWidth: 1)
-              )
-              .keyboardType(.emailAddress)
-              .textInputAutocapitalization(.never)
-              .autocorrectionDisabled(true)
-          }
-
-          // Customer Address Section
-          VStack(alignment: .leading, spacing: 12) {
-            Text("SHIPPING ADDRESS")
-              .font(.headline)
-              .fontWeight(.bold)
-              .foregroundColor(Color.trumpText)
-              .padding(.top, 8)
-
-            TextField("Street Address", text: $viewModel.street)
-              .padding()
-              .background(Color(.systemBackground))
-              .foregroundColor(.primary)
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color(.systemGray4), lineWidth: 1)
-              )
-
-            TextField("Apt, Suite, etc. (optional)", text: $viewModel.aptNumber)
-              .padding()
-              .background(Color(.systemBackground))
-              .foregroundColor(.primary)
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color(.systemGray4), lineWidth: 1)
-              )
-
-            TextField("City", text: $viewModel.city)
-              .padding()
-              .background(Color(.systemBackground))
-              .foregroundColor(.primary)
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color(.systemGray4), lineWidth: 1)
-              )
-
-            HStack(spacing: 15) {
-              TextField("State", text: $viewModel.state)
-                .padding()
-                .background(Color(.systemBackground))
-                .foregroundColor(.primary)
-                .cornerRadius(8)
-                .overlay(
-                  RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-                )
-
-              TextField("Zip Code", text: $viewModel.zip)
-                .padding()
-                .background(Color(.systemBackground))
-                .foregroundColor(.primary)
-                .cornerRadius(8)
-                .overlay(
-                  RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-                )
-                .keyboardType(.numberPad)
-            }
-          }
-
-          // Checkbox-style 'Use My Location' below all fields
-          Button(action: {
-            useLocation.toggle()
-            if useLocation {
-              // If denied, prompt to open settings
-              if locationManager.authorizationStatus == .denied {
-                didPromptSettings = true
+          // This is the critical fix - make sure we save before continuing
+          if let userId = viewModel.userId ?? Auth.auth().currentUser?.uid {
+            print("👤 Using userId: \(userId)")
+            viewModel.userId = userId  // Ensure userId is set
+            // Save contact info before continuing
+            viewModel.saveContactInfo { success in
+              if success {
+                print("✅ Contact info saved successfully, calling onNext")
+                DebugLogger.shared.log(
+                  "Contact info saved successfully for user \(viewModel.firstName) \(viewModel.lastName)",
+                  category: "ContactInfo")
+                if let orderId = viewModel.orderId {
+                  FirebaseOrderManager.shared.saveStepProgress(
+                    userId: userId, orderId: orderId, step: 1)
+                }
+                onNext()
               } else {
-                showLocationAlert = true
+                print("❌ Failed to save contact info: \(viewModel.errorMessage ?? "Unknown error")")
+                DebugLogger.shared.log(
+                  "Failed to save contact info: \(viewModel.errorMessage ?? "Unknown error")",
+                  category: "ContactInfo")
+                errorMessage = viewModel.errorMessage ?? "Failed to save contact information"
               }
             }
-          }) {
-            HStack {
-              Image(systemName: useLocation ? "checkmark.square" : "square")
-                .foregroundColor(.accentColor)
-              Text("Use My Location to autofill address")
-                .foregroundColor(.primary)
-              if isAutofillingLocation {
-                ProgressView()
-                  .scaleEffect(0.8)
-                  .padding(.leading, 4)
-              }
-            }
-            .padding(.vertical, 8)
+          } else {
+            print("❌ No userId available")
+            DebugLogger.shared.log(
+              "No userId available for contact info submission", category: "ContactInfo")
+            errorMessage = "User ID not available. Please log in again."
           }
-          .buttonStyle(.plain)
-        }
+        },
+        backButtonAction: {},
+        cancelAction: onCancel,
+        disableBackButton: true,
+        disableCancelButton: false
+      ) {
+        VStack(alignment: .center, spacing: 12) {
+          if isLoading {
+            ProgressView()
+              .progressViewStyle(CircularProgressViewStyle())
+              .scaleEffect(1.5)
+              .padding(.top, 8)
+          }
 
-        Spacer(minLength: 20)
+          // Always show status message if available
+          if let message = errorMessage {
+            Text(message)
+              .foregroundColor(message.contains("success") ? .green : .red)
+              .padding(.vertical, 8)
+              .padding(.horizontal, 12)
+              .background(Color.gray.opacity(0.1))
+              .cornerRadius(8)
+          }
+
+          // Form fields
+          if !isLoading {
+            // Contact Information Section
+            VStack(alignment: .leading, spacing: 12) {
+              Text("CONTACT INFORMATION")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(Color.trumpText)
+
+              // Input fields with improved styling
+              TextField("First Name", text: $viewModel.firstName)
+                .padding()
+                .background(Color(.systemBackground))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+
+              TextField("Last Name", text: $viewModel.lastName)
+                .padding()
+                .background(Color(.systemBackground))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+
+              TextField("Phone Number", text: $viewModel.phoneNumber)
+                .padding()
+                .background(Color(.systemBackground))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+                .keyboardType(.phonePad)
+
+              TextField("Email", text: $viewModel.email)
+                .padding()
+                .background(Color(.systemBackground))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
+            }
+
+            // Customer Address Section
+            VStack(alignment: .leading, spacing: 12) {
+              Text("SHIPPING ADDRESS")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(Color.trumpText)
+                .padding(.top, 8)
+
+              TextField("Street Address", text: $viewModel.street)
+                .padding()
+                .background(Color(.systemBackground))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+
+              TextField("Apt, Suite, etc. (optional)", text: $viewModel.aptNumber)
+                .padding()
+                .background(Color(.systemBackground))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+
+              TextField("City", text: $viewModel.city)
+                .padding()
+                .background(Color(.systemBackground))
+                .foregroundColor(.primary)
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+
+              HStack(spacing: 15) {
+                TextField("State", text: $viewModel.state)
+                  .padding()
+                  .background(Color(.systemBackground))
+                  .foregroundColor(.primary)
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color(.systemGray4), lineWidth: 1)
+                  )
+
+                TextField("Zip Code", text: $viewModel.zip)
+                  .padding()
+                  .background(Color(.systemBackground))
+                  .foregroundColor(.primary)
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color(.systemGray4), lineWidth: 1)
+                  )
+                  .keyboardType(.numberPad)
+              }
+            }
+
+            // Checkbox-style 'Use My Location' below all fields
+            Button(action: {
+              useLocation.toggle()
+              if useLocation {
+                // If denied, prompt to open settings
+                if locationManager.authorizationStatus == .denied {
+                  didPromptSettings = true
+                } else {
+                  showLocationAlert = true
+                }
+              }
+            }) {
+              HStack {
+                Image(systemName: useLocation ? "checkmark.square" : "square")
+                  .foregroundColor(.accentColor)
+                Text("Use My Location to autofill address")
+                  .foregroundColor(.primary)
+                if isAutofillingLocation || locationManager.isFetchingLocation {
+                  ProgressView()
+                    .scaleEffect(0.8)
+                    .padding(.leading, 4)
+                }
+              }
+              .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+          }
+
+          Spacer(minLength: 20)
+        }
+      }
+      .disabled(locationManager.isFetchingLocation)
+      .overlay {
+        if locationManager.isFetchingLocation {
+          ZStack {
+            Color.black.opacity(0.25).ignoresSafeArea()
+            VStack(spacing: 12) {
+              ProgressView()
+              Text("Getting your location...")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            }
+            .padding(20)
+            .background(
+              .ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+          }
+          .transition(.opacity)
+        }
       }
     }
     .navigationBarHidden(true)
@@ -257,6 +278,8 @@ struct ContactInfoView: View {
     .alert("Allow Location Access?", isPresented: $showLocationAlert) {
       Button("Allow") {
         locationManager.requestLocation()
+        // show small inline spinner near the toggle while we wait
+        isAutofillingLocation = true
       }
       Button("Cancel", role: .cancel) {}
     } message: {

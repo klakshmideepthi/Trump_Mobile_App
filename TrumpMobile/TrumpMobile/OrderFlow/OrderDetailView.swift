@@ -90,7 +90,9 @@ struct OrderDetailView: View {
         case .failure(let error):
           self.errorMessage = error.localizedDescription
         case .success(let data):
-          let status = (data["status"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+          let status =
+            (data["status"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased() ?? ""
           let step = data["currentStep"] as? Int ?? 1
 
           if status == "completed" {
