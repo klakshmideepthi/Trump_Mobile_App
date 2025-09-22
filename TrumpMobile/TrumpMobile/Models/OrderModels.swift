@@ -12,6 +12,7 @@ struct TrumpOrder: Identifiable, Codable {
   let billingCompleted: Bool
   let phoneNumber: String?
   let simType: String
+  let currentStep: Int?
 
   enum OrderStatus: String, Codable, CaseIterable {
     case pending = "pending"

@@ -29,7 +29,9 @@ class FirebaseManager {
     let orderData: [String: Any] = [
       "orderId": orderId,
       "userId": userId,
-      "status": "draft",
+      // Use 'pending' to align with in-progress state checks
+      "status": "pending",
+      "currentStep": 1,
       "createdAt": FieldValue.serverTimestamp(),
       "updatedAt": FieldValue.serverTimestamp(),
     ]

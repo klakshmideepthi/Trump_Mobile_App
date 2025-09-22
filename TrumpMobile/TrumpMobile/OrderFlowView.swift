@@ -28,9 +28,7 @@ struct OrderFlowView: View {
       handleCancelOrder()
     }
 
-    // Verify the closure is non-nil before passing
-    print("DEBUG: OrderFlowView creating FixedBottomNavigationView with cancelActionClosure")
-    print("DEBUG: Is cancelActionClosure nil? \(cancelActionClosure == nil ? "Yes" : "No")")
+    print("DEBUG: OrderFlowView creating StepNavigationContainer with cancelActionClosure")
 
     return StepNavigationContainer(
       currentStep: currentStep,
@@ -41,20 +39,24 @@ struct OrderFlowView: View {
       backButtonAction: handleBackAction,
       cancelAction: cancelActionClosure
     ) {
-      // Your order flow content based on current step
       VStack {
         switch currentStep {
         case 1:
           ContactInfoView(
             viewModel: viewModel,
-            onNext: { handleNextAction() }
+            onNext: {
+              saveProgress(step: 1)
+              handleNextAction()
+            }
           )
+
         case 2:
           DeviceCompatibilityView(
             viewModel: viewModel,
             onNext: {
               viewModel.saveDeviceInfo { success in
                 if success {
+                  saveProgress(step: 2)
                   handleNextAction()
                 }
               }
@@ -64,14 +66,16 @@ struct OrderFlowView: View {
               print("DEBUG: Cancel from DeviceCompatibilityView")
               handleCancelOrder()
             },
-            showNavigation: false  // Don't show navigation since it's already provided by FixedBottomNavigationView
+            showNavigation: false
           )
+
         case 3:
           SimSelectionView(
             viewModel: viewModel,
             onNext: {
               viewModel.saveSimSelection { success in
                 if success {
+                  saveProgress(step: 3)
                   handleNextAction()
                 }
               }
@@ -81,14 +85,16 @@ struct OrderFlowView: View {
               print("DEBUG: Cancel from SimSelectionView")
               handleCancelOrder()
             },
-            showNavigation: false  // Don't show navigation since it's already provided by FixedBottomNavigationView
+            showNavigation: false
           )
+
         case 4:
           NumberSelectionView(
             viewModel: viewModel,
             onNext: {
               viewModel.saveNumberSelection { success in
                 if success {
+                  saveProgress(step: 4)
                   handleNextAction()
                 }
               }
@@ -98,33 +104,40 @@ struct OrderFlowView: View {
               print("DEBUG: Cancel from NumberSelectionView")
               handleCancelOrder()
             },
-            showNavigation: false  // Don't show navigation since it's already provided by FixedBottomNavigationView
+            showNavigation: false
           )
+
         case 5:
           BillingInfoView(
             viewModel: viewModel,
             onNext: {
               viewModel.saveBillingInfo { success in
                 if success {
+                  saveProgress(step: 5)
                   handleNextAction()
                 }
               }
             },
             onBack: { handleBackAction() }
           )
+
         case 6:
           NumberPortingView(
             viewModel: viewModel,
             onNext: {
-              // Reset to start a new order
-              navigationState.navigateTo(.startNewOrder)
+              viewModel.completeOrder { success in
+                if let userId = viewModel.userId, let orderId = viewModel.orderId, success {
+                  orderManager.markOrderCompleted(userId: userId, orderId: orderId, completion: nil)
+                }
+                navigationState.navigateTo(.startNewOrder)
+              }
             },
             onBack: { handleBackAction() },
             onCancel: {
-              // Reset to start a new order
               navigationState.navigateTo(.startNewOrder)
             }
           )
+
         default:
           Text("Invalid step")
         }
@@ -135,37 +148,52 @@ struct OrderFlowView: View {
       print("DEBUG: OrderFlowView has currentOrder: \(currentOrder != nil ? "yes" : "no")")
       print("DEBUG: OrderFlowView has viewModel.orderId: \(viewModel.orderId ?? "nil")")
 
-      // Log order started event for FIAM when starting a new order
       if currentStep == 1 && currentOrder == nil {
         print("🔄 Resetting order-specific fields for new order")
         viewModel.resetOrderSpecificFields()
         viewModel.userId = Auth.auth().currentUser?.uid
 
-        // Check if we have a valid order ID - if not, show error
         if viewModel.orderId == nil {
           viewModel.errorMessage = "There's a problem with loading the order. Please try again."
           print("❌ No order ID available for new order flow")
           return
         }
 
-        // Log analytics event for new order
         notificationManager.logOrderStarted()
       } else if let orderId = currentOrder?.id {
         print("🔄 Setting orderId in viewModel: \(orderId)")
         viewModel.orderId = orderId
         viewModel.userId = Auth.auth().currentUser?.uid
       } else {
-        // If we're not at step 1 and don't have an order ID, this is an error
         viewModel.errorMessage = "There's a problem with loading the order. Please try again."
         print("❌ No order ID available for continuing order flow")
       }
 
-      // Testing the handleCancelOrder method is accessible
+      // Apply resume only once per order to avoid overriding user's backfill edits
+      if let resumeOrderId = navigationState.currentOrderId {
+        // Only apply the resume step for this order if we haven't already
+        if navigationState.lastAppliedResumeForOrderId != resumeOrderId {
+          if let resumeStep = navigationState.orderStartStep {
+            self.currentStep = max(1, min(6, resumeStep))
+          }
+          navigationState.lastAppliedResumeForOrderId = resumeOrderId
+        }
+
+        // Ensure local state aligns with the resumed order and hydrate once
+        if viewModel.orderId != resumeOrderId {
+          self.currentOrder = FlowOrder(id: resumeOrderId)
+          self.viewModel.orderId = resumeOrderId
+          // Prefill the view model with existing order data once
+          self.viewModel.prefillFromOrder(orderId: resumeOrderId, completion: nil)
+        }
+        // Do not clear orderStartStep/currentOrderId immediately; let it be available for other views if needed
+      }
+
       print("DEBUG: Testing if handleCancelOrder is accessible in onAppear")
       let testCancelClosure: () -> Void = {
         print("DEBUG: Test cancel closure is executing")
       }
-      print("DEBUG: Test cancel closure created successfully")
+      print("DEBUG: Test cancel closure created successfully: \(testCancelClosure)")
     }
   }
 
@@ -173,7 +201,6 @@ struct OrderFlowView: View {
     print("DEBUG: handleCancelOrder called in OrderFlowView")
     print("DEBUG: handleCancelOrder accessing navigationState object")
 
-    // First delete the order if it exists
     if let orderId = currentOrder?.id ?? viewModel.orderId {
       print("DEBUG: Deleting order with ID: \(orderId)")
       orderManager.deleteOrder(orderId: orderId) { success in
@@ -182,9 +209,6 @@ struct OrderFlowView: View {
         } else {
           print("DEBUG: Failed to delete order from Firebase")
         }
-
-        // Navigate to Home view regardless of deletion success
-        print("DEBUG: About to call navigationState.navigateTo(.home)")
         DispatchQueue.main.async {
           print("DEBUG: Inside DispatchQueue.main.async before navigation")
           self.navigationState.navigateTo(.home)
@@ -192,7 +216,6 @@ struct OrderFlowView: View {
         }
       }
     } else {
-      // No order created yet, just navigate back to home
       print("DEBUG: No order ID exists, just navigating back to home")
       DispatchQueue.main.async {
         print("DEBUG: Inside DispatchQueue.main.async before navigation (no order)")
@@ -209,20 +232,22 @@ struct OrderFlowView: View {
   }
 
   private func handleNextAction() {
-    // Log step completion before moving to next step
     notificationManager.logStepCompleted(step: currentStep)
 
     if currentStep < 6 {
       currentStep += 1
     } else {
-      // We're at step 6 - let the step handle its own completion logic
-      // Don't automatically navigate away
       print("DEBUG: At step 6, letting step handle its own completion")
-
-      // Log order completed event
       notificationManager.logOrderCompleted()
-      print("DEBUG: At step 6, letting step handle its own completion")
+    }
+  }
 
+  private func saveProgress(step: Int) {
+    guard let userId = viewModel.userId, let orderId = viewModel.orderId else { return }
+    orderManager.saveStepProgress(userId: userId, orderId: orderId, step: step) { result in
+      if case .failure(let error) = result {
+        print("⚠️ Failed to save step progress: \(error.localizedDescription)")
+      }
     }
   }
 }
@@ -230,5 +255,4 @@ struct OrderFlowView: View {
 // Simple Order model for flow tracking
 struct FlowOrder: Identifiable {
   let id: String
-  // Add other properties as needed
 }

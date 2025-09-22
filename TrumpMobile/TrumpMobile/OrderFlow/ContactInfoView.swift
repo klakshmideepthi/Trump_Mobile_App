@@ -54,6 +54,10 @@ struct ContactInfoView: View {
               DebugLogger.shared.log(
                 "Contact info saved successfully for user \(viewModel.firstName) \(viewModel.lastName)",
                 category: "ContactInfo")
+              if let orderId = viewModel.orderId {
+                FirebaseOrderManager.shared.saveStepProgress(
+                  userId: userId, orderId: orderId, step: 1)
+              }
               onNext()
             } else {
               print("❌ Failed to save contact info: \(viewModel.errorMessage ?? "Unknown error")")
@@ -247,7 +251,8 @@ struct ContactInfoView: View {
       if viewModel.email.isEmpty {
         viewModel.email = Auth.auth().currentUser?.email ?? ""
       }
-      loadUserData()
+      // Only backfill from user profile if fields are empty; do not overwrite hydrated order fields
+      loadUserData(onlyFillWhenEmpty: true)
     }
     .alert("Allow Location Access?", isPresented: $showLocationAlert) {
       Button("Allow") {
@@ -327,7 +332,7 @@ struct ContactInfoView: View {
     }
   }
 
-  func loadUserData() {
+  func loadUserData(onlyFillWhenEmpty: Bool = false) {
     guard let user = Auth.auth().currentUser else {
       DebugLogger.shared.log(
         "No authenticated user found when loading contact info", category: "ContactInfo")
@@ -354,11 +359,19 @@ struct ContactInfoView: View {
 
         if let document = document, document.exists, let data = document.data() {
           DispatchQueue.main.async {
-            self.viewModel.firstName = data["firstName"] as? String ?? self.viewModel.firstName
-            self.viewModel.lastName = data["lastName"] as? String ?? self.viewModel.lastName
-            self.viewModel.phoneNumber =
-              data["phoneNumber"] as? String ?? self.viewModel.phoneNumber
-            self.viewModel.email = data["email"] as? String ?? self.viewModel.email
+            if !onlyFillWhenEmpty || self.viewModel.firstName.isEmpty {
+              self.viewModel.firstName = data["firstName"] as? String ?? self.viewModel.firstName
+            }
+            if !onlyFillWhenEmpty || self.viewModel.lastName.isEmpty {
+              self.viewModel.lastName = data["lastName"] as? String ?? self.viewModel.lastName
+            }
+            if !onlyFillWhenEmpty || self.viewModel.phoneNumber.isEmpty {
+              self.viewModel.phoneNumber =
+                data["phoneNumber"] as? String ?? self.viewModel.phoneNumber
+            }
+            if !onlyFillWhenEmpty || self.viewModel.email.isEmpty {
+              self.viewModel.email = data["email"] as? String ?? self.viewModel.email
+            }
           }
         }
       }
@@ -371,11 +384,21 @@ struct ContactInfoView: View {
 
         if let document = document, document.exists, let data = document.data() {
           DispatchQueue.main.async {
-            self.viewModel.street = data["street"] as? String ?? self.viewModel.street
-            self.viewModel.aptNumber = data["aptNumber"] as? String ?? self.viewModel.aptNumber
-            self.viewModel.city = data["city"] as? String ?? self.viewModel.city
-            self.viewModel.state = data["state"] as? String ?? self.viewModel.state
-            self.viewModel.zip = data["zip"] as? String ?? self.viewModel.zip
+            if !onlyFillWhenEmpty || self.viewModel.street.isEmpty {
+              self.viewModel.street = data["street"] as? String ?? self.viewModel.street
+            }
+            if !onlyFillWhenEmpty || self.viewModel.aptNumber.isEmpty {
+              self.viewModel.aptNumber = data["aptNumber"] as? String ?? self.viewModel.aptNumber
+            }
+            if !onlyFillWhenEmpty || self.viewModel.city.isEmpty {
+              self.viewModel.city = data["city"] as? String ?? self.viewModel.city
+            }
+            if !onlyFillWhenEmpty || self.viewModel.state.isEmpty {
+              self.viewModel.state = data["state"] as? String ?? self.viewModel.state
+            }
+            if !onlyFillWhenEmpty || self.viewModel.zip.isEmpty {
+              self.viewModel.zip = data["zip"] as? String ?? self.viewModel.zip
+            }
           }
         }
       }

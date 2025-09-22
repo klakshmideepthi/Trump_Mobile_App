@@ -30,6 +30,11 @@ class NavigationState: ObservableObject {
   @Published var showInternationalLongDistance: Bool = false
   @Published var showPrivacyPolicy: Bool = false
   @Published var showTermsAndConditions: Bool = false
+  // Order resume support
+  @Published var currentOrderId: String? = nil
+  @Published var orderStartStep: Int? = nil
+  // Track which order's resume step has already been applied to avoid re-applying
+  @Published var lastAppliedResumeForOrderId: String? = nil
 
   init() {
     print("DEBUG: NavigationState initialized with destination: \(currentDestination)")
@@ -46,6 +51,17 @@ class NavigationState: ObservableObject {
     print("DEBUG: Current destination before change: \(self.currentDestination)")
     self.currentDestination = destination
     print("DEBUG: Current destination after change: \(self.currentDestination)")
+  }
+
+  // Resume helpers
+  func resumeOrder(orderId: String, at step: Int) {
+    currentOrderId = orderId
+    orderStartStep = step
+    navigateTo(.orderFlow)
+  }
+
+  func clearOrderResume() {
+    orderStartStep = nil
   }
 
   func handleOrderCancellation() {
@@ -75,7 +91,7 @@ class NavigationState: ObservableObject {
     showSplash = true
     resetNavigation()
   }
-  
+
   // New method to show splash screen
   func showSplashScreen() {
     print("DEBUG: NavigationState.showSplashScreen called")

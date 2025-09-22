@@ -238,6 +238,60 @@ class UserRegistrationViewModel: ObservableObject {
     print("✅ Complete order reset finished")
   }
 
+  // Hydrate the view model with values from an order document
+  func hydrateFromOrderData(_ data: [String: Any]) {
+    // Contact & shipping
+    self.firstName = data["firstName"] as? String ?? self.firstName
+    self.lastName = data["lastName"] as? String ?? self.lastName
+    self.phoneNumber = data["phoneNumber"] as? String ?? self.phoneNumber
+    self.email = data["email"] as? String ?? self.email
+    self.street = data["street"] as? String ?? self.street
+    self.aptNumber = data["aptNumber"] as? String ?? self.aptNumber
+    self.zip = data["zip"] as? String ?? self.zip
+    self.city = data["city"] as? String ?? self.city
+    self.state = data["state"] as? String ?? self.state
+
+    // Device
+    self.deviceBrand = data["deviceBrand"] as? String ?? self.deviceBrand
+    self.deviceModel = data["deviceModel"] as? String ?? self.deviceModel
+    self.imei = data["imei"] as? String ?? self.imei
+    self.deviceIsCompatible = data["deviceIsCompatible"] as? Bool ?? self.deviceIsCompatible
+
+    // SIM & numbers
+    self.simType = data["simType"] as? String ?? self.simType
+    self.numberType = data["numberType"] as? String ?? self.numberType
+    self.selectedPhoneNumber = data["selectedPhoneNumber"] as? String ?? self.selectedPhoneNumber
+    self.portInSkipped = data["portInSkipped"] as? Bool ?? self.portInSkipped
+
+    // Port-in
+    self.portInAccountNumber = data["portInAccountNumber"] as? String ?? self.portInAccountNumber
+    self.portInPin = data["portInPin"] as? String ?? self.portInPin
+    self.portInCurrentCarrier = data["portInCurrentCarrier"] as? String ?? self.portInCurrentCarrier
+    self.portInAccountHolderName = data["portInAccountHolderName"] as? String ?? self.portInAccountHolderName
+
+    // eSIM
+    self.isForThisDevice = data["isForThisDevice"] as? Bool ?? self.isForThisDevice
+    self.showQRCode = data["showQRCode"] as? Bool ?? self.showQRCode
+
+    // Billing
+    self.creditCardNumber = data["creditCardNumber"] as? String ?? self.creditCardNumber
+    self.billingDetails = data["billingDetails"] as? String ?? self.billingDetails
+    self.address = data["address"] as? String ?? self.address
+    self.country = data["country"] as? String ?? self.country
+  }
+
+  // Convenience to fetch and hydrate from Firestore orders/{orderId}
+  func prefillFromOrder(orderId: String, completion: (() -> Void)? = nil) {
+    FirebaseOrderManager.shared.fetchOrderDocument(orderId: orderId) { result in
+      DispatchQueue.main.async {
+        if case .success(let data) = result {
+          self.hydrateFromOrderData(data)
+        }
+        completion?()
+      }
+    }
+  }
+
   // Save current step data to Firebase
   func saveCurrentStepData(stepData: [String: Any], completion: @escaping (Bool) -> Void) {
     isLoading = true
@@ -1003,6 +1057,7 @@ class UserRegistrationViewModel: ObservableObject {
       "orderCompleted": true,
       "orderCompletionDate": FieldValue.serverTimestamp(),
       "status": "completed",
+      "currentStep": 6,
     ]
 
     // Save directly to orders collection only

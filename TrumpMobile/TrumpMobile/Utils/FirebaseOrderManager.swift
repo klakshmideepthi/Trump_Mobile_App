@@ -8,6 +8,83 @@ class FirebaseOrderManager {
 
   private init() {}
 
+  // MARK: - Step Progress Helpers
+
+  /// Save the user's progress for an order, updating currentStep and status.
+  func saveStepProgress(
+    userId: String,
+    orderId: String,
+    step: Int,
+    data: [String: Any] = [:],
+    completion: ((Result<Void, Error>) -> Void)? = nil
+  ) {
+    var payload: [String: Any] = data
+    payload["userId"] = userId
+    payload["currentStep"] = step
+    // keep status "pending" to match existing model unless it's completed
+    payload["status"] = payload["status"] ?? "pending"
+    payload["updatedAt"] = FieldValue.serverTimestamp()
+
+    db.collection("users").document(userId)
+      .collection("orders").document(orderId)
+      .setData(payload, merge: true) { error in
+        if let error = error {
+          completion?(.failure(error))
+        } else {
+          completion?(.success(()))
+        }
+      }
+  }
+
+  /// Mark an order as completed
+  func markOrderCompleted(
+    userId: String, orderId: String, completion: ((Result<Void, Error>) -> Void)? = nil
+  ) {
+    let data: [String: Any] = [
+      "status": "completed",
+      "updatedAt": FieldValue.serverTimestamp(),
+    ]
+
+    db.collection("users").document(userId)
+      .collection("orders").document(orderId)
+      .setData(data, merge: true) { error in
+        if let error = error {
+          completion?(.failure(error))
+        } else {
+          completion?(.success(()))
+        }
+      }
+  }
+
+  /// Fetch the latest in-progress order (status pending) for a user to resume
+  func fetchLatestIncompleteOrder(
+    for userId: String,
+    completion: @escaping (Result<(orderId: String, currentStep: Int), Error>) -> Void
+  ) {
+    db.collection("users").document(userId)
+      .collection("orders")
+      .whereField("status", isEqualTo: "pending")
+      .order(by: "updatedAt", descending: true)
+      .limit(to: 1)
+      .getDocuments { snapshot, error in
+        if let error = error {
+          completion(.failure(error))
+          return
+        }
+        guard let doc = snapshot?.documents.first else {
+          completion(
+            .failure(
+              NSError(
+                domain: "FirebaseOrderManager", code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "No in-progress order found"])))
+          return
+        }
+        let data = doc.data()
+        let step = data["currentStep"] as? Int ?? 1
+        completion(.success((orderId: doc.documentID, currentStep: step)))
+      }
+  }
+
   func fetchUserOrders(completion: @escaping ([TrumpOrder]) -> Void) {
     guard let userId = Auth.auth().currentUser?.uid else {
       print("DEBUG: Error in FirebaseOrderManager - No authenticated user")
@@ -46,7 +123,8 @@ class FirebaseOrderManager {
                   ?? .pending,
                 billingCompleted: data["billingCompleted"] as? Bool ?? false,
                 phoneNumber: data["selectedPhoneNumber"] as? String,
-                simType: data["simType"] as? String ?? "Physical SIM"
+                simType: data["simType"] as? String ?? "Physical SIM",
+                currentStep: data["currentStep"] as? Int
               )
 
               return order
@@ -98,7 +176,8 @@ class FirebaseOrderManager {
                   ?? .pending,
                 billingCompleted: data["billingCompleted"] as? Bool ?? false,
                 phoneNumber: data["selectedPhoneNumber"] as? String,
-                simType: data["simType"] as? String ?? "Physical SIM"
+                simType: data["simType"] as? String ?? "Physical SIM",
+                currentStep: data["currentStep"] as? Int
               )
 
               return order
@@ -153,7 +232,8 @@ class FirebaseOrderManager {
                   ?? .pending,
                 billingCompleted: data["billingCompleted"] as? Bool ?? false,
                 phoneNumber: data["selectedPhoneNumber"] as? String,
-                simType: data["simType"] as? String ?? "Physical SIM"
+                simType: data["simType"] as? String ?? "Physical SIM",
+                currentStep: data["currentStep"] as? Int
               )
 
               return order
@@ -190,5 +270,47 @@ class FirebaseOrderManager {
       }
       completion(success)
     }
+  }
+
+  // MARK: - Fetch a single order document
+
+  /// Fetch a single order document for the current authenticated user.
+  /// - Parameters:
+  ///   - orderId: The order document ID under users/{uid}/orders/{orderId}
+  ///   - completion: Returns the raw document data on success
+  func fetchOrderDocument(
+    orderId: String,
+    completion: @escaping (Result<[String: Any], Error>) -> Void
+  ) {
+    guard let userId = Auth.auth().currentUser?.uid else {
+      completion(
+        .failure(
+          NSError(
+            domain: "FirebaseOrderManager",
+            code: 401,
+            userInfo: [NSLocalizedDescriptionKey: "User not authenticated"]))
+      )
+      return
+    }
+
+    db.collection("users").document(userId)
+      .collection("orders").document(orderId)
+      .getDocument { snapshot, error in
+        if let error = error {
+          completion(.failure(error))
+          return
+        }
+        guard let data = snapshot?.data() else {
+          completion(
+            .failure(
+              NSError(
+                domain: "FirebaseOrderManager",
+                code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "Order not found"]))
+          )
+          return
+        }
+        completion(.success(data))
+      }
   }
 }

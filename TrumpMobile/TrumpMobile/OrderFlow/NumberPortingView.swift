@@ -38,6 +38,11 @@ struct NumberPortingView: View {
         )
       }
     }
+    .onAppear {
+      if let userId = viewModel.userId, let orderId = viewModel.orderId {
+        FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 6)
+      }
+    }
   }
 
   private var shouldShowPortIn: Bool {

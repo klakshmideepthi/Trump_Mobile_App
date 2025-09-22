@@ -144,6 +144,10 @@ struct SimSelectionView: View {
             // Save SIM selection to orders collection
             viewModel.saveSimSelection { success in
               if success {
+                if let userId = viewModel.userId, let orderId = viewModel.orderId {
+                  FirebaseOrderManager.shared.saveStepProgress(
+                    userId: userId, orderId: orderId, step: 3)
+                }
                 // Continue to next step only if save was successful
                 onNext()
               } else {

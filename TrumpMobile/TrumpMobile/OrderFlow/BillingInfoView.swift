@@ -46,6 +46,10 @@ struct BillingInfoView: View {
             DebugLogger.shared.log(
               "Billing info saved successfully for user \(viewModel.firstName) \(viewModel.lastName)",
               category: "BillingInfo")
+            if let userId = viewModel.userId, let orderId = viewModel.orderId {
+              FirebaseOrderManager.shared.saveStepProgress(
+                userId: userId, orderId: orderId, step: 5)
+            }
             onNext()
           } else {
             print("Failed to save billing information")
@@ -385,6 +389,11 @@ struct BillingInfoView: View {
           Spacer(minLength: 20)
         }
       }
+    }
+    .onAppear {
+      // Prefill local fields from view model if editing an existing order
+      if creditCardNumber.isEmpty { creditCardNumber = viewModel.creditCardNumber }
+      if expirationDate.isEmpty { expirationDate = viewModel.billingDetails }
     }
   }
 }

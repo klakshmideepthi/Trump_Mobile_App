@@ -9,6 +9,7 @@ struct OrderDetailView: View {
   @State private var isLoading = true
   @State private var errorMessage: String?
   @Environment(\.dismiss) private var dismiss
+  @EnvironmentObject private var navigationState: NavigationState
 
   private let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
@@ -67,8 +68,10 @@ struct OrderDetailView: View {
       .navigationBarTitleDisplayMode(.large)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
-            dismiss()
+          HStack(spacing: 16) {
+            Button("Edit") { onEditTapped() }
+              .disabled(isLoading)
+            Button("Done") { dismiss() }
           }
         }
       }
@@ -77,6 +80,33 @@ struct OrderDetailView: View {
       loadOrderDetails()
     }
   }
+
+  private func onEditTapped() {
+    isLoading = true
+    FirebaseOrderManager.shared.fetchOrderDocument(orderId: orderId) { result in
+      DispatchQueue.main.async {
+        self.isLoading = false
+        switch result {
+        case .failure(let error):
+          self.errorMessage = error.localizedDescription
+        case .success(let data):
+          let status = (data["status"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+          let step = data["currentStep"] as? Int ?? 1
+
+          if status == "completed" {
+            AppStoreLinking.openYouTube()
+            return
+          }
+
+          // Resume editing this order at its saved step
+          navigationState.resumeOrder(orderId: orderId, at: max(1, min(6, step)))
+          dismiss()
+        }
+      }
+    }
+  }
+
+  // Centralized deep link logic lives in AppStoreLinking
 
   private func orderHeaderSection(_ order: OrderDetail) -> some View {
     VStack(spacing: 8) {

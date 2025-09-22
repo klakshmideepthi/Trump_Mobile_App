@@ -7,6 +7,7 @@
 
 import FirebaseAnalytics
 import FirebaseAuth
+import FirebaseFirestore
 import SwiftUI
 
 struct ContentView: View {
@@ -40,7 +41,20 @@ struct ContentView: View {
                 print("✅ ContentView: Proceeding with order ID from StartOrderView: \(orderId)")
                 viewModel.resetOrderSpecificFields()
                 viewModel.orderId = orderId
-                orderStep = 1
+                // Attempt to resume at saved step for this order
+                if let userId = Auth.auth().currentUser?.uid {
+                  Firestore.firestore().collection("users").document(userId)
+                    .collection("orders").document(orderId).getDocument { snapshot, _ in
+                      let step = (snapshot?.data()? ["currentStep"] as? Int) ?? 1
+                      orderStep = max(1, min(6, step))
+                      // Hydrate view model with saved order data once
+                      viewModel.prefillFromOrder(orderId: orderId, completion: nil)
+                    }
+                } else {
+                  orderStep = 1
+                  // Also hydrate when possible; prefill will no-op if unauthenticated
+                  viewModel.prefillFromOrder(orderId: orderId, completion: nil)
+                }
               },
               onLogout: {
                 handleLogout()
@@ -59,7 +73,20 @@ struct ContentView: View {
                 print("✅ ContentView: Proceeding with order ID: \(orderId)")
                 viewModel.resetOrderSpecificFields()
                 viewModel.orderId = orderId
-                orderStep = 1
+                // Attempt to resume at saved step for this order
+                if let userId = Auth.auth().currentUser?.uid {
+                  Firestore.firestore().collection("users").document(userId)
+                    .collection("orders").document(orderId).getDocument { snapshot, _ in
+                      let step = (snapshot?.data()? ["currentStep"] as? Int) ?? 1
+                      orderStep = max(1, min(6, step))
+                      // Hydrate view model with saved order data once
+                      viewModel.prefillFromOrder(orderId: orderId, completion: nil)
+                    }
+                } else {
+                  orderStep = 1
+                  // Also hydrate when possible; prefill will no-op if unauthenticated
+                  viewModel.prefillFromOrder(orderId: orderId, completion: nil)
+                }
               },
               onLogout: {
                 handleLogout()
@@ -83,6 +110,9 @@ struct ContentView: View {
               onNext: {
                 viewModel.saveDeviceInfo { success in
                   if success {
+                    if let userId = viewModel.userId, let orderId = viewModel.orderId {
+                      FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 2)
+                    }
                     orderStep = 3
                   }
                 }
@@ -98,6 +128,9 @@ struct ContentView: View {
               onNext: {
                 viewModel.saveSimSelection { success in
                   if success {
+                    if let userId = viewModel.userId, let orderId = viewModel.orderId {
+                      FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 3)
+                    }
                     orderStep = 4
                   }
                 }
@@ -113,6 +146,9 @@ struct ContentView: View {
               onNext: {
                 viewModel.saveNumberSelection { success in
                   if success {
+                    if let userId = viewModel.userId, let orderId = viewModel.orderId {
+                      FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 4)
+                    }
                     orderStep = 5
                   }
                 }
@@ -128,6 +164,9 @@ struct ContentView: View {
               onNext: {
                 viewModel.saveBillingInfo { success in
                   if success {
+                    if let userId = viewModel.userId, let orderId = viewModel.orderId {
+                      FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 5)
+                    }
                     orderStep = 6
                   }
                 }
@@ -141,18 +180,20 @@ struct ContentView: View {
             NumberPortingView(
               viewModel: viewModel,
               onNext: {
-                // Reset order-specific fields and go to home
-                viewModel.resetOrderSpecificFields()
-                orderStep = 0
-                // Also update navigation state
-                navigationState.navigateTo(.startNewOrder)
+                // Mark order as completed, then reset and go to home
+                viewModel.completeOrder { _ in
+                  if let userId = viewModel.userId, let orderId = viewModel.orderId {
+                    FirebaseOrderManager.shared.markOrderCompleted(userId: userId, orderId: orderId, completion: nil)
+                  }
+                  viewModel.resetOrderSpecificFields()
+                  orderStep = 0
+                  navigationState.navigateTo(.startNewOrder)
+                }
               },
               onBack: { orderStep = 5 },
               onCancel: {
-                // Reset order-specific fields and go to home
                 viewModel.resetOrderSpecificFields()
                 orderStep = 0
-                // Also update navigation state
                 navigationState.navigateTo(.startNewOrder)
               }
             )
@@ -188,6 +229,17 @@ struct ContentView: View {
                 isNewAccount = true
               }
             }
+
+            // Attempt to resume latest incomplete order for this user
+            FirebaseOrderManager.shared.fetchLatestIncompleteOrder(for: user.uid) { result in
+              if case .success(let info) = result {
+                // Set order and jump to the saved step
+                viewModel.orderId = info.orderId
+                orderStep = max(1, min(6, info.currentStep))
+                // Hydrate from the saved order so earlier steps show data
+                viewModel.prefillFromOrder(orderId: info.orderId, completion: nil)
+              }
+            }
           }
         }
       }
@@ -211,7 +263,17 @@ struct ContentView: View {
             print("DEBUG: After setting state - orderStep: \(orderStep)")
           case .orderFlow:
             print("DEBUG: Setting state for OrderFlow navigation")
-            orderStep = 1
+            if let resumeStep = navigationState.orderStartStep {
+              orderStep = max(1, min(6, resumeStep))
+              navigationState.clearOrderResume()
+              // If we're navigating with a specific order, hydrate model once
+              if let resumeOrderId = navigationState.currentOrderId {
+                viewModel.orderId = resumeOrderId
+                viewModel.prefillFromOrder(orderId: resumeOrderId, completion: nil)
+              }
+            } else {
+              orderStep = 1
+            }
             print("DEBUG: After setting state - orderStep: \(orderStep)")
           case .orderDetails:
             print("DEBUG: Setting state for OrderDetails navigation")
