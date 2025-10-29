@@ -21,14 +21,14 @@ struct TermsAndConditionsView: View {
             termsSection(
               title: "Acceptance of Terms",
               content: """
-                By using Trump Mobile services, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our services.
+                By using Telgoo5 Mobile services, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our services.
                 """
             )
 
             termsSection(
               title: "Service Description",
               content: """
-                Trump Mobile provides wireless telecommunications services including voice, text, and data services. Service availability and quality may vary by location and device compatibility.
+                Telgoo5 Mobile provides wireless telecommunications services including voice, text, and data services. Service availability and quality may vary by location and device compatibility.
                 """
             )
 
@@ -67,7 +67,7 @@ struct TermsAndConditionsView: View {
             termsSection(
               title: "Limitation of Liability",
               content: """
-                Trump Mobile's liability is limited to the monthly service charge. We are not liable for indirect, incidental, or consequential damages arising from service use or interruption.
+                Telgoo5 Mobile's liability is limited to the monthly service charge. We are not liable for indirect, incidental, or consequential damages arising from service use or interruption.
                 """
             )
 
@@ -82,8 +82,8 @@ struct TermsAndConditionsView: View {
               title: "Contact Information",
               content: """
                 For questions about these terms, contact us at:
-                Email: support@trumpmobile.com
-                Phone: 1-800-TRUMP-MOBILE
+                Email: support@telgoo5mobile.com
+                Phone: 1-800-0000-000
                 """
             )
           }

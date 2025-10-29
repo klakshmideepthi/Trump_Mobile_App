@@ -19,7 +19,7 @@ struct ProfileView: View {
         Button(action: {
           // About action
         }) {
-          Label("About Trump™ Mobile", systemImage: "info.circle")
+          Label("About Telgoo5 Mobile", systemImage: "info.circle")
         }
 
         Button(action: {

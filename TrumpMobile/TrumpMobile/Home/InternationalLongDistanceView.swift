@@ -76,7 +76,7 @@ struct InternationalLongDistanceView: View {
                 })
 
             Text(
-              "Stay connected to family, friends, and business partners across the globe with Trump Mobile's International Long Distance service. Whether it's a quick call or regular communication, we make it easy and affordable to reach over 200 countries worldwide."
+              "Stay connected to family, friends, and business partners across the globe with Telgoo5 Mobile's International Long Distance service. Whether it's a quick call or regular communication, we make it easy and affordable to reach over 200 countries worldwide."
             )
             .font(.body)
             .foregroundColor(.secondary)
@@ -89,7 +89,7 @@ struct InternationalLongDistanceView: View {
             FeatureCard(
               title: "Clear Rates. No Surprises.",
               description:
-                "As part of your Trump Mobile plan you receive unlimited international calling to over 100+ countries.",
+                "As part of your Telgoo5 Mobile plan you receive unlimited international calling to over 100+ countries.",
               icon: "chart.bar.fill"
             )
 
@@ -103,14 +103,14 @@ struct InternationalLongDistanceView: View {
             FeatureCard(
               title: "Simple Activation",
               description:
-                "International Long Distance is automatically available on your Trump Mobile account. Just dial your international number and stay connected — no extra setup or activation needed.",
+                "International Long Distance is automatically available on your Telgoo5 Mobile account. Just dial your international number and stay connected — no extra setup or activation needed.",
               icon: "checkmark.circle.fill"
             )
 
             FeatureCard(
               title: "Stay Connected Worldwide",
               description:
-                "Whether you travel for business or stay in touch with loved ones abroad, Trump Mobile makes international calling easy, reliable, and affordable.",
+                "Whether you travel for business or stay in touch with loved ones abroad, Telgoo5 Mobile makes international calling easy, reliable, and affordable.",
               icon: "phone.fill"
             )
           }
@@ -124,7 +124,7 @@ struct InternationalLongDistanceView: View {
               .foregroundColor(.primary)
 
             Text(
-              "At Trump Mobile, we honor the sacrifice of our military families. That's why our plan makes it easy and affordable for service members and their loved ones to stay connected — whether stationed at home or overseas. With free international texting, discounted international calling, and reliable global coverage, you can share life's important moments no matter where duty calls. Because when you're serving our country, you deserve to stay close to the ones who matter most."
+              "At Telgoo5 Mobile, we honor the sacrifice of our military families. That's why our plan makes it easy and affordable for service members and their loved ones to stay connected — whether stationed at home or overseas. With free international texting, discounted international calling, and reliable global coverage, you can share life's important moments no matter where duty calls. Because when you're serving our country, you deserve to stay close to the ones who matter most."
             )
             .font(.body)
             .foregroundColor(.secondary)

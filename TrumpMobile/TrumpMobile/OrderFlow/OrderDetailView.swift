@@ -102,7 +102,12 @@ struct OrderDetailView: View {
 
           // Resume editing this order at its saved step
           navigationState.resumeOrder(orderId: orderId, at: max(1, min(6, step)))
-          dismiss()
+          // Mark that we've applied resume for this order so it won't be reapplied unexpectedly
+          navigationState.lastAppliedResumeForOrderId = orderId
+          // Dismiss on the next runloop cycle to avoid SwiftUI double-pop navigation behavior
+          DispatchQueue.main.async {
+            dismiss()
+          }
         }
       }
     }

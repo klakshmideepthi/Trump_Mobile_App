@@ -73,8 +73,8 @@ struct PrivacyPolicyView: View {
               title: "Contact Us",
               content: """
                 If you have questions about this Privacy Policy, please contact us at:
-                Email: privacy@trumpmobile.com
-                Phone: 1-800-TRUMP-MOBILE
+                Email: privacy@telgoo5mobile.com
+                Phone: 1-800-0000-000
                 """
             )
           }

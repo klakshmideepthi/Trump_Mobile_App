@@ -256,7 +256,7 @@ struct BillingInfoView: View {
                   .foregroundColor(agreeRecurringCharge ? Color("AccentColor") : .gray)
               }
               Text(
-                "By checking this box, you authorize Trump Mobile LLC to charge your card on a recurring basis. You can cancel the service at any time to stop future charges."
+                "By checking this box, you authorize Telgoo5 Mobile LLC to charge your card on a recurring basis. You can cancel the service at any time to stop future charges."
               )
               .font(.caption)
               .foregroundColor(.gray)
@@ -272,7 +272,7 @@ struct BillingInfoView: View {
                   .foregroundColor(agreePrivacyTerms ? Color("AccentColor") : .gray)
               }
               Text(
-                "You are acknowledging your agreement to our Privacy Policy and Terms of Use by creating an account or logging into your TrumpGM Mobile account."
+                "You are acknowledging your agreement to our Privacy Policy and Terms of Use by creating an account or logging into your Telgoo5 Mobile account."
               )
               .font(.caption)
               .foregroundColor(.gray)

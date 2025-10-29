@@ -3,7 +3,7 @@ import os.log
 
 class DebugLogger {
   static let shared = DebugLogger()
-  private let logger = Logger(subsystem: "com.trumpmobile.app", category: "Debug")
+  private let logger = Logger(subsystem: "com.telgoo5mobile.app", category: "Debug")
 
   private init() {}
 
@@ -65,7 +65,7 @@ class DebugLogger {
 
   // General debug logging
   func log(_ message: String, category: String = "General") {
-    let categoryLogger = Logger(subsystem: "com.trumpmobile.app", category: category)
+    let categoryLogger = Logger(subsystem: "com.telgoo5mobile.app", category: category)
     categoryLogger.debug("\(message)")
 
     #if DEBUG

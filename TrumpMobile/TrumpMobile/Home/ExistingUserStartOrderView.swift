@@ -24,7 +24,7 @@ struct ExistingUserStartOrderView: View {
           Image("Trump_Mobile_logo_gold")
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(height: 40)
+            .frame(height: 80)
 
           Spacer()
 
@@ -116,7 +116,7 @@ struct ExistingUserStartOrderView: View {
                   .font(.subheadline)
                   .foregroundColor(.secondary)
 
-                Text("Start your first Trump Mobile order below!")
+                Text("Start your first Telgoo5 Mobile order below!")
                   .font(.caption)
                   .foregroundColor(.secondary)
               }

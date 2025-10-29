@@ -24,7 +24,7 @@ struct DeviceCompatibilityView: View {
         Text("Check device compatibility")
           .font(.title2)
           .fontWeight(.semibold)
-        Text("Let's double check that your device works with Trump Mobile")
+        Text("Let's double check that your device works with Telgoo5 Mobile")
           .font(.subheadline)
           .foregroundColor(.gray)
       }

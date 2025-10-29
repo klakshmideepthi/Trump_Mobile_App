@@ -86,7 +86,7 @@ struct PreviousOrdersView: View {
               .foregroundColor(.primary)
 
             Text(
-              "Your order history will appear here once you make your first purchase with Trump Mobile."
+              "Your order history will appear here once you make your first purchase with Telgoo5 Mobile."
             )
             .font(.body)
             .multilineTextAlignment(.center)

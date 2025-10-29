@@ -108,7 +108,7 @@ struct SimSelectionView: View {
       VStack(alignment: .leading, spacing: 12) {
         ForEach(
           [
-            "eSIM is a new method to deliver SIM cards onto phones electronically. Upon order completion, you'll see a QR code on-screen, via order confirmation emails and from within your Account Dashboard. Instead of having to wait for the physical SIM to arrive in the mail, just scanning it with the camera of your phone will download the eSIM onto it and be used with the Trump Mobile's service immediately.",
+            "eSIM is a new method to deliver SIM cards onto phones electronically. Upon order completion, you'll see a QR code on-screen, via order confirmation emails and from within your Account Dashboard. Instead of having to wait for the physical SIM to arrive in the mail, just scanning it with the camera of your phone will download the eSIM onto it and be used with the Telgoo5 Mobile's service immediately.",
             "Certain older phones can't take eSIMS and in these cases, we mail a physical SIM kit out the day after the order is received via First Class USPS Postal Mail.",
             "Certain phones can take both eSIMs and physical SIMs, then it'll be up to you to choose which format to get with eSIM being the prefer method as delivery is instantaneous.",
           ], id: \.self

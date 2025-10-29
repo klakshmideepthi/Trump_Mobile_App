@@ -47,7 +47,7 @@ struct StartOrderView: View {
               Image("Trump_Mobile_logo_gold")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 50)
+                .frame(height: 80)
               Spacer()
               Button(action: {
                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -176,7 +176,7 @@ struct StartOrderView: View {
         // Fixed bottom button
         VStack {
           Button(action: createNewOrder) {
-            Text("Enroll in Trump™ Mobile Now")
+            Text("Enroll in Telgoo5 Mobile Now")
               .font(.headline)
               .fontWeight(.bold)
               .frame(maxWidth: .infinity)

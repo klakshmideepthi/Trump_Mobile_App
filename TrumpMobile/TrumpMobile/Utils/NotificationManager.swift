@@ -98,7 +98,7 @@ class NotificationManager: ObservableObject {
     // Schedule a celebration notification
     scheduleLocalNotification(
       title: "🎉 Order Complete!",
-      body: "Your Trump Mobile order has been successfully submitted.",
+      body: "Your Telgoo5 Mobile order has been successfully submitted.",
       in: 2,
       identifier: "order_complete"
     )
@@ -153,7 +153,7 @@ class NotificationManager: ObservableObject {
     // Schedule eSIM activation success notification
     scheduleLocalNotification(
       title: "✅ eSIM Activated!",
-      body: "Your Trump Mobile eSIM is now active and ready to use.",
+      body: "Your Telgoo5 Mobile eSIM is now active and ready to use.",
       in: 2,
       identifier: "esim_activated"
     )
@@ -172,7 +172,7 @@ class NotificationManager: ObservableObject {
   // MARK: - Predefined notification templates
   func sendWelcomeNotification() {
     scheduleLocalNotification(
-      title: "Welcome to Trump Mobile! 🇺🇸",
+      title: "Welcome to Telgoo5 Mobile! 🇺🇸",
       body: "Get started with your new mobile service today.",
       in: 3,
       identifier: "welcome"
@@ -182,7 +182,7 @@ class NotificationManager: ObservableObject {
   func sendOrderReminderNotification() {
     scheduleLocalNotification(
       title: "Complete Your Order",
-      body: "You have an incomplete Trump Mobile order. Tap to continue.",
+      body: "You have an incomplete Telgoo5 Mobile order. Tap to continue.",
       in: 10,
       identifier: "order_reminder"
     )
@@ -191,7 +191,7 @@ class NotificationManager: ObservableObject {
   func sendSimShippingNotification() {
     scheduleLocalNotification(
       title: "📦 SIM Card Shipped!",
-      body: "Your Trump Mobile SIM card is on its way. Track your package in the app.",
+      body: "Your Telgoo5 Mobile SIM card is on its way. Track your package in the app.",
       in: 5,
       identifier: "sim_shipped"
     )
@@ -201,7 +201,7 @@ class NotificationManager: ObservableObject {
   func sendESIMReadyNotification() {
     scheduleLocalNotification(
       title: "📱 Your eSIM is Ready!",
-      body: "Tap to start setting up your Trump Mobile eSIM.",
+      body: "Tap to start setting up your Telgoo5 Mobile eSIM.",
       in: 3,
       identifier: "esim_ready"
     )

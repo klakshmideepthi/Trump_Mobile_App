@@ -116,7 +116,7 @@ class FirebaseOrderManager {
               let order = TrumpOrder(
                 id: doc.documentID,
                 userId: userId,
-                planName: data["planName"] as? String ?? "Trump Mobile Plan",
+                planName: data["planName"] as? String ?? "Telgoo5 Mobile Plan",
                 amount: data["amount"] as? Double ?? 47.45,
                 orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
                 status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
@@ -169,7 +169,7 @@ class FirebaseOrderManager {
               let order = TrumpOrder(
                 id: doc.documentID,
                 userId: userId,
-                planName: data["planName"] as? String ?? "Trump Mobile Plan",
+                planName: data["planName"] as? String ?? "Telggo5 Mobile Plan",
                 amount: data["amount"] as? Double ?? 47.45,
                 orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
                 status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
@@ -225,7 +225,7 @@ class FirebaseOrderManager {
               let order = TrumpOrder(
                 id: doc.documentID,
                 userId: userId,
-                planName: data["planName"] as? String ?? "Trump Mobile Plan",
+                planName: data["planName"] as? String ?? "Telgoo5 Mobile Plan",
                 amount: data["amount"] as? Double ?? 47.45,
                 orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
                 status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
