@@ -208,7 +208,6 @@ struct ContentView: View {
           }
         }
       }
-      .padding()
       .onAppear {
         // Set up auth state listener when view appears
         authStateListener = Auth.auth().addStateDidChangeListener { auth, user in

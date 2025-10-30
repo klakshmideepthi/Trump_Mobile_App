@@ -14,6 +14,7 @@ struct LoginView: View {
   @State private var showError = false
   @State private var errorMessage = ""
   @StateObject private var viewModel = UserRegistrationViewModel()
+  @State private var isSigningIn = false
 
   // Apple Sign-In nonce (required by Firebase)
   @State private var currentNonce: String?
@@ -26,34 +27,69 @@ struct LoginView: View {
           .scaledToFit()
           .frame(width: 120, height: 120)
           .padding(.top, 40)
+          .accessibilityHidden(true)
 
         VStack(spacing: 16) {
-          TextField("Email", text: $email)
+          // Use clearer placeholder and themed background for readability and consistency
+          TextField("Email address", text: $email)
             .keyboardType(.emailAddress)
             .textInputAutocapitalization(.never)
+            .textContentType(.username)
             .autocorrectionDisabled(true)
+            .submitLabel(.next)
             .padding()
-            .background(Color(.secondarySystemBackground))
+            .background(Color.adaptiveSecondaryBackground)
             .cornerRadius(8)
+            .accessibilityLabel("Email")
 
+          // Use secure field with proper submit action and themed background
           SecureField("Password", text: $password)
+            .textContentType(.password)
+            .submitLabel(.done)
             .padding()
-            .background(Color(.secondarySystemBackground))
+            .background(Color.adaptiveSecondaryBackground)
             .cornerRadius(8)
+            .accessibilityLabel("Password")
+
+          // Make "Forgot password" actionable: send reset email when possible
+          Button("Forgot password?") {
+            let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, trimmed.contains("@") else {
+              show(error: "Enter your email above to receive a reset link.")
+              return
+            }
+            Auth.auth().sendPasswordReset(withEmail: trimmed) { error in
+              if let error = error {
+                show(error: "We couldn’t send a reset email. \(error.localizedDescription)")
+              } else {
+                show(error: "We’ve sent a password reset link to \(trimmed). Check your inbox.")
+              }
+            }
+          }
+          .font(.footnote)
+          .foregroundColor(.accentColor)
+          .frame(maxWidth: .infinity, alignment: .trailing)
+          .padding(.top, 4)
+          .accessibilityHint("Opens password reset instructions")
         }
         .padding(.horizontal)
 
         Button {
           signInWithEmail()
         } label: {
-          Text("Sign In")
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.accentColor)
-            .foregroundColor(.white)
-            .cornerRadius(8)
+          HStack {
+            if isSigningIn { ProgressView().tint(.white) }
+            Text("Sign In") // Title Case for consistency
+              .frame(maxWidth: .infinity)
+          }
+          .padding()
+          .background((isFormValid ? Color.accentColor : Color.gray).opacity(0.95))
+          .foregroundColor(.white)
+          .cornerRadius(8)
         }
+        .disabled(!isFormValid || isSigningIn)
         .padding(.horizontal)
+        .accessibilityHint(!isFormValid ? "Enter a valid email and password to continue" : "Sign in to your account")
 
         HStack {
           Rectangle().frame(height: 1).foregroundColor(.gray.opacity(0.4))
@@ -67,7 +103,7 @@ struct LoginView: View {
         } label: {
           HStack {
             Image(systemName: "globe")
-            Text("Sign in with Google")
+            Text("Sign in with Google") // Keep brand phrase as is
           }
           .frame(maxWidth: .infinity)
           .padding()
@@ -76,6 +112,7 @@ struct LoginView: View {
           .cornerRadius(8)
         }
         .padding(.horizontal)
+        .accessibilityLabel("Sign in with Google")
 
         // Single, correct Apple button
         SignInWithAppleButton { request in
@@ -90,9 +127,10 @@ struct LoginView: View {
         .frame(height: 50)
         .cornerRadius(8)
         .padding(.horizontal)
+        .accessibilityLabel("Sign in with Apple")
 
         HStack(spacing: 4) {
-          Text("New user?")
+          Text("New to Telgoo5 Mobile?")
           Button("Create an account") { showRegistration = true }
         }
         .padding(.top, 8)
@@ -109,7 +147,7 @@ struct LoginView: View {
       }
       .alert(isPresented: $showError) {
         Alert(
-          title: Text("Error"),
+          title: Text("Sign-In"), // Consistent casing
           message: Text(errorMessage),
           dismissButton: .default(Text("OK"))
         )
@@ -117,11 +155,23 @@ struct LoginView: View {
     }
   }
 
+  private var isFormValid: Bool {
+    !email.trimmingCharacters(in: .whitespaces).isEmpty &&
+      email.contains("@") &&
+      !password.isEmpty
+  }
+
   // MARK: - Email / Password
   private func signInWithEmail() {
+    guard isFormValid else {
+      show(error: "Please enter a valid email and password.")
+      return
+    }
+    isSigningIn = true
     Auth.auth().signIn(withEmail: email, password: password) { _, error in
+      isSigningIn = false
       if let error = error {
-        show(error: error.localizedDescription)
+        show(error: "We couldn’t sign you in. \(error.localizedDescription)")
         return
       }
       onSignIn?()

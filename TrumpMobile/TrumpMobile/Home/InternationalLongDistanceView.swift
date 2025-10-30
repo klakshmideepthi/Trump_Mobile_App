@@ -70,13 +70,13 @@ struct InternationalLongDistanceView: View {
                     .onAppear {
                       scrollOffset = geometry.frame(in: .global).minY
                     }
-                    .onChange(of: geometry.frame(in: .global).minY) { value in
+                    .onChange(of: geometry.frame(in: .global).minY) { _, value in
                       scrollOffset = value
                     }
                 })
 
             Text(
-              "Stay connected to family, friends, and business partners across the globe with Telgoo5 Mobile's International Long Distance service. Whether it's a quick call or regular communication, we make it easy and affordable to reach over 200 countries worldwide."
+              "Stay connected to family, friends, and business partners across the globe with Telgoo5 Mobile’s International Long Distance service. Whether it’s a quick call or regular communication, we make it easy and affordable to reach over 200 countries worldwide."
             )
             .font(.body)
             .foregroundColor(.secondary)
@@ -89,7 +89,7 @@ struct InternationalLongDistanceView: View {
             FeatureCard(
               title: "Clear Rates. No Surprises.",
               description:
-                "As part of your Telgoo5 Mobile plan you receive unlimited international calling to over 100+ countries.",
+                "As part of your Telgoo5 Mobile plan you receive unlimited international calling to over 100 countries.",
               icon: "chart.bar.fill"
             )
 
@@ -124,7 +124,7 @@ struct InternationalLongDistanceView: View {
               .foregroundColor(.primary)
 
             Text(
-              "At Telgoo5 Mobile, we honor the sacrifice of our military families. That's why our plan makes it easy and affordable for service members and their loved ones to stay connected — whether stationed at home or overseas. With free international texting, discounted international calling, and reliable global coverage, you can share life's important moments no matter where duty calls. Because when you're serving our country, you deserve to stay close to the ones who matter most."
+              "At Telgoo5 Mobile, we honor the sacrifice of our military families. That’s why our plan makes it easy and affordable for service members and their loved ones to stay connected — whether stationed at home or overseas. With free international texting, discounted international calling, and reliable global coverage, you can share life’s important moments no matter where duty calls. Because when you’re serving our country, you deserve to stay close to the ones who matter most."
             )
             .font(.body)
             .foregroundColor(.secondary)

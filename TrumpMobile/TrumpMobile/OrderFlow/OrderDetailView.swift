@@ -141,7 +141,7 @@ struct OrderDetailView: View {
       }
     }
     .padding()
-    .background(Color(.systemGray6))
+    .background(Color.adaptiveSecondaryBackground)
     .cornerRadius(10)
   }
 
@@ -227,7 +227,7 @@ struct OrderDetailView: View {
       }
     }
     .padding()
-    .background(Color(.systemBackground))
+    .background(Color.adaptiveBackground)
     .cornerRadius(10)
     .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
   }

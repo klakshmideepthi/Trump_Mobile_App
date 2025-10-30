@@ -13,7 +13,7 @@ struct IMEICheckView: View {
       VStack(spacing: 0) {
         // Header
         VStack(spacing: 16) {
-          Text("FIND OUT IF YOUR PHONE IS COMPATIBLE")
+          Text("Find out if your phone is compatible")
             .font(.headline)
             .fontWeight(.bold)
             .foregroundColor(.white)
@@ -47,7 +47,7 @@ struct IMEICheckView: View {
         // Instructions Section
         ScrollView {
           VStack(alignment: .leading, spacing: 20) {
-            Text("HOW TO FIND YOUR DEVICE'S IMEI NUMBER")
+            Text("How to find your device's IMEI number")
               .font(.title2)
               .fontWeight(.bold)
               .padding(.top, 20)

@@ -10,14 +10,8 @@ struct SIMSetupView: View {
   @State private var showingQRCode = false
 
   var body: some View {
-    let contentView = VStack(spacing: 0) {
-      ScrollView {
-        VStack(spacing: 24) {
-          simSetupSection
-        }
-        .padding()
-      }
-
+    let contentView = VStack(spacing: 24) {
+      simSetupSection
       Spacer()
     }
     .background(Color.adaptiveBackground)
@@ -53,18 +47,15 @@ struct SIMSetupView: View {
 
   private var simSetupSection: some View {
     VStack(spacing: 20) {
-      VStack(spacing: 8) {
-        Text("SIM Card Setup")
-          .font(.title2)
-          .fontWeight(.bold)
-          .foregroundColor(Color.adaptiveText)
+      OrderStepHeader("SIM Card Setup")
 
-        if !viewModel.selectedPhoneNumber.isEmpty {
-          Text("Number: \(viewModel.selectedPhoneNumber)")
-            .font(.subheadline)
-            .foregroundColor(Color.accentGold)
-            .fontWeight(.medium)
-        }
+      if !viewModel.selectedPhoneNumber.isEmpty {
+        Text("NUMBER: \(viewModel.selectedPhoneNumber)")
+          .font(.subheadline)
+          .foregroundColor(Color.accentGold)
+          .fontWeight(.medium)
+          .multilineTextAlignment(.center)
+          .frame(maxWidth: .infinity, alignment: .center)
       }
 
       if viewModel.simType == "eSIM" {

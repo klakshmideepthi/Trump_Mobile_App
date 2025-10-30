@@ -20,11 +20,13 @@ struct ExistingUserStartOrderView: View {
       Color.trumpBackground.ignoresSafeArea()
 
       VStack(spacing: 0) {
-        HStack {
+        // FIXED HEADER
+        AppHeader {
           Image("Trump_Mobile_logo_gold")
             .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(height: 80)
+            .aspectRatio(80.0/23.0, contentMode: .fit)
+            .frame(height: 25)
+            .clipped()
 
           Spacer()
 
@@ -38,9 +40,8 @@ struct ExistingUserStartOrderView: View {
               .foregroundColor(.primary)
           }
         }
-        .padding(.horizontal)
-        .padding(.top, 10)
 
+        // SCROLLABLE MIDDLE CONTENT
         ScrollView {
           VStack(spacing: 24) {
             // Welcome Section
@@ -50,7 +51,7 @@ struct ExistingUserStartOrderView: View {
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
 
-              Text("Here's your dashboard.")
+              Text("Here’s your dashboard.")
                 .font(.headline)
                 .foregroundColor(.secondary)
             }
@@ -121,57 +122,30 @@ struct ExistingUserStartOrderView: View {
                   .foregroundColor(.secondary)
               }
               .padding(30)
-              .background(Color(.systemGray6))
+              .background(Color.adaptiveSecondaryBackground)
               .cornerRadius(12)
             }
 
-            Spacer(minLength: 100)  // Space for bottom button
+            Spacer(minLength: 20)  // Reduced space since button is fixed
           }
           .padding(.horizontal)
         }
 
-        // Fixed bottom button
-        VStack {
-          // Error message if order creation fails
-          if let errorMessage = errorMessage {
-            Text(errorMessage)
-              .font(.caption)
-              .foregroundColor(.red)
-              .padding(.horizontal)
-              .padding(.top, 8)
-          }
-
-          Button(action: {
-            createNewOrderAndStart()
-          }) {
-            HStack {
-              if isCreatingOrder {
-                ProgressView()
-                  .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                  .scaleEffect(0.8)
-                Text("Creating Order...")
-              } else {
-                Text("Start a New Order")
-              }
+        // FIXED BOTTOM BUTTON (standardized)
+        BottomActionBar {
+          VStack(spacing: 8) {
+            if let errorMessage = errorMessage {
+              Text(errorMessage)
+                .font(.caption)
+                .foregroundColor(.red)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .font(.headline)
-            .fontWeight(.bold)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(
-              LinearGradient(
-                gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                startPoint: .leading,
-                endPoint: .trailing
-              )
+            PrimaryGradientButton(
+              title: isCreatingOrder ? "Creating order…" : "Start a New Order",
+              isDisabled: isCreatingOrder,
+              action: { createNewOrderAndStart() }
             )
-            .foregroundColor(.white)
-            .cornerRadius(25)
-            .opacity(isCreatingOrder ? 0.7 : 1.0)
           }
-          .padding(.horizontal)
-          .padding(.bottom, 20)
-          .disabled(isCreatingOrder)
         }
       }
       .background(Color.trumpBackground.ignoresSafeArea(edges: .bottom))
@@ -396,7 +370,7 @@ struct ExistingUserStartOrderView: View {
   }
 
   private func loadOrdersDirectly() {
-    guard let userId = Auth.auth().currentUser?.uid else {
+    guard Auth.auth().currentUser?.uid != nil else {
       isLoading = false
       return
     }

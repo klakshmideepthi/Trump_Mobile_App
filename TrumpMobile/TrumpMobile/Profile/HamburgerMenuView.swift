@@ -10,138 +10,115 @@ struct HamburgerMenuView: View {
   @EnvironmentObject var navigationState: NavigationState
 
   var body: some View {
-    ZStack {
-      // Background overlay - covers entire screen
+    ZStack(alignment: .trailing) { // <- Align menu to the right
       if isMenuOpen {
+        // Dimmed overlay
         Color.black.opacity(0.3)
-          .ignoresSafeArea(.all)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .ignoresSafeArea()
           .onTapGesture {
             withAnimation(.easeInOut(duration: 0.3)) {
               isMenuOpen = false
             }
           }
-      }
 
-      // Menu content
-      HStack {
-        Spacer()
-
-        if isMenuOpen {
-          VStack(alignment: .leading, spacing: 0) {
-            // Menu header
-            HStack {
-              Text("Menu")
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-              Spacer()
-              Button {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                  isMenuOpen = false
-                }
-              } label: {
-                Image(systemName: "xmark")
-                  .font(.title2)
-                  .foregroundColor(.primary)
-              }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 10)
-
-            Divider()
-
-            // Menu items
-            ScrollView {
-              VStack(alignment: .leading, spacing: 0) {
-                // Contact Information (Direct access)
-                Button {
-                  navigationState.showContactInfoDetail = true
-                  withAnimation(.easeInOut(duration: 0.3)) {
-                    isMenuOpen = false
-                  }
-                } label: {
-                  MenuItemView(icon: "person.circle", title: "Contact Information")
-                }
-
-                Divider()
-                  .padding(.horizontal, 20)
-
-                // Previous Orders
-                Button {
-                  navigationState.showPreviousOrders = true
-                  withAnimation(.easeInOut(duration: 0.3)) {
-                    isMenuOpen = false
-                  }
-                } label: {
-                  MenuItemView(icon: "clock.arrow.circlepath", title: "Previous Orders")
-                }
-
-                Divider()
-                  .padding(.horizontal, 20)
-
-                // International Long Distance
-                Button {
-                  navigationState.showInternationalLongDistance = true
-                  withAnimation(.easeInOut(duration: 0.3)) {
-                    isMenuOpen = false
-                  }
-                } label: {
-                  MenuItemView(icon: "globe", title: "International Long Distance")
-                }
-
-                // Divider for legal section
-                Divider()
-                  .padding(.horizontal, 20)
-                  .padding(.vertical, 10)
-
-                // Privacy Policy
-                Button {
-                  navigationState.showPrivacyPolicy = true
-                  withAnimation(.easeInOut(duration: 0.3)) {
-                    isMenuOpen = false
-                  }
-                } label: {
-                  MenuItemView(icon: "lock.shield", title: "Privacy Policy")
-                }
-
-                Divider()
-                  .padding(.horizontal, 20)
-
-                // Terms and Conditions
-                Button {
-                  navigationState.showTermsAndConditions = true
-                  withAnimation(.easeInOut(duration: 0.3)) {
-                    isMenuOpen = false
-                  }
-                } label: {
-                  MenuItemView(icon: "doc.text", title: "Terms & Conditions")
-                }
-
-                // Divider before logout
-                Divider()
-                  .padding(.horizontal, 20)
-                  .padding(.vertical, 10)
-
-                // Logout
-                Button {
-                  showLogoutAlert = true
-                } label: {
-                  MenuItemView(icon: "arrow.right.square", title: "Logout", isDestructive: true)
-                }
-              }
-            }
-
+        // Menu panel
+        VStack(spacing: 0) {
+          // Header
+          HStack {
+            Text("Menu")
+              .font(.title2)
+              .fontWeight(.semibold)
+              .foregroundColor(.primary)
             Spacer()
+            Button {
+              withAnimation(.easeInOut(duration: 0.3)) {
+                isMenuOpen = false
+              }
+            } label: {
+              Image(systemName: "xmark")
+                .font(.title2)
+                .foregroundColor(.primary)
+            }
           }
-          .frame(width: UIScreen.main.bounds.width * 0.75)
-          .frame(maxHeight: .infinity)
-          .background(Color(UIColor.systemBackground))
-          .cornerRadius(0)
-          .shadow(radius: 10)
-          .transition(.move(edge: .trailing))
+          .padding(.horizontal, 20)
+          .padding(.top, 80)
+          .padding(.bottom, 10)
+
+          Divider()
+
+          // Menu items
+          ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+              // Contact Info
+              Button {
+                navigationState.showContactInfoDetail = true
+                withAnimation { isMenuOpen = false }
+              } label: {
+                MenuItemView(icon: "person.circle", title: "Contact Information")
+              }
+
+              Divider().padding(.horizontal, 20)
+
+              // Previous Orders
+              Button {
+                navigationState.showPreviousOrders = true
+                withAnimation { isMenuOpen = false }
+              } label: {
+                MenuItemView(icon: "clock.arrow.circlepath", title: "Previous Orders")
+              }
+
+              Divider().padding(.horizontal, 20)
+
+              // International Long Distance
+              Button {
+                navigationState.showInternationalLongDistance = true
+                withAnimation { isMenuOpen = false }
+              } label: {
+                MenuItemView(icon: "globe", title: "International Long Distance")
+              }
+
+              Divider().padding(.horizontal, 20)
+                .padding(.vertical, 10)
+
+              // Privacy Policy
+              Button {
+                navigationState.showPrivacyPolicy = true
+                withAnimation { isMenuOpen = false }
+              } label: {
+                MenuItemView(icon: "lock.shield", title: "Privacy Policy")
+              }
+
+              Divider().padding(.horizontal, 20)
+
+              // Terms
+              Button {
+                navigationState.showTermsAndConditions = true
+                withAnimation { isMenuOpen = false }
+              } label: {
+                MenuItemView(icon: "doc.text", title: "Terms & Conditions")
+              }
+
+              Divider().padding(.horizontal, 20)
+                .padding(.vertical, 10)
+
+              // Logout
+              Button {
+                showLogoutAlert = true
+              } label: {
+                MenuItemView(icon: "arrow.right.square",
+                             title: "Logout",
+                             isDestructive: true)
+              }
+            }
+          }
         }
+        .frame(width: UIScreen.main.bounds.width * 0.75)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(20) // <- Rounded corner for a cleaner slide-in
+        .shadow(radius: 10)
+        .ignoresSafeArea()
+        .transition(.move(edge: .trailing)) // <- Slides from the right
       }
     }
     .onAppear {

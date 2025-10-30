@@ -20,15 +20,11 @@ struct DeviceCompatibilityView: View {
     let phoneCatalog = PhoneCatalog.shared
 
     let contentView = VStack(spacing: 0) {
-      VStack(spacing: 6) {
-        Text("Check device compatibility")
-          .font(.title2)
-          .fontWeight(.semibold)
-        Text("Let's double check that your device works with Telgoo5 Mobile")
-          .font(.subheadline)
-          .foregroundColor(.gray)
-      }
-      .padding(.bottom, 20)
+      OrderStepHeader(
+        "Check device compatibility",
+        subtitle: "Let’s double-check that your device works with Telgoo5 Mobile."
+      )
+      .padding(.bottom, OrderStepLayout.interSectionSpacing)
 
       VStack(spacing: 16) {
         // Brand Picker
@@ -179,7 +175,7 @@ struct DeviceCompatibilityView: View {
         VStack(spacing: 16) {
           Text("Can't find your device in the list above?")
             .font(.body)
-            .foregroundColor(.gray)
+            .foregroundColor(Color.primary)
             .multilineTextAlignment(.center)
 
           Button(action: {
@@ -233,6 +229,16 @@ struct DeviceCompatibilityView: View {
 
       // Set device as compatible for the demo
       viewModel.deviceIsCompatible = true
+
+      // Smart defaults: on iOS, prefer Apple brand and first model if none selected
+      if selectedBrand == nil {
+        if let appleBrand = PhoneBrand.allCases.first(where: { $0.rawValue == "Apple" }) {
+          selectedBrand = appleBrand.rawValue
+          if let firstModel = PhoneCatalog.shared.models(for: appleBrand).first?.name {
+            selectedModel = firstModel
+          }
+        }
+      }
     }
 
     // Return either wrapped in navigation container or just the content

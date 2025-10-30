@@ -5,23 +5,22 @@ struct StepIndicatorText: View {
   let totalSteps: Int
 
   var body: some View {
-    ZStack {
-      Capsule()
-        .fill(
-          LinearGradient(
-            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-            startPoint: .leading,
-            endPoint: .trailing
-          )
+  Text("Step \(currentStep) of \(totalSteps)")
+    .font(.headline)
+    .fontWeight(.bold)
+    .foregroundColor(.white)
+    .padding(.horizontal)   // adjust horizontal padding to taste
+    .frame(height: 36)          // keep the capsule height fixed
+    .background(
+      Capsule().fill(
+        LinearGradient(
+          gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+          startPoint: .leading,
+          endPoint: .trailing
         )
-        .frame(height: 40)
-
-      Text("STEP \(currentStep) OF \(totalSteps)")
-        .font(.headline)
-        .fontWeight(.bold)
-        .foregroundColor(.white)
-        .padding(.horizontal, 10)
-    }
+      )
+    )
+    .fixedSize()                 // prevents stretching between Spacers
   }
 }
 
@@ -65,7 +64,7 @@ struct StepNavigationContainer<Content: View>: View {
   var body: some View {
     ZStack(alignment: .bottom) {
       VStack(spacing: 0) {
-        HStack {
+        AppHeader {
           // Back button on left
           Button(action: backButtonAction) {
             Image(systemName: "arrow.left")
@@ -74,7 +73,9 @@ struct StepNavigationContainer<Content: View>: View {
                 (currentStep == 1 || currentStep == 6 || disableBackButton)
                   ? Color.clear : Color.accentGold
               )
-              .padding()
+              .padding(.vertical, 8)
+              .accessibilityLabel("Back")
+              .accessibilityHint(currentStep == 1 ? "Back is unavailable on the first step" : "Go to the previous step")
           }
           .disabled(currentStep == 1 || currentStep == 6 || disableBackButton)
 
@@ -82,6 +83,7 @@ struct StepNavigationContainer<Content: View>: View {
 
           // Step indicator in center
           StepIndicatorText(currentStep: currentStep, totalSteps: totalSteps)
+            .accessibilityLabel("Step \(currentStep) of \(totalSteps)")
 
           Spacer()
 
@@ -98,7 +100,9 @@ struct StepNavigationContainer<Content: View>: View {
               Image(systemName: "xmark")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(disableCancelButton ? Color.clear : Color.accentGold)
-                .padding()
+                .padding(.vertical, 8)
+                .accessibilityLabel("Cancel Order")
+                .accessibilityHint("Cancel this order and return to Home")
             }
             .disabled(disableCancelButton)
           } else {
@@ -106,22 +110,22 @@ struct StepNavigationContainer<Content: View>: View {
             Image(systemName: "xmark")
               .font(.system(size: 20, weight: .semibold))
               .foregroundColor(.clear)
-              .padding()
+              .padding(.vertical, 8)
           }
         }
 
         // Content area (flexible)
         ScrollView {
           content
-            .padding(.horizontal, 16)  // Reduced horizontal padding
-            .padding(.top, 4)  // Minimal top padding
+            .padding(.horizontal, OrderStepLayout.horizontalPadding)
+            .padding(.top, OrderStepLayout.verticalPadding)
             .frame(maxWidth: .infinity)
-            .padding(.bottom, 100)  // Add padding to ensure content isn't hidden behind button
+            .padding(.bottom, 100)
         }
       }
 
-      // Fixed navigation button at bottom
-      VStack(spacing: 0) {
+      // Fixed navigation button at bottom (standardized)
+      BottomActionBar {
         StepNavigationButton(
           currentStep: currentStep,
           totalSteps: totalSteps,
@@ -130,15 +134,8 @@ struct StepNavigationContainer<Content: View>: View {
           action: nextButtonAction
         )
       }
-      .background(
-        Rectangle()
-          .fill(Color(.systemBackground))
-          .edgesIgnoringSafeArea(.bottom)
-          .shadow(color: Color.black.opacity(0.1), radius: 5, y: -2)
-      )
     }
-    .background(Color(.systemBackground))
-    .edgesIgnoringSafeArea(.all)
+    .background(Color.adaptiveBackground)
     .alert(isPresented: $showCancelConfirmation) {
       Alert(
         title: Text("Cancel Order"),
@@ -152,7 +149,7 @@ struct StepNavigationContainer<Content: View>: View {
             print("DEBUG: cancelAction is nil in StepNavigationContainer")
           }
         },
-        secondaryButton: .cancel(Text("No"))
+        secondaryButton: .cancel(Text("No, Keep Editing"))
       )
     }
     .navigationBarBackButtonHidden(true)
@@ -205,7 +202,7 @@ struct StepNavigationButton: View {
       .background(
         Group {
           if isDisabled {
-            Color.gray
+            Color.gray.opacity(0.6) // Slightly lighter when disabled for better contrast cues
           } else {
             LinearGradient(
               gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),

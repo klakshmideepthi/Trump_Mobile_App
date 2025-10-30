@@ -40,33 +40,34 @@ struct StartOrderView: View {
     return ZStack {
       Color.trumpBackground.ignoresSafeArea()
       VStack(spacing: 0) {
+        // FIXED HEADER
+        AppHeader {
+          Image("Trump_Mobile_logo_gold")
+            .resizable()
+            .aspectRatio(80.0/23.0, contentMode: .fit)
+            .frame(height: 25)
+            .clipped()
+          Spacer()
+          Button(action: {
+            withAnimation(.easeInOut(duration: 0.3)) {
+              isMenuOpen = true
+            }
+          }) {
+            Image(systemName: "line.3.horizontal")
+              .font(.title2)
+              .foregroundStyle(
+                LinearGradient(
+                  gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                  startPoint: .leading,
+                  endPoint: .trailing
+                )
+              )
+          }
+        }
+
+        // SCROLLABLE MIDDLE CONTENT
         ScrollView {
           VStack(alignment: .leading, spacing: 20) {
-            // Header with logo and hamburger menu
-            HStack {
-              Image("Trump_Mobile_logo_gold")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 80)
-              Spacer()
-              Button(action: {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                  isMenuOpen = true
-                }
-              }) {
-                Image(systemName: "line.3.horizontal")
-                  .font(.system(size: 30))
-                  .foregroundStyle(
-                    LinearGradient(
-                      gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                      startPoint: .leading,
-                      endPoint: .trailing
-                    )
-                  )
-              }
-            }
-            .padding(.horizontal)
-            .padding(.top, 10)
             // Header section with plan badge
             GeometryReader { geometry in
               HStack {
@@ -114,7 +115,7 @@ struct StartOrderView: View {
             .frame(height: 150)  // Adjust as needed
             .padding(.top, 20)
             // Price section
-            Text("$47.45/MONTH.")
+            Text("$47.45/month")
               .font(.title2)
               .fontWeight(.bold)
               .foregroundStyle(
@@ -169,33 +170,18 @@ struct StartOrderView: View {
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(8)
             }
-            Spacer(minLength: 80)  // Add space for the button at the bottom
+            Spacer(minLength: 20)  // Reduced space since button is fixed
           }
           .padding(.horizontal)
         }
-        // Fixed bottom button
-        VStack {
-          Button(action: createNewOrder) {
-            Text("Enroll in Telgoo5 Mobile Now")
-              .font(.headline)
-              .fontWeight(.bold)
-              .frame(maxWidth: .infinity)
-              .padding()
-              .background(
-                LinearGradient(
-                  gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                  startPoint: .leading,
-                  endPoint: .trailing
-                )
-              )
-              .foregroundColor(.white)
-              .cornerRadius(25)
-          }
-          .padding(.horizontal)
-          .padding(.bottom, 20)
-          .disabled(isLoading)
+        // FIXED BOTTOM BUTTON (standardized)
+        BottomActionBar {
+          PrimaryGradientButton(
+            title: "Join Telgoo5 Mobile Now",
+            isDisabled: isLoading,
+            action: createNewOrder
+          )
         }
-        .background(Color.trumpBackground.ignoresSafeArea(edges: .bottom))
       }
       .ignoresSafeArea(.keyboard)
       .sheet(isPresented: $showInternationalDetails) {

@@ -102,11 +102,12 @@ struct ContactInfoView: View {
           // Form fields
           if !isLoading {
             // Contact Information Section
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .center, spacing: 12) {
               Text("CONTACT INFORMATION")
-                .font(.headline)
+                .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(Color.trumpText)
+                .multilineTextAlignment(.center)
 
               // Input fields with improved styling
               TextField("First Name", text: $viewModel.firstName)
@@ -155,12 +156,12 @@ struct ContactInfoView: View {
             }
 
             // Customer Address Section
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .center, spacing: 12) {
               Text("SHIPPING ADDRESS")
-                .font(.headline)
+                .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(Color.trumpText)
-                .padding(.top, 8)
+                .multilineTextAlignment(.center)
 
               TextField("Street Address", text: $viewModel.street)
                 .padding()

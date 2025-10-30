@@ -106,32 +106,24 @@ class FirebaseOrderManager {
 
         let orders =
           snapshot?.documents.compactMap { doc -> TrumpOrder? in
-            do {
-              // Create TrumpOrder from document data
-              let data = doc.data()
+            let data = doc.data()
+            guard let userId = data["userId"] as? String else { return nil }
 
-              // Map the document data to TrumpOrder properties
-              guard let userId = data["userId"] as? String else { return nil }
-
-              let order = TrumpOrder(
-                id: doc.documentID,
-                userId: userId,
+            let order = TrumpOrder(
+              id: doc.documentID,
+              userId: userId,
                 planName: data["planName"] as? String ?? "Telgoo5 Mobile Plan",
-                amount: data["amount"] as? Double ?? 47.45,
-                orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
-                  ?? .pending,
-                billingCompleted: data["billingCompleted"] as? Bool ?? false,
-                phoneNumber: data["selectedPhoneNumber"] as? String,
-                simType: data["simType"] as? String ?? "Physical SIM",
-                currentStep: data["currentStep"] as? Int
-              )
+              amount: data["amount"] as? Double ?? 47.45,
+              orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+              status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
+                ?? .pending,
+              billingCompleted: data["billingCompleted"] as? Bool ?? false,
+              phoneNumber: data["selectedPhoneNumber"] as? String,
+              simType: data["simType"] as? String ?? "Physical SIM",
+              currentStep: data["currentStep"] as? Int
+            )
 
-              return order
-            } catch {
-              print("DEBUG: Error creating order from document: \(error)")
-              return nil
-            }
+            return order
           } ?? []
 
         print("DEBUG: Successfully fetched \(orders.count) orders")
@@ -161,30 +153,24 @@ class FirebaseOrderManager {
 
         let orders =
           snapshot?.documents.compactMap { doc -> TrumpOrder? in
-            do {
-              let data = doc.data()
+            let data = doc.data()
+            guard let userId = data["userId"] as? String else { return nil }
 
-              guard let userId = data["userId"] as? String else { return nil }
-
-              let order = TrumpOrder(
-                id: doc.documentID,
-                userId: userId,
+            let order = TrumpOrder(
+              id: doc.documentID,
+              userId: userId,
                 planName: data["planName"] as? String ?? "Telggo5 Mobile Plan",
-                amount: data["amount"] as? Double ?? 47.45,
-                orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
-                  ?? .pending,
-                billingCompleted: data["billingCompleted"] as? Bool ?? false,
-                phoneNumber: data["selectedPhoneNumber"] as? String,
-                simType: data["simType"] as? String ?? "Physical SIM",
-                currentStep: data["currentStep"] as? Int
-              )
+              amount: data["amount"] as? Double ?? 47.45,
+              orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+              status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
+                ?? .pending,
+              billingCompleted: data["billingCompleted"] as? Bool ?? false,
+              phoneNumber: data["selectedPhoneNumber"] as? String,
+              simType: data["simType"] as? String ?? "Physical SIM",
+              currentStep: data["currentStep"] as? Int
+            )
 
-              return order
-            } catch {
-              print("DEBUG: Error creating completed order from document: \(error)")
-              return nil
-            }
+            return order
           } ?? []
 
         print("DEBUG: Successfully fetched \(orders.count) completed orders")
@@ -217,30 +203,24 @@ class FirebaseOrderManager {
 
         let orders =
           snapshot?.documents.compactMap { doc -> TrumpOrder? in
-            do {
-              let data = doc.data()
+            let data = doc.data()
+            guard let userId = data["userId"] as? String else { return nil }
 
-              guard let userId = data["userId"] as? String else { return nil }
-
-              let order = TrumpOrder(
-                id: doc.documentID,
-                userId: userId,
+            let order = TrumpOrder(
+              id: doc.documentID,
+              userId: userId,
                 planName: data["planName"] as? String ?? "Telgoo5 Mobile Plan",
-                amount: data["amount"] as? Double ?? 47.45,
-                orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
-                  ?? .pending,
-                billingCompleted: data["billingCompleted"] as? Bool ?? false,
-                phoneNumber: data["selectedPhoneNumber"] as? String,
-                simType: data["simType"] as? String ?? "Physical SIM",
-                currentStep: data["currentStep"] as? Int
-              )
+              amount: data["amount"] as? Double ?? 47.45,
+              orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+              status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
+                ?? .pending,
+              billingCompleted: data["billingCompleted"] as? Bool ?? false,
+              phoneNumber: data["selectedPhoneNumber"] as? String,
+              simType: data["simType"] as? String ?? "Physical SIM",
+              currentStep: data["currentStep"] as? Int
+            )
 
-              return order
-            } catch {
-              print("DEBUG: Error creating order from document: \(error)")
-              return nil
-            }
+            return order
           } ?? []
 
         print("DEBUG: Successfully fetched \(orders.count) orders with specified statuses")

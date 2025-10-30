@@ -12,6 +12,7 @@ struct CreateAccountView: View {
 
   @State private var showError = false
   @State private var errorMessage = ""
+  @State private var isCreating = false
 
   // Apple Sign-In nonce (required by Firebase)
   @State private var currentNonce: String?
@@ -24,39 +25,67 @@ struct CreateAccountView: View {
           .scaledToFit()
           .frame(width: 120, height: 120)
           .padding(.top, 40)
+          .accessibilityHidden(true)
 
         VStack(spacing: 16) {
-          TextField("Email", text: $viewModel.email)
+          // Themed inputs for consistency and better readability
+          TextField("Email address", text: $viewModel.email)
             .keyboardType(.emailAddress)
             .textInputAutocapitalization(.never)
+            .textContentType(.emailAddress)
             .autocorrectionDisabled(true)
+            .submitLabel(.next)
             .padding()
-            .background(Color(.secondarySystemBackground))
+            .background(Color.adaptiveSecondaryBackground)
+            .cornerRadius(8)
+            .accessibilityLabel("Email")
+
+          SecureField("Password (min 8 characters)", text: $viewModel.password)
+            .textContentType(.newPassword)
+            .submitLabel(.next)
+            .padding()
+            .background(Color.adaptiveSecondaryBackground)
             .cornerRadius(8)
 
-          SecureField("Password", text: $viewModel.password)
+          SecureField("Confirm password", text: $viewModel.confirmPassword)
+            .textContentType(.newPassword)
+            .submitLabel(.done)
             .padding()
-            .background(Color(.secondarySystemBackground))
+            .background(Color.adaptiveSecondaryBackground)
             .cornerRadius(8)
+            .accessibilityLabel("Confirm Password")
 
-          SecureField("Confirm Password", text: $viewModel.confirmPassword)
-            .padding()
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(8)
+          if !passwordsMatch && !viewModel.confirmPassword.isEmpty {
+            Text("Passwords don’t match.")
+              .font(.footnote)
+              .foregroundColor(.red)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          }
+
+          // Subtle guidance improves first-try success rates
+          Text("Use at least 8 characters. Avoid using your name or email.")
+            .font(.footnote)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal)
 
         Button {
           createAccount()
         } label: {
-          Text("Create Account")
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.accentColor)
-            .foregroundColor(.white)
-            .cornerRadius(8)
+          HStack {
+            if isCreating { ProgressView().tint(.white) }
+            Text("Create Account") // Title Case consistency
+              .frame(maxWidth: .infinity)
+          }
+          .padding()
+          .background(isFormValid ? Color.accentColor : Color.gray)
+          .foregroundColor(.white)
+          .cornerRadius(8)
         }
+        .disabled(!isFormValid || isCreating)
         .padding(.horizontal)
+        .accessibilityHint(!isFormValid ? "Enter a valid email and matching password" : "Create your account")
 
         HStack {
           Rectangle().frame(height: 1).foregroundColor(.gray.opacity(0.4))
@@ -70,7 +99,7 @@ struct CreateAccountView: View {
         } label: {
           HStack {
             Image(systemName: "globe")
-            Text("Sign up with Google")
+            Text("Sign up with Google") // Keep brand phrasing
           }
           .frame(maxWidth: .infinity)
           .padding()
@@ -106,12 +135,12 @@ struct CreateAccountView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {
-          Button("Cancel") { dismiss() }
+          Button("Cancel") { dismiss() } // Keep simple, clear exit
         }
       }
       .alert(isPresented: $showError) {
         Alert(
-          title: Text("Error"),
+          title: Text("Create Account"), // Consistent title casing
           message: Text(errorMessage),
           dismissButton: .default(Text("OK"))
         )
@@ -121,27 +150,18 @@ struct CreateAccountView: View {
   }
 
   private func createAccount() {
-    // Basic validation
-    guard !viewModel.email.isEmpty else {
-      show(error: "Please enter your email address.")
-      return
-    }
-
-    guard !viewModel.password.isEmpty else {
-      show(error: "Please enter a password.")
-      return
-    }
-
-    guard viewModel.password == viewModel.confirmPassword else {
-      show(error: "Passwords do not match.")
+    guard isFormValid else {
+      show(error: "Enter a valid email and a password with at least 8 characters.")
       return
     }
 
     // Create account in Firebase
+    isCreating = true
     Auth.auth().createUser(withEmail: viewModel.email, password: viewModel.password) {
       result, error in
+      isCreating = false
       if let error = error {
-        show(error: error.localizedDescription)
+        show(error: "We couldn’t create your account. \(error.localizedDescription)")
         return
       }
 
@@ -150,9 +170,19 @@ struct CreateAccountView: View {
         viewModel.userId = user.uid
         onAccountCreated?()
       } else {
-        show(error: "Failed to create account.")
+        show(error: "We couldn’t create your account. Please try again.")
       }
     }
+  }
+
+  private var passwordsMatch: Bool {
+    viewModel.password == viewModel.confirmPassword
+  }
+
+  private var isFormValid: Bool {
+    let emailValid = viewModel.email.contains("@")
+    let pwValid = viewModel.password.count >= 8
+    return emailValid && pwValid && passwordsMatch
   }
 
   // MARK: - Google Sign-Up
@@ -299,3 +329,4 @@ struct CreateAccountView: View {
     return hashed.compactMap { String(format: "%02x", $0) }.joined()
   }
 }
+

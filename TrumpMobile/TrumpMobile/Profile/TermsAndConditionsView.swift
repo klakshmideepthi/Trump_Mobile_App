@@ -67,7 +67,7 @@ struct TermsAndConditionsView: View {
             termsSection(
               title: "Limitation of Liability",
               content: """
-                Telgoo5 Mobile's liability is limited to the monthly service charge. We are not liable for indirect, incidental, or consequential damages arising from service use or interruption.
+                Telgoo5 Mobile’s liability is limited to the monthly service charge. We are not liable for indirect, incidental, or consequential damages arising from service use or interruption.
                 """
             )
 
@@ -91,7 +91,7 @@ struct TermsAndConditionsView: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 30)
       }
-      .background(Color(UIColor.systemBackground))
+      .background(Color.adaptiveBackground)
       .navigationBarHidden(true)
       .overlay(
         HStack {

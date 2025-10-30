@@ -20,14 +20,8 @@ struct PortingView: View {
   ]
 
   var body: some View {
-    let contentView = VStack(spacing: 0) {
-      ScrollView {
-        VStack(spacing: 24) {
-          portInSection
-        }
-        .padding()
-      }
-
+    let contentView = VStack(spacing: 24) {
+      portInSection
       Spacer()
     }
     .background(Color.adaptiveBackground)
@@ -65,17 +59,10 @@ struct PortingView: View {
 
   private var portInSection: some View {
     VStack(spacing: 20) {
-      VStack(spacing: 8) {
-        Text("Transfer Your Existing Number")
-          .font(.title2)
-          .fontWeight(.bold)
-          .foregroundColor(Color.adaptiveText)
-
-        Text("Please provide the following information from your current carrier:")
-          .font(.subheadline)
-          .foregroundColor(Color.adaptiveSecondaryText)
-          .multilineTextAlignment(.center)
-      }
+      OrderStepHeader(
+        "Transfer Your Existing Number",
+        subtitle: "Please provide the following information from your current carrier:"
+      )
 
       VStack(spacing: 16) {
         CustomTextField(

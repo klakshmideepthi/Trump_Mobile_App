@@ -9,15 +9,10 @@ struct NumberSelectionView: View {
 
   var body: some View {
     let contentView = VStack(spacing: 24) {
-      // Header section matching the screenshot
-      VStack(spacing: 16) {
-        Text("TRANSFER YOUR EXISTING NUMBER OR CHOOSE A NEW NUMBER")
-          .font(.title2)
-          .fontWeight(.bold)
-          .multilineTextAlignment(.center)
-          .lineSpacing(4)
-      }
-      .padding(.top, 8)
+      // Header section unified
+      OrderStepHeader(
+        "Transfer your existing number or choose a new number"
+      )
 
       // Button section with styling similar to SimSelectionView
       VStack(spacing: 12) {
@@ -110,7 +105,7 @@ struct NumberSelectionView: View {
               .padding(.top, 2)
 
             Text(
-              "If you prefer to transfer your existing number to us, supply us with the Account Number, Account Name, Account Address, and most importantly a Transfer PIN or password. Without a correct PIN/Password, your existing carrier will NOT release your number to us. You can usually get the Transfer PIN by calling your carrier or obtain from their app. So please have such information ready before going onto the 'Next' step."
+              "To transfer your number, you’ll need your Account Number, Account Name, Account Address, and a Transfer PIN or password from your current carrier. Without a correct PIN/password, your carrier will not release your number. You can usually get the PIN by calling your carrier or via their app. Please have this information ready before tapping Next."
             )
             .font(.system(size: 15))
             .lineSpacing(2)

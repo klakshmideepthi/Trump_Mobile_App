@@ -17,10 +17,14 @@ struct SplashView: View {
           Image("Trump_Mobile_logo_gold")
             .resizable()
             .scaledToFit()
-            .frame(width: 280, height: 280)
+            .frame(width: 220, height: 220)
+            .accessibilityLabel("Telgoo5 Mobile") // Clear brand label for VO
+          ProgressView()
+            .padding(.top, 16)
+            .accessibilityLabel("Loading")
           Spacer()
         }
-        .background(Color(.systemBackground))
+        .background(Color.adaptiveBackground)
         .ignoresSafeArea()
       } else if isLoggedIn {
         ContentView()
@@ -89,7 +93,7 @@ struct SplashView: View {
       }
 
       // Show splash for minimum time, then hide loading state
-      let minimumSplashTime: TimeInterval = isLoading ? 2.0 : 0.5
+      let minimumSplashTime: TimeInterval = UIAccessibility.isReduceMotionEnabled ? 0.8 : 1.6
       DispatchQueue.main.asyncAfter(deadline: .now() + minimumSplashTime) {
         isLoading = false
       }
