@@ -30,64 +30,12 @@ struct ContentView: View {
         // Show appropriate start view based on orderStep and account type
         if orderStep == 0 {
           if isNewAccount {
-            StartOrderView(
-              onStart: { orderId in
-                // Only proceed if we have a valid order ID
-                guard let orderId = orderId, !orderId.isEmpty else {
-                  print("❌ ContentView: Cannot proceed without valid order ID from StartOrderView")
-                  return
-                }
-
-                print("✅ ContentView: Proceeding with order ID from StartOrderView: \(orderId)")
-                viewModel.resetOrderSpecificFields()
-                viewModel.orderId = orderId
-                // Attempt to resume at saved step for this order
-                if let userId = Auth.auth().currentUser?.uid {
-                  Firestore.firestore().collection("users").document(userId)
-                    .collection("orders").document(orderId).getDocument { snapshot, _ in
-                      let step = (snapshot?.data()?["currentStep"] as? Int) ?? 1
-                      orderStep = max(1, min(6, step))
-                      // Hydrate view model with saved order data once
-                      viewModel.prefillFromOrder(orderId: orderId, completion: nil)
-                    }
-                } else {
-                  orderStep = 1
-                  // Also hydrate when possible; prefill will no-op if unauthenticated
-                  viewModel.prefillFromOrder(orderId: orderId, completion: nil)
-                }
-              },
-              onLogout: {
-                handleLogout()
-              }
-            )
+            NewUserView(onLogout: {
+              handleLogout()
+            })
           } else {
-            ExistingUserStartOrderView(
+            ExistingUserView(
               previousOrders: viewModel.previousOrders,
-              onStart: { orderId in
-                // Only proceed if we have a valid order ID
-                guard let orderId = orderId, !orderId.isEmpty else {
-                  print("❌ ContentView: Cannot proceed without valid order ID")
-                  return
-                }
-
-                print("✅ ContentView: Proceeding with order ID: \(orderId)")
-                viewModel.resetOrderSpecificFields()
-                viewModel.orderId = orderId
-                // Attempt to resume at saved step for this order
-                if let userId = Auth.auth().currentUser?.uid {
-                  Firestore.firestore().collection("users").document(userId)
-                    .collection("orders").document(orderId).getDocument { snapshot, _ in
-                      let step = (snapshot?.data()?["currentStep"] as? Int) ?? 1
-                      orderStep = max(1, min(6, step))
-                      // Hydrate view model with saved order data once
-                      viewModel.prefillFromOrder(orderId: orderId, completion: nil)
-                    }
-                } else {
-                  orderStep = 1
-                  // Also hydrate when possible; prefill will no-op if unauthenticated
-                  viewModel.prefillFromOrder(orderId: orderId, completion: nil)
-                }
-              },
               onLogout: {
                 handleLogout()
               }

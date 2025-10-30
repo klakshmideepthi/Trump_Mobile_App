@@ -3,6 +3,7 @@ import SwiftUI
 
 struct HamburgerMenuView: View {
   @Binding var isMenuOpen: Bool
+  var onLogout: (() -> Void)? = nil
   @State private var orders: [TrumpOrder] = []
   @State private var showLogoutAlert = false
   @EnvironmentObject var userRegistrationViewModel: UserRegistrationViewModel
@@ -126,7 +127,11 @@ struct HamburgerMenuView: View {
     }
     .alert("Log out", isPresented: $showLogoutAlert) {
       Button("Yes", role: .destructive) {
-        logout()
+        if let onLogout = onLogout {
+          onLogout()
+        } else {
+          logout()
+        }
       }
       Button("No", role: .cancel) {
         // Alert automatically dismisses

@@ -19,34 +19,38 @@ class FirebaseManager {
     }
   }
 
-  // Create a new order for a user
-  func createNewOrder(userId: String, completion: @escaping (String?, Error?) -> Void) {
-    // Create a new document reference with auto-generated ID
-    let orderRef = db.collection("users").document(userId).collection("orders").document()
-    let orderId = orderRef.documentID
+    // Create a new order for a user (with selected plan ID)
+    func createNewOrder(
+        userId: String,
+        planId: String,
+        completion: @escaping (String?, Error?) -> Void
+    ) {
+        // Create a new document reference with auto-generated ID
+        let orderRef = db.collection("users").document(userId).collection("orders").document()
+        let orderId = orderRef.documentID
 
-    // Create initial order data with userId for security rules
-    let orderData: [String: Any] = [
-      "orderId": orderId,
-      "userId": userId,
-      // Use 'pending' to align with in-progress state checks
-      "status": "pending",
-      "currentStep": 1,
-      "createdAt": FieldValue.serverTimestamp(),
-      "updatedAt": FieldValue.serverTimestamp(),
-    ]
+        // Create initial order data with planId reference
+        let orderData: [String: Any] = [
+            "orderId": orderId,
+            "userId": userId,
+            "planId": planId, // store only the plan ID
+            "status": "pending",
+            "currentStep": 1,
+            "createdAt": FieldValue.serverTimestamp(),
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
 
-    // Save the new order document
-    orderRef.setData(orderData) { error in
-      if let error = error {
-        print("❌ Error creating order: \(error.localizedDescription)")
-        completion(nil, error)
-      } else {
-        print("✅ Order created with ID: \(orderId)")
-        completion(orderId, nil)
-      }
+        // Save the new order document
+        orderRef.setData(orderData) { error in
+            if let error = error {
+                print("❌ Error creating order: \(error.localizedDescription)")
+                completion(nil, error)
+            } else {
+                print("✅ Order created with ID: \(orderId) for plan: \(planId)")
+                completion(orderId, nil)
+            }
+        }
     }
-  }
 
   // Copy contact info from user to order
   func copyContactInfoToOrder(
