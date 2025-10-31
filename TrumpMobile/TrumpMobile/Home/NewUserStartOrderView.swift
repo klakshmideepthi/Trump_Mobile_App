@@ -172,7 +172,7 @@ struct StartOrderView: View {
             }
             Spacer(minLength: 20)  // Reduced space since button is fixed
           }
-          .padding(.horizontal)
+          .padding(.horizontal, 30)
         }
         // FIXED BOTTOM BUTTON (standardized)
         BottomActionBar {

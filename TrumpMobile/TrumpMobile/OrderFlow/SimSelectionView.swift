@@ -7,7 +7,23 @@ struct SimSelectionView: View {
   var onCancel: (() -> Void)? = nil
   var showNavigation: Bool = true  // New parameter to control navigation display
 
+  // Determine if the selected device is eSIM-only
+  private func isESIMOnlyDevice(model: String, brand: String, country: String) -> Bool {
+    let brandLower = brand.lowercased()
+    let modelLower = model.lowercased()
+    // Apple iPhone 14/15 models in the USA are eSIM-only
+    if brandLower == "apple", country.uppercased() == "USA" {
+      return modelLower.contains("iphone 15") || modelLower.contains("iphone 14")
+    }
+    return false
+  }
+
   var body: some View {
+    let isESIMOnly = isESIMOnlyDevice(
+      model: viewModel.deviceModel,
+      brand: viewModel.deviceBrand,
+      country: viewModel.country
+    )
     let contentView = VStack(spacing: 24) {
       // Header section with unified styling
       OrderStepHeader(
@@ -54,43 +70,44 @@ struct SimSelectionView: View {
             )
             .foregroundColor(viewModel.simType == "eSIM" ? .white : .primary)
         }
-
-        Button(action: {
-          viewModel.simType = "Physical"
-        }) {
-          Text("I want Physical SIM card")
-            .font(.system(size: 18, weight: .medium))
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity)
-            .background(
-              RoundedRectangle(cornerRadius: 25)
-                .stroke(
-                  LinearGradient(
-                    gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                  ),
-                  lineWidth: 2
-                )
-                .background(
-                  RoundedRectangle(cornerRadius: 25)
-                    .fill(
-                      viewModel.simType == "Physical"
-                        ? LinearGradient(
-                          gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                          startPoint: .leading,
-                          endPoint: .trailing
-                        )
-                        : LinearGradient(
-                          gradient: Gradient(colors: [Color.clear, Color.clear]),
-                          startPoint: .leading,
-                          endPoint: .trailing
-                        )
-                    )
-                )
-            )
-            .foregroundColor(viewModel.simType == "Physical" ? .white : .primary)
+        if !isESIMOnly {
+          Button(action: {
+            viewModel.simType = "Physical"
+          }) {
+            Text("I want Physical SIM card")
+              .font(.system(size: 18, weight: .medium))
+              .padding(.horizontal, 24)
+              .padding(.vertical, 16)
+              .frame(maxWidth: .infinity)
+              .background(
+                RoundedRectangle(cornerRadius: 25)
+                  .stroke(
+                    LinearGradient(
+                      gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                      startPoint: .leading,
+                      endPoint: .trailing
+                    ),
+                    lineWidth: 2
+                  )
+                  .background(
+                    RoundedRectangle(cornerRadius: 25)
+                      .fill(
+                        viewModel.simType == "Physical"
+                          ? LinearGradient(
+                            gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                          )
+                          : LinearGradient(
+                            gradient: Gradient(colors: [Color.clear, Color.clear]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                          )
+                      )
+                  )
+              )
+              .foregroundColor(viewModel.simType == "Physical" ? .white : .primary)
+          }
         }
       }
       .padding(.horizontal, 16)
@@ -121,6 +138,13 @@ struct SimSelectionView: View {
       .padding(.top, 8)
 
       Spacer()
+    }
+
+    // If device is eSIM-only, force-select eSIM
+    if isESIMOnly && viewModel.simType != "eSIM" {
+      DispatchQueue.main.async {
+        viewModel.simType = "eSIM"
+      }
     }
 
     // Return either wrapped in navigation container or just the content

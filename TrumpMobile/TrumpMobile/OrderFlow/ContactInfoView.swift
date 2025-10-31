@@ -26,7 +26,7 @@ struct ContactInfoView: View {
         currentStep: 1,
         nextButtonText: "Next Step",
         nextButtonDisabled: viewModel.firstName.isEmpty || viewModel.lastName.isEmpty
-          || viewModel.phoneNumber.isEmpty || isLoading,
+          || viewModel.phoneNumber.count != 10 || isLoading,
         nextButtonAction: {
           print("📲 Next button tapped in ContactInfoView")
 
@@ -130,16 +130,30 @@ struct ContactInfoView: View {
                     .stroke(Color(.systemGray4), lineWidth: 1)
                 )
 
-              TextField("Phone Number", text: $viewModel.phoneNumber)
+              TextField(
+                "(000) 000-0000",
+                text: Binding(
+                  get: { formatPhoneNumber(viewModel.phoneNumber) },
+                  set: { newValue in
+                    let digits = newValue.filter { $0.isNumber }
+                    viewModel.phoneNumber = String(digits.prefix(10))
+                  }
+                )
+              )
+                .font(.system(size: 16))
                 .padding()
                 .background(Color(.systemBackground))
                 .foregroundColor(.primary)
                 .cornerRadius(8)
                 .overlay(
                   RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
+                    .stroke(
+                      viewModel.phoneNumber.count == 10 ? Color.accentGold : Color(.systemGray4),
+                      lineWidth: viewModel.phoneNumber.count == 10 ? 2 : 1
+                    )
                 )
                 .keyboardType(.phonePad)
+                .textContentType(.telephoneNumber)
 
               TextField("Email", text: $viewModel.email)
                 .padding()
@@ -162,6 +176,33 @@ struct ContactInfoView: View {
                 .fontWeight(.bold)
                 .foregroundColor(Color.trumpText)
                 .multilineTextAlignment(.center)
+
+              // Checkbox-style 'Use My Location' below all fields
+            Button(action: {
+              useLocation.toggle()
+              if useLocation {
+                // If denied, prompt to open settings
+                if locationManager.authorizationStatus == .denied {
+                  didPromptSettings = true
+                } else {
+                  showLocationAlert = true
+                }
+              }
+            }) {
+              HStack {
+                Image(systemName: useLocation ? "checkmark.square" : "square")
+                  .foregroundColor(.accentColor)
+                Text("Use My Location to autofill address")
+                  .foregroundColor(.primary)
+                if isAutofillingLocation || locationManager.isFetchingLocation {
+                  ProgressView()
+                    .scaleEffect(0.8)
+                    .padding(.leading, 4)
+                }
+              }
+              .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
 
               TextField("Street Address", text: $viewModel.street)
                 .padding()
@@ -217,32 +258,7 @@ struct ContactInfoView: View {
               }
             }
 
-            // Checkbox-style 'Use My Location' below all fields
-            Button(action: {
-              useLocation.toggle()
-              if useLocation {
-                // If denied, prompt to open settings
-                if locationManager.authorizationStatus == .denied {
-                  didPromptSettings = true
-                } else {
-                  showLocationAlert = true
-                }
-              }
-            }) {
-              HStack {
-                Image(systemName: useLocation ? "checkmark.square" : "square")
-                  .foregroundColor(.accentColor)
-                Text("Use My Location to autofill address")
-                  .foregroundColor(.primary)
-                if isAutofillingLocation || locationManager.isFetchingLocation {
-                  ProgressView()
-                    .scaleEffect(0.8)
-                    .padding(.leading, 4)
-                }
-              }
-              .padding(.vertical, 8)
-            }
-            .buttonStyle(.plain)
+            
           }
 
           Spacer(minLength: 20)
@@ -354,6 +370,28 @@ struct ContactInfoView: View {
     } message: {
       Text(locationError ?? "")
     }
+  }
+
+  // Helper to format phone number like (XXX) XXX-XXXX while storing digits-only
+  private func formatPhoneNumber(_ number: String) -> String {
+    let digits = number.filter { $0.isNumber }
+    if digits.count >= 10 {
+      let area = String(digits.prefix(3))
+      let exchange = String(digits.dropFirst(3).prefix(3))
+      let num = String(digits.dropFirst(6).prefix(4))
+      return "(\(area)) \(exchange)-\(num)"
+    } else if digits.count >= 6 {
+      let area = String(digits.prefix(3))
+      let exchange = String(digits.dropFirst(3))
+      return "(\(area)) \(exchange)"
+    } else if digits.count >= 3 {
+      let area = String(digits.prefix(3))
+      let remaining = String(digits.dropFirst(3))
+      return "(\(area)) \(remaining)"
+    } else if digits.count > 0 {
+      return "(\(digits)"
+    }
+    return digits
   }
 
   func loadUserData(onlyFillWhenEmpty: Bool = false) {
