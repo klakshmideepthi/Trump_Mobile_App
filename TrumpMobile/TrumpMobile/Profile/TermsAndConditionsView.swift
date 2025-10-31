@@ -2,22 +2,42 @@ import SwiftUI
 
 struct TermsAndConditionsView: View {
   @Environment(\.dismiss) private var dismiss
+  @State private var scrollOffset: CGFloat = 0
 
   var body: some View {
-    NavigationView {
+    ZStack(alignment: .top) {
       ScrollView {
         VStack(alignment: .leading, spacing: 20) {
-          Text("Terms & Conditions")
-            .font(.largeTitle)
-            .fontWeight(.bold)
-            .foregroundColor(.primary)
-            .padding(.top, 60)
+          // Top spacing and close
+          HStack {
+            Spacer()
+            Button("Close") { dismiss() }
+              .foregroundColor(.accentColor)
+              .font(.body)
+          }
+          .padding(.horizontal, 20)
+          .padding(.top, 20)
 
-          VStack(alignment: .leading, spacing: 15) {
+          // Header with scroll tracking
+          VStack(alignment: .leading, spacing: 16) {
+            Text("Terms & Conditions")
+              .font(.largeTitle)
+              .fontWeight(.bold)
+              .foregroundColor(.primary)
+              .background(
+                GeometryReader { geo in
+                  Color.clear
+                    .onAppear { scrollOffset = geo.frame(in: .global).minY }
+                    .onChange(of: geo.frame(in: .global).minY) { _, v in scrollOffset = v }
+                }
+              )
             Text("Last Updated: September 15, 2025")
               .font(.caption)
               .foregroundColor(.secondary)
+          }
+          .padding(.horizontal, 20)
 
+          VStack(alignment: .leading, spacing: 15) {
             termsSection(
               title: "Acceptance of Terms",
               content: """
@@ -87,31 +107,37 @@ struct TermsAndConditionsView: View {
                 """
             )
           }
+          .padding(.horizontal, 20)
+
+          Spacer(minLength: 80)
         }
-        .padding(.horizontal, 20)
         .padding(.bottom, 30)
       }
-      .background(Color.adaptiveBackground)
-      .navigationBarHidden(true)
-      .overlay(
-        HStack {
-          Button(action: { dismiss() }) {
-            HStack(spacing: 6) {
-              Image(systemName: "chevron.left")
-                .font(.system(size: 16, weight: .semibold))
-              Text("Back")
-                .font(.system(size: 16, weight: .medium))
-            }
-            .foregroundColor(.accentColor)
-          }
 
+      // Sticky Header
+      if scrollOffset < -80 {
+        VStack(spacing: 0) {
+          HStack {
+            Text("Terms & Conditions")
+              .font(.title2)
+              .fontWeight(.bold)
+              .foregroundColor(.primary)
+            Spacer()
+            Button("Close") { dismiss() }
+              .foregroundColor(.accentColor)
+              .font(.body)
+          }
+          .padding()
+          .background(Color(.systemBackground).opacity(0.95))
+          .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
           Spacer()
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 10),
-        alignment: .top
-      )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.3), value: scrollOffset)
+      }
     }
+    .background(Color.adaptiveBackground)
     .navigationBarHidden(true)
   }
 

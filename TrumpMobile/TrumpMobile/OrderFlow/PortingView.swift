@@ -25,40 +25,36 @@ struct PortingView: View {
       Spacer()
     }
     .background(Color.adaptiveBackground)
-    .onTapGesture {
-      if showCarrierDropdown {
-        showCarrierDropdown = false
-      }
-    }
 
     // Return either wrapped in navigation container or just the content
     if showNavigation {
       return AnyView(
-        StepNavigationContainer(
-          currentStep: 6,
-          totalSteps: 6,
-          nextButtonText: "Continue to SIM Setup",
-          nextButtonDisabled: !isPortInFormValid,
-          nextButtonAction: {
-            savePortInDataAndContinue()
-          },
-          backButtonAction: {
-            if let onBack = onBack {
-              onBack()
-            }
-          },
-          cancelAction: onCancel
-        ) {
-          contentView
+        ZStack {
+          StepNavigationContainer(
+            currentStep: 6,
+            totalSteps: 6,
+            nextButtonText: "Continue to SIM Setup",
+            nextButtonDisabled: !isPortInFormValid,
+            nextButtonAction: { savePortInDataAndContinue() },
+            backButtonAction: { onBack?() },
+            cancelAction: onCancel
+          ) {
+            contentView
+          }
         }
       )
     } else {
-      return AnyView(contentView)
+      return AnyView(
+        ZStack {
+          contentView
+        }
+      )
     }
   }
 
   private var portInSection: some View {
-    VStack(spacing: 20) {
+    ZStack {
+      VStack(spacing: 20) {
       OrderStepHeader(
         "Transfer Your Existing Number",
         subtitle: "Please provide the following information from your current carrier:"
@@ -154,6 +150,7 @@ struct PortingView: View {
             .shadow(color: Color.adaptiveText.opacity(0.1), radius: 5, x: 0, y: 2)
             .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
             .animation(.easeInOut(duration: 0.2), value: showCarrierDropdown)
+            .zIndex(2)
           }
         }
 
@@ -224,6 +221,7 @@ struct PortingView: View {
       }
       .buttonStyle(PlainButtonStyle())
     }
+    }
   }
 
   private var isPortInFormValid: Bool {
@@ -233,6 +231,7 @@ struct PortingView: View {
   }
 
   private func savePortInDataAndContinue() {
+    viewModel.portInSkipped = false
     // Save the port-in data to Firebase
     viewModel.saveNumberSelection { success in
       if success {

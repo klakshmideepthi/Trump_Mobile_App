@@ -205,10 +205,14 @@ struct StartOrderView: View {
         }
       }
       .sheet(isPresented: $navigationState.showPrivacyPolicy) {
-        PrivacyPolicyView()
+        NavigationView {
+          PrivacyPolicyView()
+        }
       }
       .sheet(isPresented: $navigationState.showTermsAndConditions) {
-        TermsAndConditionsView()
+        NavigationView {
+          TermsAndConditionsView()
+        }
       }
 
       // Hamburger menu overlay

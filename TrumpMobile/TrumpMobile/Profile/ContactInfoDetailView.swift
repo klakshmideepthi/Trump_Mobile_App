@@ -2,10 +2,25 @@ import SwiftUI
 
 struct ContactInfoDetailView: View {
   @StateObject private var viewModel = ContactInfoDetailViewModel()
-  @Environment(\.presentationMode) var presentationMode
+  @Environment(\.dismiss) private var dismiss
 
   var body: some View {
     VStack(spacing: 0) {
+      // Custom header with Close button
+      HStack {
+        Text("Contact Information")
+          .font(.title2.bold())
+          .foregroundColor(.primary)
+        Spacer()
+        Button("Close") { dismiss() }
+          .foregroundColor(.accentColor)
+          .font(.body)
+      }
+      .padding(.horizontal, 16)
+      .padding(.top, 20)
+      .padding(.bottom, 8)
+      .background(Color(.systemBackground))
+
       // Profile Card
       VStack(spacing: 12) {
         ZStack {
@@ -53,8 +68,7 @@ struct ContactInfoDetailView: View {
       .background(Color(.systemGroupedBackground))
     }
     .background(Color(.systemGroupedBackground).ignoresSafeArea())
-    .navigationTitle("Contact Information")
-    .navigationBarTitleDisplayMode(.inline)
+    .navigationBarHidden(true)
     .onAppear {
       viewModel.loadContactInfo()
     }

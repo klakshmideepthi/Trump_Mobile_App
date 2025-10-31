@@ -169,10 +169,14 @@ struct ExistingUserStartOrderView: View {
       }
     }
     .sheet(isPresented: $navigationState.showPrivacyPolicy) {
-      PrivacyPolicyView()
+      NavigationView {
+        PrivacyPolicyView()
+      }
     }
     .sheet(isPresented: $navigationState.showTermsAndConditions) {
-      TermsAndConditionsView()
+      NavigationView {
+        TermsAndConditionsView()
+      }
     }
     .onAppear {
       print("DEBUG: ExistingUserStartOrderView - previousOrders count: \(previousOrders.count)")

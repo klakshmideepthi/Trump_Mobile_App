@@ -5,6 +5,8 @@ struct PreviousOrdersView: View {
   let orders: [TrumpOrder]?
   @State private var loadedOrders: [TrumpOrder] = []
   @State private var isLoading = false
+  @Environment(\.dismiss) private var dismiss
+  @State private var scrollOffset: CGFloat = 0
 
   // Helper method to get current user identifier for logging
   private var currentUserIdentifier: String {
@@ -46,7 +48,7 @@ struct PreviousOrdersView: View {
   }
 
   var body: some View {
-    ZStack {
+    ZStack(alignment: .top) {
       // Background gradient
       LinearGradient(
         colors: [Color.trumpBackground, Color.trumpBackground.opacity(0.95)],
@@ -55,112 +57,182 @@ struct PreviousOrdersView: View {
       )
       .ignoresSafeArea()
 
-      if orders == nil && isLoading {
-        VStack(spacing: 20) {
-          ProgressView()
-            .scaleEffect(1.5)
-            .progressViewStyle(CircularProgressViewStyle(tint: .accentGold))
+      Group {
+        if orders == nil && isLoading {
+          VStack(spacing: 20) {
+            ProgressView()
+              .scaleEffect(1.5)
+              .progressViewStyle(CircularProgressViewStyle(tint: .accentGold))
 
-          Text("Loading your orders...")
-            .font(.headline)
-            .foregroundColor(.primary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-      } else if displayOrders.isEmpty {
-        // Enhanced empty state
-        VStack(spacing: 24) {
-          ZStack {
-            Circle()
-              .fill(Color.accentGold.opacity(0.1))
-              .frame(width: 120, height: 120)
-
-            Image(systemName: "bag")
-              .font(.system(size: 50, weight: .light))
-              .foregroundColor(.accentGold)
+            Text("Loading your orders...")
+              .font(.headline)
+              .foregroundColor(.primary)
           }
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .padding(.top, 60)
+        } else if displayOrders.isEmpty {
+          // Enhanced empty state
+          VStack(spacing: 24) {
+            HStack {
+              Spacer()
+              Button("Close") { dismiss() }
+                .foregroundColor(.accentColor)
+                .font(.body)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 20)
 
-          VStack(spacing: 12) {
-            Text("No Previous Orders")
+            Text("Previous Orders")
+              .font(.largeTitle)
+              .fontWeight(.bold)
+              .foregroundColor(.primary)
+              .padding(.horizontal, 16)
+
+            ZStack {
+              Circle()
+                .fill(Color.accentGold.opacity(0.1))
+                .frame(width: 120, height: 120)
+
+              Image(systemName: "bag")
+                .font(.system(size: 50, weight: .light))
+                .foregroundColor(.accentGold)
+            }
+
+            VStack(spacing: 12) {
+              Text("No Previous Orders")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+              Text(
+                "Your order history will appear here once you make your first purchase with Telgoo5 Mobile."
+              )
+              .font(.body)
+              .multilineTextAlignment(.center)
+              .foregroundColor(.secondary)
+              .lineLimit(3)
+              .padding(.horizontal, 32)
+            }
+
+            Button(action: {
+              // Add action to start new order
+            }) {
+              HStack {
+                Image(systemName: "plus.circle.fill")
+                Text("Start Your First Order")
+              }
+              .font(.headline)
+              .foregroundColor(.white)
+              .padding(.horizontal, 24)
+              .padding(.vertical, 12)
+              .background(Color.accentGold)
+              .cornerRadius(25)
+              .shadow(color: .accentGold.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+            .padding(.top, 8)
+
+            Spacer()
+          }
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .padding()
+        } else {
+          ScrollView {
+            VStack(spacing: 16) {
+              // Top spacing + close
+              HStack {
+                Spacer()
+                Button("Close") { dismiss() }
+                  .foregroundColor(.accentColor)
+                  .font(.body)
+              }
+              .padding(.horizontal, 16)
+              .padding(.top, 20)
+
+              // Header with scroll tracking
+              Text("Previous Orders")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .background(
+                  GeometryReader { geo in
+                    Color.clear
+                      .onAppear { scrollOffset = geo.frame(in: .global).minY }
+                      .onChange(of: geo.frame(in: .global).minY) { _, v in scrollOffset = v }
+                  }
+                )
+
+              LazyVStack(spacing: 12) {
+                // Recent Orders Section
+                if !recentOrders.isEmpty {
+                  VStack(alignment: .leading, spacing: 16) {
+                    SectionHeader(
+                      title: "Recent Orders",
+                      subtitle: "Orders in progress or recently started",
+                      icon: "clock.fill"
+                    )
+
+                    ForEach(recentOrders) { order in
+                      NavigationLink(destination: OrderDetailView(orderId: order.id)) {
+                        OrderCardView(order: order)
+                      }
+                      .buttonStyle(PlainButtonStyle())
+                    }
+                  }
+                  .padding(.horizontal, 16)
+                }
+
+                // Completed Orders Section
+                if !completedOrders.isEmpty {
+                  VStack(alignment: .leading, spacing: 16) {
+                    SectionHeader(
+                      title: "Completed Orders",
+                      subtitle: "Successfully completed purchases",
+                      icon: "checkmark.circle.fill"
+                    )
+
+                    ForEach(completedOrders) { order in
+                      NavigationLink(destination: OrderDetailView(orderId: order.id)) {
+                        OrderCardView(order: order)
+                      }
+                      .buttonStyle(PlainButtonStyle())
+                    }
+                  }
+                  .padding(.horizontal, 16)
+                }
+              }
+              .padding(.vertical, 20)
+
+              Spacer(minLength: 80)
+            }
+          }
+        }
+      }
+
+      // Sticky Header
+      if scrollOffset < -80 && !displayOrders.isEmpty {
+        VStack(spacing: 0) {
+          HStack {
+            Text("Previous Orders")
               .font(.title2)
               .fontWeight(.bold)
               .foregroundColor(.primary)
-
-            Text(
-              "Your order history will appear here once you make your first purchase with Telgoo5 Mobile."
-            )
-            .font(.body)
-            .multilineTextAlignment(.center)
-            .foregroundColor(.secondary)
-            .lineLimit(3)
-            .padding(.horizontal, 32)
+            Spacer()
+            Button("Close") { dismiss() }
+              .foregroundColor(.accentColor)
+              .font(.body)
           }
-
-          // Call to action button
-          Button(action: {
-            // Add action to start new order
-          }) {
-            HStack {
-              Image(systemName: "plus.circle.fill")
-              Text("Start Your First Order")
-            }
-            .font(.headline)
-            .foregroundColor(.white)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            .background(Color.accentGold)
-            .cornerRadius(25)
-            .shadow(color: .accentGold.opacity(0.3), radius: 8, x: 0, y: 4)
-          }
-          .padding(.top, 8)
+          .padding()
+          .background(Color(.systemBackground).opacity(0.95))
+          .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
+          Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
-      } else {
-        ScrollView {
-          LazyVStack(spacing: 24) {
-            // Recent Orders Section
-            if !recentOrders.isEmpty {
-              VStack(alignment: .leading, spacing: 16) {
-                SectionHeader(
-                  title: "Recent Orders",
-                  subtitle: "Orders in progress or recently started",
-                  icon: "clock.fill"
-                )
-
-                ForEach(recentOrders) { order in
-                  NavigationLink(destination: OrderDetailView(orderId: order.id)) {
-                    RecentOrderRowView(order: order)
-                  }
-                  .buttonStyle(PlainButtonStyle())
-                }
-              }
-              .padding(.horizontal, 16)
-            }
-
-            // Completed Orders Section
-            if !completedOrders.isEmpty {
-              VStack(alignment: .leading, spacing: 16) {
-                SectionHeader(
-                  title: "Completed Orders",
-                  subtitle: "Successfully completed purchases",
-                  icon: "checkmark.circle.fill"
-                )
-
-                ForEach(completedOrders) { order in
-                  NavigationLink(destination: OrderDetailView(orderId: order.id)) {
-                    OrderRowView(order: order)
-                  }
-                  .buttonStyle(PlainButtonStyle())
-                }
-              }
-              .padding(.horizontal, 16)
-            }
-          }
-          .padding(.vertical, 20)
-        }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: 0.3), value: scrollOffset)
       }
     }
-    .navigationTitle("Previous Orders")
     .navigationBarTitleDisplayMode(.large)
     .onAppear {
       // Log which user's orders are being displayed

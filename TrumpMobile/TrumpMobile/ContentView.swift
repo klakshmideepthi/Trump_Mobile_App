@@ -11,16 +11,24 @@ import FirebaseFirestore
 import SwiftUI
 
 struct ContentView: View {
+  let isNewAccount: Bool
+  let initialOrderStep: Int
   @StateObject private var viewModel = UserRegistrationViewModel()
   @StateObject private var notificationManager = NotificationManager.shared
   @State private var isSignedIn: Bool = false
-  @State private var isNewAccount = true
-  @State private var orderStep: Int = 0  // 0 = Start Order View
+  @State private var orderStep: Int
   @Environment(\.colorScheme) var colorScheme
   @EnvironmentObject private var navigationState: NavigationState
 
   // Add auth state listener
   @State private var authStateListener: AuthStateDidChangeListenerHandle?
+  @State private var showExistingStart: Bool? = nil
+
+  init(isNewAccount: Bool, initialOrderStep: Int) {
+    self.isNewAccount = isNewAccount
+    self.initialOrderStep = initialOrderStep
+    self._orderStep = State(initialValue: initialOrderStep)
+  }
 
   var body: some View {
     ZStack {
@@ -29,7 +37,8 @@ struct ContentView: View {
       VStack(spacing: 0) {
         // Show appropriate start view based on orderStep and account type
         if orderStep == 0 {
-          if isNewAccount {
+          let useExisting = showExistingStart ?? !isNewAccount
+          if useExisting == false {
             StartOrderView(
               onStart: { orderId in
                 // Only proceed if we have a valid order ID
@@ -214,7 +223,6 @@ struct ContentView: View {
 
           // If user is signed in
           if let user = user {
-
             // Send welcome notification for new users
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
               notificationManager.sendWelcomeNotification()
@@ -224,26 +232,11 @@ struct ContentView: View {
             viewModel.userId = user.uid
             viewModel.loadUserData { _ in }
 
-            // Fetch previous orders and set isNewAccount accordingly
-            viewModel.fetchPreviousOrders { orders in
-              if let orders = orders, !orders.isEmpty {
-                isNewAccount = false
-                print("DEBUG: Existing user with orders found")
-              } else {
-                isNewAccount = true
-              }
-            }
-
-            // Attempt to resume latest incomplete order for this user
-            FirebaseOrderManager.shared.fetchLatestIncompleteOrder(for: user.uid) { result in
-              if case .success(let info) = result {
-                // Set order and jump to the saved step
-                viewModel.orderId = info.orderId
-                orderStep = max(1, min(6, info.currentStep))
-                // Hydrate from the saved order so earlier steps show data
-                viewModel.prefillFromOrder(orderId: info.orderId, completion: nil)
-              }
-            }
+            // Remove isNewAccount check: SplashView is responsible
+            // Only resume incomplete orders
+            // onAppear should only set up auth listener for logout/logout UI refresh, not trigger any orderStep fetch.
+            // Refresh which start screen to show based on current orders
+            refreshExistingFlag()
           }
         }
       }
@@ -251,6 +244,11 @@ struct ContentView: View {
         // Remove auth state listener when view disappears
         if let handle = authStateListener {
           Auth.auth().removeStateDidChangeListener(handle)
+        }
+      }
+      .onChange(of: orderStep) { _, newValue in
+        if newValue == 0 {
+          refreshExistingFlag()
         }
       }
       .onChange(of: navigationState.currentDestination) { _, newDestination in
@@ -265,6 +263,8 @@ struct ContentView: View {
             print("DEBUG: Setting state for StartOrderView navigation")
             orderStep = 0
             print("DEBUG: After setting state - orderStep: \(orderStep)")
+            // Recompute which start screen to show each time we land on start
+            refreshExistingFlag()
           case .orderFlow:
             print("DEBUG: Setting state for OrderFlow navigation")
             if let resumeStep = navigationState.orderStartStep {
@@ -292,6 +292,16 @@ struct ContentView: View {
     }
   }
 
+  private func refreshExistingFlag() {
+    FirebaseOrderManager.shared.fetchUserOrders { orders in
+      DispatchQueue.main.async {
+        self.viewModel.previousOrders = orders
+        self.showExistingStart = !orders.isEmpty
+        print("DEBUG: refreshExistingFlag -> previousOrders: \(orders.count), showExistingStart: \(self.showExistingStart ?? false)")
+      }
+    }
+  }
+
   private func handleLogout() {
     print("🔄 ContentView handleLogout called")
 
@@ -311,7 +321,6 @@ struct ContentView: View {
 
         // Reset UI state
         self.isSignedIn = false
-        self.isNewAccount = true
         self.orderStep = 0
 
         // Trigger splash screen display

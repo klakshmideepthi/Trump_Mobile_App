@@ -4,6 +4,8 @@ import SwiftUI
 struct SplashView: View {
   @State private var isLoggedIn = false
   @State private var isLoading = true
+  @State private var isNewAccount: Bool? = nil // Changed: isNewAccount now handled in SplashView
+  @State private var initialOrderStep: Int? = nil
   @EnvironmentObject private var navigationState: NavigationState
   @StateObject private var notificationManager = NotificationManager.shared
   @StateObject private var viewModel = UserRegistrationViewModel()
@@ -26,15 +28,21 @@ struct SplashView: View {
         }
         .background(Color.adaptiveBackground)
         .ignoresSafeArea()
-      } else if isLoggedIn {
-        ContentView()
+      } else if isLoggedIn, let newAccount = isNewAccount, let startStep = initialOrderStep {
+        ContentView(isNewAccount: newAccount, initialOrderStep: startStep)
           .environmentObject(viewModel)
-      } else {
+      } else if !isLoggedIn {
         LoginView(
           onSignIn: {
             isLoggedIn = true
+            isNewAccount = nil
+            isLoading = true
+            initialOrderStep = nil
+            checkAuthenticationState()
           }
         )
+      } else {
+        EmptyView()
       }
     }
     .onAppear {
@@ -58,25 +66,31 @@ struct SplashView: View {
     // Add a small delay to ensure Firebase Auth is ready
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
       if let user = Auth.auth().currentUser {
-        print("🔍 User is signed in: \(user.email ?? "unknown")")
         isLoggedIn = true
-
-        // Load user data
         viewModel.userId = user.uid
-        viewModel.loadUserData { _ in }
-
-        // Attempt to resume latest incomplete order
-        FirebaseOrderManager.shared.fetchLatestIncompleteOrder(for: user.uid) { result in
-          switch result {
-          case .success(let info):
-            print(
-              "➡️ Found in-progress order to resume: id=\(info.orderId) step=\(info.currentStep)")
-            navigationState.resumeOrder(orderId: info.orderId, at: max(1, info.currentStep))
-          case .failure:
-            break
+        viewModel.loadUserData { _ in
+          // Determine if new or existing user by order fetch
+          viewModel.fetchPreviousOrders { orders in
+            isNewAccount = (orders == nil || orders!.isEmpty)
+            FirebaseOrderManager.shared.fetchLatestIncompleteOrder(for: user.uid) { result in
+              switch result {
+              case .success(let info):
+                initialOrderStep = max(1, min(6, info.currentStep))
+                viewModel.orderId = info.orderId
+                viewModel.prefillFromOrder(orderId: info.orderId, completion: nil)
+              case .failure:
+                initialOrderStep = 0
+              }
+              // Show splash for minimum time
+              let minimumSplashTime: TimeInterval = UIAccessibility.isReduceMotionEnabled ? 0.8 : 1.6
+              DispatchQueue.main.asyncAfter(deadline: .now() + minimumSplashTime) {
+                isLoading = false
+              }
+            }
           }
         }
-
+        // Attempt to resume latest incomplete order (optional, can keep here...)
+        // Removed navigationState.resumeOrder call
         // Send welcome notification for authenticated users if needed
         if isLoading {
           DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -84,18 +98,16 @@ struct SplashView: View {
           }
         }
       } else {
-        print("🔍 User is not signed in")
         isLoggedIn = false
-
-        // Reset navigation state and view models when user is not logged in
+        isNewAccount = nil
+        initialOrderStep = nil
         navigationState.reset()
         viewModel.reset()
-      }
-
-      // Show splash for minimum time, then hide loading state
-      let minimumSplashTime: TimeInterval = UIAccessibility.isReduceMotionEnabled ? 0.8 : 1.6
-      DispatchQueue.main.asyncAfter(deadline: .now() + minimumSplashTime) {
-        isLoading = false
+        // Show splash for minimum time
+        let minimumSplashTime: TimeInterval = UIAccessibility.isReduceMotionEnabled ? 0.8 : 1.6
+        DispatchQueue.main.asyncAfter(deadline: .now() + minimumSplashTime) {
+          isLoading = false
+        }
       }
     }
   }
