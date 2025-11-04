@@ -26,6 +26,92 @@ struct FeatureRow: View {
   }
 }
 
+struct CompactPlanCard: View {
+  let plan: Plan
+  let isSelected: Bool
+  let onSelect: () -> Void
+  
+  var body: some View {
+    Button(action: onSelect) {
+      HStack {
+        VStack(alignment: .leading, spacing: 4) {
+          Text(plan.display_name ?? plan.plan_name)
+            .font(.headline)
+            .foregroundColor(.trumpText)
+          
+          if let displayDescription = plan.display_description, !displayDescription.isEmpty {
+            Text(displayDescription)
+              .font(.caption)
+              .foregroundColor(.secondary)
+              .lineLimit(2)
+          }
+        }
+        
+        Spacer()
+        
+        VStack(alignment: .trailing, spacing: 2) {
+          Text("$\(plan.total_plan_price)")
+            .font(.title3)
+            .fontWeight(.bold)
+            .foregroundStyle(
+              LinearGradient(
+                gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                startPoint: .leading,
+                endPoint: .trailing
+              )
+            )
+          Text("/month")
+            .font(.caption2)
+            .foregroundColor(.secondary)
+        }
+        
+        if isSelected {
+          Image(systemName: "checkmark.circle.fill")
+            .foregroundColor(.accentGold)
+        }
+      }
+      .padding()
+      .background(isSelected ? Color.accentGold.opacity(0.1) : Color(.systemGray6))
+      .cornerRadius(10)
+      .overlay(
+        RoundedRectangle(cornerRadius: 10)
+          .stroke(isSelected ? Color.accentGold : Color.clear, lineWidth: 2)
+      )
+      .overlay(
+        // Add subtle click indicator
+        VStack {
+          Spacer()
+          HStack(spacing: 4) {
+            Text(isSelected ? "Selected" : "Tap to select")
+              .font(.caption2)
+              .fontWeight(.medium)
+              .foregroundStyle(
+                LinearGradient(
+                  gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                  startPoint: .leading,
+                  endPoint: .trailing
+                )
+              )
+            Image(systemName: "chevron.right")
+              .font(.caption2)
+              .foregroundStyle(
+                LinearGradient(
+                  gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                  startPoint: .leading,
+                  endPoint: .trailing
+                )
+              )
+          }
+          .frame(maxWidth: .infinity)
+          .padding(.horizontal)
+          .padding(.bottom, 8)
+        }
+      )
+    }
+    .buttonStyle(PlainButtonStyle())
+  }
+}
+
 struct StartOrderView: View {
   var onStart: (String?) -> Void
   var onLogout: (() -> Void)? = nil
@@ -34,6 +120,10 @@ struct StartOrderView: View {
   @State private var errorMessage: String? = nil
   @State private var showInternationalDetails = false
   @State private var isMenuOpen = false
+  @State private var availablePlans: [Plan] = []
+  @State private var isLoadingPlans = false
+  @State private var showPlanSelection = false
+  @State private var selectedPlan: Plan?
   @EnvironmentObject private var navigationState: NavigationState
 
   var body: some View {
@@ -114,18 +204,46 @@ struct StartOrderView: View {
             }
             .frame(height: 150)  // Adjust as needed
             .padding(.top, 20)
-            // Price section
-            Text("$47.45/month")
-              .font(.title2)
-              .fontWeight(.bold)
-              .foregroundStyle(
-                LinearGradient(
-                  gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
-                  startPoint: .leading,
-                  endPoint: .trailing
-                )
-              )
-              .padding(.bottom, 10)
+            // Plans section
+            if isLoadingPlans {
+              ProgressView("Loading plans...")
+                .padding()
+            } else if !availablePlans.isEmpty {
+              VStack(alignment: .leading, spacing: 12) {
+                Text("Available Plans")
+                  .font(.title2)
+                  .fontWeight(.bold)
+                  .foregroundColor(.trumpText)
+                
+                ForEach(availablePlans.prefix(3)) { plan in
+                  CompactPlanCard(
+                    plan: plan,
+                    isSelected: selectedPlan?.plan_id == plan.plan_id,
+                    onSelect: {
+                      selectedPlan = plan
+                    }
+                  )
+                }
+                
+                if availablePlans.count > 3 {
+                  Button(action: {
+                    showPlanSelection = true
+                  }) {
+                    Text("View All Plans (\(availablePlans.count))")
+                      .font(.subheadline)
+                      .foregroundStyle(
+                        LinearGradient(
+                          gradient: Gradient(colors: [Color.accentGold, Color.accentGold2]),
+                          startPoint: .leading,
+                          endPoint: .trailing
+                        )
+                      )
+                  }
+                }
+              }
+              .padding(.bottom, 20)
+            }
+            
             // Features section
             VStack(alignment: .leading, spacing: 18) {
               FeatureRow(icon: "message.and.waveform.fill", text: "Unlimited Talk, Text & Data")
@@ -214,6 +332,19 @@ struct StartOrderView: View {
           TermsAndConditionsView()
         }
       }
+      .sheet(isPresented: $showPlanSelection) {
+        NavigationView {
+          PlanSelectionView(plans: availablePlans) { plan in
+            selectedPlan = plan
+            showPlanSelection = false
+          }
+          .navigationTitle("Select Plan")
+          .navigationBarTitleDisplayMode(.inline)
+        }
+      }
+      .onAppear {
+        loadPlans()
+      }
 
       // Hamburger menu overlay
       HamburgerMenuView(isMenuOpen: $isMenuOpen)
@@ -245,8 +376,18 @@ struct StartOrderView: View {
       isLoading = true
       errorMessage = nil
 
-      // Step 1: Create a new order document
-      FirebaseManager.shared.createNewOrder(userId: userId) { orderId, error in
+      // Get plan information from selected plan
+      let planId = selectedPlan?.plan_id
+      let planName = selectedPlan?.display_name ?? selectedPlan?.plan_name ?? "Telgoo5 Mobile Plan"
+      let planPrice = selectedPlan?.total_plan_price
+
+      // Step 1: Create a new order document with plan information
+      FirebaseManager.shared.createNewOrder(
+        userId: userId,
+        planId: planId,
+        planName: planName,
+        planPrice: planPrice
+      ) { orderId, error in
         if let error = error {
           DispatchQueue.main.async {
             isLoading = false
@@ -292,6 +433,38 @@ struct StartOrderView: View {
           // Navigate to next screen with the order ID
           // This will trigger a fresh view model that loads only basic user info
           onStart(orderId)
+        }
+      }
+    }
+    
+    func loadPlans() {
+      isLoadingPlans = true
+      
+      // Get zip code - you may want to get this from user's saved address or location
+      // For now, using a default. Replace with actual zip code from user data
+      let zipCode = "60644" // TODO: Get from user's shipping address or location
+      
+      VCareAPIManager.shared.getPlanList(
+        zipCode: zipCode,
+        enrollmentType: "NON_LIFELINE",
+        isFamilyPlan: "N",
+        agentId: "Sushil",
+        source: "API"
+      ) { [self] result in
+        DispatchQueue.main.async {
+          isLoadingPlans = false
+          switch result {
+          case .success(let plans):
+            availablePlans = plans
+            print("✅ Loaded \(plans.count) plans")
+            // Select first plan by default if none selected
+            if selectedPlan == nil && !plans.isEmpty {
+              selectedPlan = plans.first
+            }
+          case .failure(let error):
+            print("❌ Failed to load plans: \(error.localizedDescription)")
+            // Don't show error as it's not critical for order creation
+          }
         }
       }
     }

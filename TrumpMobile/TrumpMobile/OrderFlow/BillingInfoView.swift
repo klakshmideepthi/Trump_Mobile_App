@@ -17,6 +17,11 @@ struct BillingInfoView: View {
   @State private var agreeRecurringCharge = false
   @State private var agreePrivacyTerms = false
   @State private var isSaving = false
+  
+  // Plan information state
+  @State private var planName: String = "Telgoo5 Mobile Plan"
+  @State private var planPrice: Double = 47.45
+  @State private var isLoadingPlanInfo = false
 
   var body: some View {
     let stepNumber = 5
@@ -36,6 +41,9 @@ struct BillingInfoView: View {
       // Prefill local fields from view model if editing an existing order
       if creditCardNumber.isEmpty { creditCardNumber = viewModel.creditCardNumber }
       if expirationDate.isEmpty { expirationDate = viewModel.billingDetails }
+      
+      // Load plan information from order
+      loadPlanInfo()
     }
   }
 
@@ -44,6 +52,37 @@ struct BillingInfoView: View {
       expirationDate.count == 5 &&
       cvv.count >= 3 &&
       agreeE911 && agreeRecurringCharge && agreePrivacyTerms
+  }
+  
+  // Load plan information from order document
+  private func loadPlanInfo() {
+    guard let userId = viewModel.userId, let orderId = viewModel.orderId else {
+      return
+    }
+    
+    isLoadingPlanInfo = true
+    
+    FirebaseOrderManager.shared.fetchOrderDocument(orderId: orderId) { result in
+      DispatchQueue.main.async {
+        isLoadingPlanInfo = false
+        
+        if case .success(let data) = result {
+          // Extract plan information
+          if let name = data["planName"] as? String {
+            planName = name
+          }
+          
+          // Handle planPrice - can be Int or Double
+          if let price = data["planPrice"] as? Int {
+            planPrice = Double(price)
+          } else if let price = data["planPrice"] as? Double {
+            planPrice = price
+          } else if let amount = data["amount"] as? Double {
+            planPrice = amount
+          }
+        }
+      }
+    }
   }
 }
 
@@ -88,32 +127,48 @@ private extension BillingInfoView {
   @ViewBuilder
   private func pricingSection() -> some View {
     VStack(spacing: 8) {
+      // Plan Name
+      HStack {
+        Text("Plan")
+          .font(.body)
+        Spacer()
+        Text(planName)
+          .font(.body)
+          .fontWeight(.medium)
+          .foregroundColor(.primary)
+      }
+      
+      // Plan Price
       HStack {
         Text("Plan Price")
           .font(.body)
         Spacer()
-        Text("$47.45")
+        Text("$\(String(format: "%.2f", planPrice))")
           .font(.body)
           .fontWeight(.medium)
       }
 
+      // Calculate tax (7% - adjust as needed)
+      let tax = planPrice * 0.07
       HStack {
         Text("Plan Tax")
           .font(.body)
         Spacer()
-        Text("$3.34")
+        Text("$\(String(format: "%.2f", tax))")
           .font(.body)
           .fontWeight(.medium)
       }
 
       Divider()
 
+      // Total
+      let total = planPrice + tax
       HStack {
         Text("Total")
           .font(.body)
           .fontWeight(.semibold)
         Spacer()
-        Text("$50.79")
+        Text("$\(String(format: "%.2f", total))")
           .font(.body)
           .fontWeight(.semibold)
       }

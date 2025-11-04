@@ -156,11 +156,22 @@ class FirebaseOrderManager {
             let data = doc.data()
             guard let userId = data["userId"] as? String else { return nil }
 
+            // Get plan name and amount from order data
+            let planName = data["planName"] as? String ?? "Telgoo5 Mobile Plan"
+            let amount: Double
+            if let planPrice = data["planPrice"] as? Int {
+              amount = Double(planPrice)
+            } else if let planPrice = data["planPrice"] as? Double {
+              amount = planPrice
+            } else {
+              amount = data["amount"] as? Double ?? 47.45
+            }
+
             let order = TrumpOrder(
               id: doc.documentID,
               userId: userId,
-                planName: data["planName"] as? String ?? "Telggo5 Mobile Plan",
-              amount: data["amount"] as? Double ?? 47.45,
+              planName: planName,
+              amount: amount,
               orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
               status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
                 ?? .pending,
@@ -206,11 +217,22 @@ class FirebaseOrderManager {
             let data = doc.data()
             guard let userId = data["userId"] as? String else { return nil }
 
+            // Get plan name and amount from order data
+            let planName = data["planName"] as? String ?? "Telgoo5 Mobile Plan"
+            let amount: Double
+            if let planPrice = data["planPrice"] as? Int {
+              amount = Double(planPrice)
+            } else if let planPrice = data["planPrice"] as? Double {
+              amount = planPrice
+            } else {
+              amount = data["amount"] as? Double ?? 47.45
+            }
+
             let order = TrumpOrder(
               id: doc.documentID,
               userId: userId,
-                planName: data["planName"] as? String ?? "Telgoo5 Mobile Plan",
-              amount: data["amount"] as? Double ?? 47.45,
+              planName: planName,
+              amount: amount,
               orderDate: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
               status: TrumpOrder.OrderStatus(rawValue: data["status"] as? String ?? "pending")
                 ?? .pending,

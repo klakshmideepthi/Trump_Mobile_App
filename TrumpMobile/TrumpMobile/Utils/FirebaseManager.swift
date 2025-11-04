@@ -20,13 +20,13 @@ class FirebaseManager {
   }
 
   // Create a new order for a user
-  func createNewOrder(userId: String, completion: @escaping (String?, Error?) -> Void) {
+  func createNewOrder(userId: String, planId: Int? = nil, planName: String? = nil, planPrice: Int? = nil, completion: @escaping (String?, Error?) -> Void) {
     // Create a new document reference with auto-generated ID
     let orderRef = db.collection("users").document(userId).collection("orders").document()
     let orderId = orderRef.documentID
 
     // Create initial order data with userId for security rules
-    let orderData: [String: Any] = [
+    var orderData: [String: Any] = [
       "orderId": orderId,
       "userId": userId,
       // Use 'pending' to align with in-progress state checks
@@ -35,6 +35,18 @@ class FirebaseManager {
       "createdAt": FieldValue.serverTimestamp(),
       "updatedAt": FieldValue.serverTimestamp(),
     ]
+    
+    // Add plan information if provided
+    if let planId = planId {
+      orderData["plan_id"] = planId
+    }
+    if let planName = planName {
+      orderData["planName"] = planName
+    }
+    if let planPrice = planPrice {
+      orderData["planPrice"] = planPrice
+      orderData["amount"] = Double(planPrice)
+    }
 
     // Save the new order document
     orderRef.setData(orderData) { error in
