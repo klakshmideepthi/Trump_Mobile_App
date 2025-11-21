@@ -491,6 +491,8 @@ struct OrderRowView: View {
       return .green
     case .cancelled:
       return .red
+    case .draft:
+      return .gray
     }
   }
 }
@@ -655,6 +657,8 @@ struct StatusBadge: View {
       return .green
     case .cancelled:
       return .red
+    case .draft:
+      return .gray
     }
   }
 
@@ -666,6 +670,8 @@ struct StatusBadge: View {
       return "checkmark.circle.fill"
     case .cancelled:
       return "xmark.circle.fill"
+    case .draft:
+      return "doc.text.fill"
     }
   }
 }

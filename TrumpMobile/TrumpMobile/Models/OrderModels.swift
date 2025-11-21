@@ -18,6 +18,7 @@ struct TrumpOrder: Identifiable, Codable {
     case pending = "pending"
     case completed = "completed"
     case cancelled = "cancelled"
+    case draft = "draft"
 
     var displayName: String {
       switch self {
@@ -27,6 +28,8 @@ struct TrumpOrder: Identifiable, Codable {
         return "Completed"
       case .cancelled:
         return "Cancelled"
+      case .draft:
+        return "Draft"
       }
     }
   }

@@ -23,6 +23,9 @@ struct ContentView: View {
   // Add auth state listener
   @State private var authStateListener: AuthStateDidChangeListenerHandle?
   @State private var showExistingStart: Bool? = nil
+  @State private var hasContactInfo: Bool? = nil
+  @State private var isLoadingContactInfo: Bool = true
+  @State private var showContactInfoForAddressChange: Bool = false
 
   init(isNewAccount: Bool, initialOrderStep: Int) {
     self.isNewAccount = isNewAccount
@@ -37,9 +40,17 @@ struct ContentView: View {
       VStack(spacing: 0) {
         // Show appropriate start view based on orderStep and account type
         if orderStep == 0 {
-          let useExisting = showExistingStart ?? !isNewAccount
-          if useExisting == false {
-            StartOrderView(
+          // Check if user wants to change address or new user needs to provide contact info
+          if showContactInfoForAddressChange || (isNewAccount && (hasContactInfo == nil || hasContactInfo == false) && !isLoadingContactInfo) {
+            NewUserContactInfoView(viewModel: viewModel, onNext: {
+              // After saving contact info, proceed to NewUserStartOrderView
+              hasContactInfo = true
+              showContactInfoForAddressChange = false
+            })
+          } else {
+            let useExisting = showExistingStart ?? !isNewAccount
+            if useExisting == false {
+              StartOrderView(
               onStart: { orderId in
                 // Only proceed if we have a valid order ID
                 guard let orderId = orderId, !orderId.isEmpty else {
@@ -67,6 +78,9 @@ struct ContentView: View {
               },
               onLogout: {
                 handleLogout()
+              },
+              onChangeAddress: {
+                showContactInfoForAddressChange = true
               }
             )
           } else {
@@ -99,8 +113,12 @@ struct ContentView: View {
               },
               onLogout: {
                 handleLogout()
+              },
+              onChangeAddress: {
+                showContactInfoForAddressChange = true
               }
             )
+          }
           }
         } else {
           // Show order flow steps
@@ -237,6 +255,11 @@ struct ContentView: View {
             // onAppear should only set up auth listener for logout/logout UI refresh, not trigger any orderStep fetch.
             // Refresh which start screen to show based on current orders
             refreshExistingFlag()
+            
+            // Check if contact info exists for new users
+            if isNewAccount {
+              checkContactInfoExists()
+            }
           }
         }
       }
@@ -325,6 +348,49 @@ struct ContentView: View {
 
         // Trigger splash screen display
         self.navigationState.showSplashScreen()
+      }
+    }
+  }
+  
+  private func checkContactInfoExists() {
+    guard let userId = Auth.auth().currentUser?.uid else {
+      hasContactInfo = false
+      isLoadingContactInfo = false
+      return
+    }
+    
+    isLoadingContactInfo = true
+    FirebaseManager.shared.getContactInfo(userId: userId) { data, error in
+      DispatchQueue.main.async {
+        self.isLoadingContactInfo = false
+        // Check if contact info exists and has required fields
+        if let data = data,
+           let firstName = data["firstName"] as? String,
+           let lastName = data["lastName"] as? String,
+           !firstName.isEmpty,
+           !lastName.isEmpty {
+          self.hasContactInfo = true
+          // Load existing data into viewModel
+          self.viewModel.firstName = firstName
+          self.viewModel.lastName = lastName
+          self.viewModel.phoneNumber = data["phoneNumber"] as? String ?? ""
+          self.viewModel.email = data["email"] as? String ?? Auth.auth().currentUser?.email ?? ""
+        } else {
+          self.hasContactInfo = false
+        }
+      }
+    }
+    
+    // Also check shipping address for zip code
+    FirebaseManager.shared.getShippingAddress(userId: userId) { data, error in
+      DispatchQueue.main.async {
+        if let data = data {
+          self.viewModel.street = data["street"] as? String ?? ""
+          self.viewModel.aptNumber = data["aptNumber"] as? String ?? ""
+          self.viewModel.zip = data["zip"] as? String ?? self.viewModel.zip
+          self.viewModel.city = data["city"] as? String ?? ""
+          self.viewModel.state = data["state"] as? String ?? ""
+        }
       }
     }
   }

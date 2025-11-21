@@ -636,4 +636,158 @@ class FirebaseManager {
       completion(results)
     }
   }
+
+  // MARK: - Plan Caching
+  
+  /// Save plans to Firestore, keyed by zip code, enrollment type, and family plan status
+  func savePlans(
+    zipCode: String,
+    enrollmentType: String,
+    isFamilyPlan: String,
+    plans: [Plan],
+    completion: @escaping (Bool, Error?) -> Void
+  ) {
+    // Create a document ID based on zip code, enrollment type, and family plan status
+    let documentId = "\(zipCode)_\(enrollmentType)_\(isFamilyPlan)"
+    
+    // Convert plans to dictionary array
+    var plansData: [[String: Any]] = []
+    for plan in plans {
+      var planDict: [String: Any] = [
+        "plan_id": plan.plan_id,
+        "plan_name": plan.plan_name,
+        "plan_price": plan.plan_price,
+        "total_plan_price": plan.total_plan_price,
+        "plan_description": plan.plan_description,
+        "plan_code": plan.plan_code,
+        "display_name": plan.display_name as Any,
+        "display_price": plan.display_price,
+        "display_description": plan.display_description as Any,
+        "display_features_description": plan.display_features_description,
+        "data": plan.data,
+        "talk": plan.talk,
+        "text": plan.text,
+        "is_unlimited_plan": plan.is_unlimited_plan,
+        "is_familyplan": plan.is_familyplan,
+        "is_prepaid_postpaid": plan.is_prepaid_postpaid,
+        "plan_expiry_days": plan.plan_expiry_days,
+        "plan_expiry_type": plan.plan_expiry_type,
+        "carrier": plan.carrier,
+        "minute_unlimited": plan.minute_unlimited as Any,
+        "text_unlimited": plan.text_unlimited as Any,
+        "data_unlimited": plan.data_unlimited as Any,
+        "plan_discount_details": plan.plan_discount_details,
+        "autopay_discount": plan.autopay_discount
+      ]
+      plansData.append(planDict)
+    }
+    
+    // Save to Firestore
+    let planData: [String: Any] = [
+      "zipCode": zipCode,
+      "enrollmentType": enrollmentType,
+      "isFamilyPlan": isFamilyPlan,
+      "plans": plansData,
+      "lastUpdated": FieldValue.serverTimestamp()
+    ]
+    
+    db.collection("plans").document(documentId).setData(planData) { error in
+      if let error = error {
+        print("❌ Error saving plans to Firestore: \(error.localizedDescription)")
+        completion(false, error)
+      } else {
+        print("✅ Plans saved to Firestore for zip code: \(zipCode)")
+        completion(true, nil)
+      }
+    }
+  }
+  
+  /// Retrieve plans from Firestore for a given zip code, enrollment type, and family plan status
+  func getPlans(
+    zipCode: String,
+    enrollmentType: String,
+    isFamilyPlan: String,
+    completion: @escaping ([Plan]?, Error?) -> Void
+  ) {
+    let documentId = "\(zipCode)_\(enrollmentType)_\(isFamilyPlan)"
+    
+    db.collection("plans").document(documentId).getDocument { snapshot, error in
+      if let error = error {
+        print("❌ Error getting plans from Firestore: \(error.localizedDescription)")
+        completion(nil, error)
+        return
+      }
+      
+      guard let data = snapshot?.data(),
+            let plansArray = data["plans"] as? [[String: Any]] else {
+        print("⚠️ No plans found in Firestore for zip code: \(zipCode)")
+        completion(nil, nil)
+        return
+      }
+      
+      // Convert dictionary array back to Plan objects
+      var plans: [Plan] = []
+      for planDict in plansArray {
+        // Convert to JSON data first, then decode
+        if let jsonData = try? JSONSerialization.data(withJSONObject: planDict),
+           let plan = try? JSONDecoder().decode(Plan.self, from: jsonData) {
+          plans.append(plan)
+        }
+      }
+      
+      if plans.isEmpty {
+        print("⚠️ No valid plans found in Firestore for zip code: \(zipCode)")
+        completion(nil, nil)
+      } else {
+        print("✅ Retrieved \(plans.count) plans from Firestore for zip code: \(zipCode)")
+        completion(plans, nil)
+      }
+    }
+  }
+  
+  /// Clear plans cache for a specific zip code (optional - for cleanup)
+  func clearPlansCache(
+    zipCode: String,
+    enrollmentType: String,
+    isFamilyPlan: String,
+    completion: @escaping (Bool, Error?) -> Void
+  ) {
+    let documentId = "\(zipCode)_\(enrollmentType)_\(isFamilyPlan)"
+    
+    db.collection("plans").document(documentId).delete { error in
+      if let error = error {
+        print("❌ Error clearing plans cache: \(error.localizedDescription)")
+        completion(false, error)
+      } else {
+        print("✅ Plans cache cleared for zip code: \(zipCode)")
+        completion(true, nil)
+      }
+    }
+  }
+  
+  // Save enrollment_id to order
+  func saveEnrollmentId(
+    userId: String,
+    orderId: String,
+    enrollmentId: String,
+    completion: @escaping (Bool, Error?) -> Void
+  ) {
+    print("💾 Saving enrollment_id: \(enrollmentId) to order: \(orderId)")
+    
+    let orderRef = db.collection("users").document(userId)
+      .collection("orders").document(orderId)
+    
+    orderRef.setData([
+      "enrollment_id": enrollmentId,
+      "updatedAt": FieldValue.serverTimestamp()
+    ], merge: true) { error in
+      if let error = error {
+        print("❌ Error saving enrollment_id: \(error.localizedDescription)")
+        completion(false, error)
+      } else {
+        print("✅ Successfully saved enrollment_id to order")
+        completion(true, nil)
+      }
+    }
+  }
 }

@@ -194,8 +194,8 @@ struct PlanCard: View {
     }
     
     private func formatTalk(_ plan: Plan) -> String {
-        // Check if value is extremely large (truly unlimited)
-        if plan.talk >= 999999999 {
+        // Check if value is extremely large (9999K or higher should show as unlimited)
+        if plan.talk >= 9999000 {
             return "∞"
         }
         // Show actual formatted value
@@ -206,8 +206,8 @@ struct PlanCard: View {
     }
     
     private func formatText(_ plan: Plan) -> String {
-        // Check if value is extremely large (truly unlimited)
-        if plan.text >= 999999999 {
+        // Check if value is extremely large (9999K or higher should show as unlimited)
+        if plan.text >= 9999000 {
             return "∞"
         }
         // Show actual formatted value

@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "804860067099",
+    "project_id": "linkmobile-494b0",
+    "storage_bucket": "linkmobile-494b0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:804860067099:android:9211a21e7c70a53235a7be",
+        "android_client_info": {
+          "package_name": "com.linkmobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "804860067099-sdsoafngooip0msfunpld6ece9677l4e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmMxoKfc7mnLbI8MLGsZ7ektj2DbZNAZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "804860067099-sdsoafngooip0msfunpld6ece9677l4e.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "804860067099-78fhbc11trgu8aub100hce5it4fmmri8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.linkmobile"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:804860067099:android:acb78056d291904835a7be",
+        "android_client_info": {
+          "package_name": "com.linkmobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "804860067099-m7ckmvcmdcglf3buveqtpn3hc1v6h34i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.linkmobile",
+            "certificate_hash": "9330443c8519efd64b066732cd3daab131cc17b8"
+          }
+        },
+        {
+          "client_id": "804860067099-sdsoafngooip0msfunpld6ece9677l4e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmMxoKfc7mnLbI8MLGsZ7ektj2DbZNAZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "804860067099-sdsoafngooip0msfunpld6ece9677l4e.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "804860067099-78fhbc11trgu8aub100hce5it4fmmri8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.linkmobile"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

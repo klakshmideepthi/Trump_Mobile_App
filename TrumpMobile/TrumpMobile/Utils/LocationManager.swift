@@ -63,6 +63,11 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
       break
     }
   }
+  
+  /// Refresh authorization status (useful when app returns from settings)
+  func refreshAuthorizationStatus() {
+    authorizationStatus = manager.authorizationStatus
+  }
 }
 
 // Helper to open app settings

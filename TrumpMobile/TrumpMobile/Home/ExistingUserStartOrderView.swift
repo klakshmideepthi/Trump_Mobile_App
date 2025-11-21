@@ -6,6 +6,7 @@ struct ExistingUserStartOrderView: View {
   var previousOrders: [TrumpOrder] = []
   var onStart: ((String?) -> Void)?
   var onLogout: (() -> Void)?
+  var onChangeAddress: (() -> Void)? = nil
 
   @State private var isMenuOpen = false
   @State private var loadedOrders: [TrumpOrder] = []
@@ -21,6 +22,11 @@ struct ExistingUserStartOrderView: View {
   @State private var carouselTimer: Timer?
   @State private var showPlanDetailsSheet = false
   @EnvironmentObject private var navigationState: NavigationState
+  
+  // Address state variables
+  @State private var currentZipCode: String = ""
+  @State private var currentAddress: String = ""
+  @State private var showAddressSheet = false
 
   var body: some View {
     ZStack {
@@ -34,6 +40,25 @@ struct ExistingUserStartOrderView: View {
             .aspectRatio(80.0/23.0, contentMode: .fit)
             .frame(height: 25)
             .clipped()
+
+          Spacer()
+          
+          // Zip code display with dropdown
+          if !currentZipCode.isEmpty {
+            Button(action: {
+              showAddressSheet = true
+            }) {
+              HStack(spacing: 4) {
+                Text(currentZipCode)
+                  .font(.body)
+                  .fontWeight(.medium)
+                  .foregroundColor(.primary)
+                Image(systemName: "chevron.down")
+                  .font(.body)
+                  .foregroundColor(.secondary)
+              }
+            }
+          }
 
           Spacer()
 
@@ -254,6 +279,19 @@ struct ExistingUserStartOrderView: View {
         .presentationDragIndicator(.visible)
       }
     }
+    .sheet(isPresented: $showAddressSheet) {
+      AddressInfoSheet(
+        currentAddress: currentAddress,
+        zipCode: currentZipCode,
+        onChangeAddress: {
+          // Empty callback - sheet will handle reloading
+        }
+      )
+      .onDisappear {
+        // Reload address info when sheet is dismissed
+        loadAddressInfo()
+      }
+    }
     .onAppear {
       print("DEBUG: ExistingUserStartOrderView - previousOrders count: \(previousOrders.count)")
 
@@ -269,6 +307,9 @@ struct ExistingUserStartOrderView: View {
       
       // Load plans
       loadPlans()
+      
+      // Load address info
+      loadAddressInfo()
     }
   }
 
@@ -477,37 +518,150 @@ struct ExistingUserStartOrderView: View {
     }
   }
   
+  // Load address info from Firebase
+  private func loadAddressInfo() {
+    guard let userId = Auth.auth().currentUser?.uid else { return }
+    
+    let previousZipCode = currentZipCode
+    
+    // Load shipping address
+    FirebaseManager.shared.getShippingAddress(userId: userId) { addressData, _ in
+      DispatchQueue.main.async {
+        if let data = addressData {
+          let street = data["street"] as? String ?? ""
+          let aptNumber = data["aptNumber"] as? String ?? ""
+          let city = data["city"] as? String ?? ""
+          let state = data["state"] as? String ?? ""
+          let zip = data["zip"] as? String ?? ""
+          
+          self.currentZipCode = zip
+          
+          // Build full address string
+          var addressParts: [String] = []
+          if !street.isEmpty {
+            addressParts.append(street)
+          }
+          if !aptNumber.isEmpty {
+            addressParts.append("Apt \(aptNumber)")
+          }
+          if !city.isEmpty {
+            addressParts.append(city)
+          }
+          if !state.isEmpty {
+            addressParts.append(state)
+          }
+          if !zip.isEmpty {
+            addressParts.append(zip)
+          }
+          
+          self.currentAddress = addressParts.joined(separator: ", ")
+          
+          // Reload plans if ZIP code changed
+          // This will check Firestore first, and if plans don't exist for the new zip code,
+          // it will fetch from API and save to Firestore
+          if previousZipCode != zip && !zip.isEmpty {
+            print("📍 ZIP code changed from \(previousZipCode) to \(zip) - reloading plans")
+            loadPlans()
+          }
+        }
+      }
+    }
+  }
+  
   private func loadPlans() {
     isLoadingPlans = true
     
-    // Get zip code - you may want to get this from user's saved address or location
-    // For now, using a default. Replace with actual zip code from user data
-    let zipCode = "60644" // TODO: Get from user's shipping address or location
+    // Get zip code from Firebase contact info
+    guard let userId = Auth.auth().currentUser?.uid else {
+      isLoadingPlans = false
+      return
+    }
     
-    VCareAPIManager.shared.getPlanList(
-      zipCode: zipCode,
-      enrollmentType: "NON_LIFELINE",
-      isFamilyPlan: "N",
-      agentId: "Sushil",
-      source: "API"
-    ) { [self] result in
-      DispatchQueue.main.async {
-        isLoadingPlans = false
-        switch result {
-        case .success(let plans):
-          availablePlans = plans
-          print("✅ Loaded \(plans.count) plans")
-          // Reset carousel to first plan
-          currentPlanIndex = 0
-          // Don't auto-select - let user select manually
-          selectedPlan = nil
-          // Start timer if plans are available
-          if !plans.isEmpty {
-            startCarouselTimer()
+    // Helper function to load plans with zip code
+    let loadPlansWithZipCode = { [self] (zipCode: String) in
+      let enrollmentType = "NON_LIFELINE"
+      let isFamilyPlan = "N"
+      
+      // First, try to get plans from Firestore
+      FirebaseManager.shared.getPlans(
+        zipCode: zipCode,
+        enrollmentType: enrollmentType,
+        isFamilyPlan: isFamilyPlan
+      ) { [self] cachedPlans, error in
+        if let cachedPlans = cachedPlans, !cachedPlans.isEmpty {
+          // Plans found in Firestore, use them
+          DispatchQueue.main.async {
+            isLoadingPlans = false
+            availablePlans = cachedPlans
+            print("✅ Loaded \(cachedPlans.count) plans from Firestore for zip code: \(zipCode)")
+            // Reset carousel to first plan
+            currentPlanIndex = 0
+            // Don't auto-select - let user select manually
+            selectedPlan = nil
+            // Start timer if plans are available
+            if !cachedPlans.isEmpty {
+              startCarouselTimer()
+            }
           }
-        case .failure(let error):
-          print("❌ Failed to load plans: \(error.localizedDescription)")
-          // Don't show error as it's not critical for order creation
+        } else {
+          // Plans not in Firestore, fetch from API
+          print("📡 Plans not found in Firestore, fetching from API for zip code: \(zipCode)")
+          VCareAPIManager.shared.getPlanList(
+            zipCode: zipCode,
+            enrollmentType: enrollmentType,
+            isFamilyPlan: isFamilyPlan,
+            agentId: "Sushil",
+            source: "API"
+          ) { [self] result in
+            DispatchQueue.main.async {
+              isLoadingPlans = false
+              switch result {
+              case .success(let plans):
+                availablePlans = plans
+                print("✅ Loaded \(plans.count) plans from API for zip code: \(zipCode)")
+                
+                // Save plans to Firestore for future use
+                FirebaseManager.shared.savePlans(
+                  zipCode: zipCode,
+                  enrollmentType: enrollmentType,
+                  isFamilyPlan: isFamilyPlan,
+                  plans: plans
+                ) { success, error in
+                  if success {
+                    print("✅ Plans saved to Firestore for zip code: \(zipCode)")
+                  } else if let error = error {
+                    print("⚠️ Failed to save plans to Firestore: \(error.localizedDescription)")
+                  }
+                }
+                
+                // Reset carousel to first plan
+                currentPlanIndex = 0
+                // Don't auto-select - let user select manually
+                selectedPlan = nil
+                // Start timer if plans are available
+                if !plans.isEmpty {
+                  startCarouselTimer()
+                }
+              case .failure(let error):
+                print("❌ Failed to load plans: \(error.localizedDescription)")
+                // Don't show error as it's not critical for order creation
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // First try to get zip from shipping address
+    FirebaseManager.shared.getShippingAddress(userId: userId) { [self] addressData, _ in
+      // Check shipping address for zip
+      if let zip = addressData?["zip"] as? String, !zip.isEmpty {
+        loadPlansWithZipCode(zip)
+      } else {
+        // Fall back to contact info (if zip is stored there)
+        FirebaseManager.shared.getContactInfo(userId: userId) { [self] contactData, _ in
+          let zipCode = contactData?["zip"] as? String ?? "60644" // Default fallback
+          loadPlansWithZipCode(zipCode)
         }
       }
     }
@@ -520,11 +674,15 @@ struct ExistingUserStartOrderView: View {
     carouselTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
       guard !self.availablePlans.isEmpty else { return }
       DispatchQueue.main.async {
-        var transaction = Transaction(animation: .easeInOut(duration: 0.6))
-        transaction.disablesAnimations = false
-        withTransaction(transaction) {
-          let nextIndex = (self.currentPlanIndex + 1) % self.availablePlans.count
-          self.currentPlanIndex = nextIndex
+        withAnimation(.easeInOut(duration: 0.6)) {
+          // Calculate next index with proper wrap-around
+          if self.currentPlanIndex >= self.availablePlans.count - 1 {
+            // If at last item, go back to first
+            self.currentPlanIndex = 0
+          } else {
+            // Otherwise, go to next item
+            self.currentPlanIndex += 1
+          }
           // Only rotate visually, don't auto-select plans
         }
       }
@@ -780,6 +938,8 @@ struct OrderCardView: View {
       return .green
     case .cancelled:
       return .red
+    case .draft:
+      return .gray
     }
   }
 }
@@ -925,8 +1085,8 @@ struct DetailedPlanCarouselCard: View {
   }
   
   private func formatTalk(_ plan: Plan) -> String {
-    // Check if value is extremely large (truly unlimited)
-    if plan.talk >= 999999999 {
+    // Check if value is extremely large (9999K or higher should show as unlimited)
+    if plan.talk >= 9999000 {
       return "Unlimited"
     }
     // Show actual formatted value
@@ -937,8 +1097,8 @@ struct DetailedPlanCarouselCard: View {
   }
   
   private func formatText(_ plan: Plan) -> String {
-    // Check if value is extremely large (truly unlimited)
-    if plan.text >= 999999999 {
+    // Check if value is extremely large (9999K or higher should show as unlimited)
+    if plan.text >= 9999000 {
       return "Unlimited"
     }
     // Show actual formatted value
@@ -1159,8 +1319,8 @@ struct PlanDetailsSheetView: View {
   }
   
   private func formatTalk(_ plan: Plan) -> String {
-    // Check if value is extremely large (truly unlimited)
-    if plan.talk >= 999999999 {
+    // Check if value is extremely large (9999K or higher should show as unlimited)
+    if plan.talk >= 9999000 {
       return "Unlimited"
     }
     // Show actual formatted value
@@ -1171,8 +1331,8 @@ struct PlanDetailsSheetView: View {
   }
   
   private func formatText(_ plan: Plan) -> String {
-    // Check if value is extremely large (truly unlimited)
-    if plan.text >= 999999999 {
+    // Check if value is extremely large (9999K or higher should show as unlimited)
+    if plan.text >= 9999000 {
       return "Unlimited"
     }
     // Show actual formatted value

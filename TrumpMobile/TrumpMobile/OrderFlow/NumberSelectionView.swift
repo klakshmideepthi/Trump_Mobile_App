@@ -1,4 +1,6 @@
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 struct NumberSelectionView: View {
   @ObservedObject var viewModel: UserRegistrationViewModel
@@ -6,6 +8,12 @@ struct NumberSelectionView: View {
   var onBack: (() -> Void)? = nil
   var onCancel: (() -> Void)? = nil
   var showNavigation: Bool = true  // New parameter to control navigation display
+  
+  @State private var isValidatingPortIn: Bool = false
+  @State private var portInValidationStatus: String? = nil
+  @State private var portInValidationError: String? = nil
+  @State private var hasValidatedPortIn: Bool = false
+  @State private var carrierFromOrder: String? = nil
 
   var body: some View {
     let contentView = VStack(spacing: 24) {
@@ -13,11 +21,35 @@ struct NumberSelectionView: View {
       OrderStepHeader(
         "Transfer your existing number or choose a new number"
       )
+      .onAppear {
+        // Get carrier from order when view appears (only if Existing is selected)
+        if viewModel.numberType == "Existing" {
+          getCarrierFromOrder { carrier in
+            DispatchQueue.main.async {
+              self.carrierFromOrder = carrier
+              // If phone number is already entered, trigger validation
+              if !self.viewModel.selectedPhoneNumber.isEmpty && carrier != nil {
+                self.validatePortIn()
+              }
+            }
+          }
+        }
+      }
 
       // Button section with styling similar to SimSelectionView
       VStack(spacing: 12) {
         Button(action: {
           viewModel.numberType = "Existing"
+          // Get carrier from order when Existing is selected
+          getCarrierFromOrder { carrier in
+            DispatchQueue.main.async {
+              self.carrierFromOrder = carrier
+              // If phone number is already entered, trigger validation
+              if !self.viewModel.selectedPhoneNumber.isEmpty && carrier != nil {
+                self.validatePortIn()
+              }
+            }
+          }
         }) {
           Text("Transfer Your Existing Number")
             .font(.system(size: 18, weight: .medium))
@@ -129,7 +161,32 @@ struct NumberSelectionView: View {
                 // Remove all non-numeric characters
                 let digits = newValue.filter { $0.isNumber }
                 // Limit to 10 digits
-                viewModel.selectedPhoneNumber = String(digits.prefix(10))
+                let newPhoneNumber = String(digits.prefix(10))
+                
+                // Only update if the number actually changed
+                if newPhoneNumber != viewModel.selectedPhoneNumber {
+                  viewModel.selectedPhoneNumber = newPhoneNumber
+                  
+                  // Reset validation when phone number changes (only if not currently validating)
+                  if !isValidatingPortIn {
+                    hasValidatedPortIn = false
+                    portInValidationStatus = nil
+                    portInValidationError = nil
+                    
+                    // Trigger validation if carrier is available and we have 10 digits
+                    if digits.count == 10 && carrierFromOrder != nil {
+                      // Use Task to debounce the validation call
+                      Task {
+                        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 second delay
+                        await MainActor.run {
+                          if !isValidatingPortIn && viewModel.selectedPhoneNumber.count == 10 {
+                            validatePortIn()
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             )
           )
@@ -149,6 +206,36 @@ struct NumberSelectionView: View {
           )
           .keyboardType(.phonePad)
           .textContentType(.telephoneNumber)
+          
+          // Validation status indicator
+          if isValidatingPortIn {
+            HStack {
+              ProgressView()
+                .progressViewStyle(CircularProgressViewStyle())
+              Text("Validating phone number...")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            }
+            .padding(.top, 8)
+          } else if let status = portInValidationStatus {
+            HStack {
+              Image(systemName: status == "Eligible" ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .foregroundColor(status == "Eligible" ? .green : .red)
+              Text(status == "Eligible" ? "Number is eligible for porting" : "Number is not eligible for porting")
+                .font(.subheadline)
+                .foregroundColor(status == "Eligible" ? .green : .red)
+            }
+            .padding(.top, 8)
+          } else if let error = portInValidationError {
+            HStack {
+              Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.orange)
+              Text(error)
+                .font(.subheadline)
+                .foregroundColor(.orange)
+            }
+            .padding(.top, 8)
+          }
         }
         .padding(.horizontal, 16)
       }
@@ -164,7 +251,7 @@ struct NumberSelectionView: View {
           totalSteps: 6,
           nextButtonText: "Next Step",
           nextButtonDisabled: viewModel.numberType.isEmpty
-            || (viewModel.numberType == "Existing" && viewModel.selectedPhoneNumber.count != 10),
+            || (viewModel.numberType == "Existing" && (viewModel.selectedPhoneNumber.count != 10 || isValidatingPortIn || !hasValidatedPortIn)),
           nextButtonAction: {
             // Save number selection to orders collection
             viewModel.saveNumberSelection { success in
@@ -217,5 +304,181 @@ struct NumberSelectionView: View {
     }
 
     return digits
+  }
+  
+  // MARK: - Helper Methods (same as IMEICheckView)
+  
+  private func getCarrierFromOrder(completion: @escaping (String?) -> Void) {
+    guard let userId = Auth.auth().currentUser?.uid else {
+      print("❌ getCarrierFromOrder: No user ID")
+      completion(nil)
+      return
+    }
+    
+    // Get current order ID from UserDefaults
+    let orderId = UserDefaults.standard.string(forKey: "currentOrderId")
+    print("🔍 getCarrierFromOrder: userId=\(userId), orderId=\(orderId ?? "nil")")
+    
+    let db = Firestore.firestore()
+    let orderRef: DocumentReference
+    
+    if let orderId = orderId {
+      orderRef = db.collection("users").document(userId).collection("orders").document(orderId)
+    } else {
+      // Fallback: get any pending order (without ordering to avoid index requirement)
+      db.collection("users").document(userId)
+        .collection("orders")
+        .whereField("status", isEqualTo: "pending")
+        .limit(to: 1)
+        .getDocuments { snapshot, error in
+          if let error = error {
+            print("❌ Error fetching order: \(error.localizedDescription)")
+            completion(nil)
+            return
+          }
+          
+          guard let doc = snapshot?.documents.first,
+                let planId = doc.data()["plan_id"] as? Int else {
+            completion(nil)
+            return
+          }
+          
+          self.getCarrierFromPlanId(planId: planId, completion: completion)
+        }
+      return
+    }
+    
+    // Get order document
+    orderRef.getDocument { snapshot, error in
+      if let error = error {
+        print("❌ Error fetching order: \(error.localizedDescription)")
+        completion(nil)
+        return
+      }
+      
+      guard let data = snapshot?.data(),
+            let planId = data["plan_id"] as? Int else {
+        print("⚠️ Order document missing plan_id. Data: \(snapshot?.data() ?? [:])")
+        completion(nil)
+        return
+      }
+      
+      print("✅ Found plan_id in order: \(planId)")
+      // Get carrier from plan
+      self.getCarrierFromPlanId(planId: planId, completion: completion)
+    }
+  }
+  
+  private func getCarrierFromPlanId(planId: Int, completion: @escaping (String?) -> Void) {
+    print("🔍 getCarrierFromPlanId: Searching for plan_id=\(planId)")
+    let db = Firestore.firestore()
+    
+    // Query all plan documents to find the one with matching plan_id
+    db.collection("plans")
+      .getDocuments { snapshot, error in
+        if let error = error {
+          print("❌ Error fetching plans: \(error.localizedDescription)")
+          completion(nil)
+          return
+        }
+        
+        guard let documents = snapshot?.documents else {
+          print("⚠️ No plan documents found")
+          completion(nil)
+          return
+        }
+        
+        print("📋 Found \(documents.count) plan documents")
+        // Search through all plan documents
+        for doc in documents {
+          let data = doc.data()
+          if let plansArray = data["plans"] as? [[String: Any]] {
+            for planDict in plansArray {
+              if let id = planDict["plan_id"] as? Int, id == planId,
+                 let carrierArray = planDict["carrier"] as? [String],
+                 let firstCarrier = carrierArray.first {
+                print("✅ Found carrier for plan_id \(planId): \(firstCarrier)")
+                completion(firstCarrier)
+                return
+              }
+            }
+          }
+        }
+        
+        print("⚠️ No carrier found for plan_id: \(planId)")
+        completion(nil)
+      }
+  }
+  
+  private func validatePortIn() {
+    // Don't validate if already validating or if required fields are missing
+    guard !isValidatingPortIn,
+          !viewModel.selectedPhoneNumber.isEmpty,
+          viewModel.selectedPhoneNumber.count == 10 else {
+      print("⚠️ Cannot validate: isValidatingPortIn=\(isValidatingPortIn), phoneNumber=\(viewModel.selectedPhoneNumber), count=\(viewModel.selectedPhoneNumber.count)")
+      return
+    }
+    
+    guard let carrier = carrierFromOrder else {
+      print("⚠️ Cannot validate: carrier is nil. Attempting to fetch carrier from order...")
+      // Try to get carrier if we don't have it yet
+      getCarrierFromOrder { fetchedCarrier in
+        DispatchQueue.main.async {
+          self.carrierFromOrder = fetchedCarrier
+          if let carrier = fetchedCarrier {
+            print("✅ Carrier fetched: \(carrier)")
+            // Retry validation
+            self.validatePortIn()
+          } else {
+            print("❌ Failed to fetch carrier from order")
+            self.portInValidationError = "Unable to determine carrier. Please ensure you have selected a plan."
+          }
+        }
+      }
+      return
+    }
+    
+    print("🔄 Starting port-in validation for phone: \(viewModel.selectedPhoneNumber), carrier: \(carrier)")
+    
+    // Reset previous validation
+    hasValidatedPortIn = false
+    portInValidationStatus = nil
+    portInValidationError = nil
+    isValidatingPortIn = true
+    
+    // Get zip code (required for AT&T, use user's saved zip)
+    let zipCode = viewModel.zip.isEmpty ? nil : viewModel.zip
+    print("📦 Using zip code: \(zipCode ?? "none")")
+    
+    // Call the API with carrier from order
+    VCareAPIManager.shared.validatePortIn(
+      mdn: viewModel.selectedPhoneNumber,
+      carrier: carrier,
+      zipCode: zipCode,
+      agentId: "Sushil", // TODO: Get from user settings or configuration
+      source: "WEBSITE"
+    ) { result in
+      DispatchQueue.main.async {
+        isValidatingPortIn = false
+        
+        switch result {
+        case .success(let validationData):
+          hasValidatedPortIn = true
+          portInValidationStatus = validationData.PORTINSTATUS ?? validationData.description
+          portInValidationError = nil
+          
+          // Log the result
+          if let status = validationData.PORTINSTATUS {
+            print("✅ Port-in validation successful: \(status)")
+          }
+          
+        case .failure(let error):
+          hasValidatedPortIn = false
+          portInValidationStatus = nil
+          portInValidationError = error.localizedDescription
+          print("❌ Port-in validation failed: \(error.localizedDescription)")
+        }
+      }
+    }
   }
 }

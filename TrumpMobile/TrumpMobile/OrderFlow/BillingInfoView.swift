@@ -56,7 +56,7 @@ struct BillingInfoView: View {
   
   // Load plan information from order document
   private func loadPlanInfo() {
-    guard let userId = viewModel.userId, let orderId = viewModel.orderId else {
+    guard let orderId = viewModel.orderId else {
       return
     }
     
@@ -93,15 +93,287 @@ private extension BillingInfoView {
     viewModel.creditCardNumber = creditCardNumber
     viewModel.billingDetails = expirationDate
     viewModel.saveBillingInfo { success in
-      isSaving = false
       if success {
         if let userId = viewModel.userId, let orderId = viewModel.orderId {
           FirebaseOrderManager.shared.saveStepProgress(userId: userId, orderId: orderId, step: 5)
+          
+          // After payment is completed, call create_customer_prepaid_multiline API
+          createCustomerOrder(userId: userId, orderId: orderId)
+        } else {
+          isSaving = false
+          onNext()
         }
-        onNext()
       } else {
+        isSaving = false
         let err = viewModel.errorMessage ?? "Unknown error"
         DebugLogger.shared.log("Failed to save billing info: \(err)", category: "BillingInfo")
+      }
+    }
+  }
+  
+  func createCustomerOrder(userId: String, orderId: String) {
+    // Fetch order document to get enrollment_id, plan_id, and other data
+    FirebaseOrderManager.shared.fetchOrderDocument(orderId: orderId) { result in
+      DispatchQueue.main.async {
+        switch result {
+        case .success(let orderData):
+          // Extract required data from order
+          guard let enrollmentId = orderData["enrollment_id"] as? String else {
+            print("❌ Missing enrollment_id in order document")
+            self.isSaving = false
+            // Continue to next step even if enrollment_id is missing
+            self.onNext()
+            return
+          }
+          
+          // Get plan_id - can be Int or String
+          var planId: Int?
+          if let planIdInt = orderData["plan_id"] as? Int {
+            planId = planIdInt
+          } else if let planIdString = orderData["plan_id"] as? String, let planIdInt = Int(planIdString) {
+            planId = planIdInt
+          }
+          
+          guard let planId = planId else {
+            print("❌ Missing plan_id in order document")
+            self.isSaving = false
+            self.onNext()
+            return
+          }
+          
+          // Get order_id from payment (if available)
+          // Try different possible field names
+          var paymentOrderId: Int?
+          if let orderIdInt = orderData["payment_order_id"] as? Int {
+            paymentOrderId = orderIdInt
+          } else if let orderIdInt = orderData["order_id"] as? Int {
+            paymentOrderId = orderIdInt
+          } else if let orderIdString = orderData["payment_order_id"] as? String, let orderIdInt = Int(orderIdString) {
+            paymentOrderId = orderIdInt
+          } else if let orderIdString = orderData["order_id"] as? String, let orderIdInt = Int(orderIdString) {
+            paymentOrderId = orderIdInt
+          }
+          
+          // Determine activation type
+          let activationType: String
+          if self.viewModel.numberType == "Existing" {
+            activationType = "PORTIN"
+          } else {
+            activationType = "NEWACTIVATION"
+          }
+          
+          // Determine enrollment type (SHIPMENT or HANDOVER)
+          let enrollmentType: String
+          if self.viewModel.simType == "eSIM" {
+            enrollmentType = "SHIPMENT"  // eSIM always uses SHIPMENT
+          } else {
+            // For physical SIM, check if customer has SIM (HANDOVER) or needs shipment
+            enrollmentType = "SHIPMENT"  // Default to SHIPMENT for now
+          }
+          
+          // Determine is_esim
+          let isEsim = self.viewModel.simType == "eSIM" ? "Y" : "N"
+          
+          // Get carrier from order or use default
+          let carrier = orderData["carrier"] as? String ?? "TMBRLY"
+          
+          // Build customer info dictionary
+          var customerInfo: [String: Any] = [
+            "activation_type": activationType,
+            "enrollment_type": enrollmentType,
+            "is_esim": isEsim,
+            "carrier": carrier,
+            "email": self.viewModel.email,
+            "first_name": self.viewModel.firstName,
+            "last_name": self.viewModel.lastName,
+            "service_address_one": self.viewModel.street,
+            "service_address_two": self.viewModel.aptNumber,
+            "service_city": self.viewModel.city,
+            "service_state": self.viewModel.state,
+            "service_zip": self.viewModel.zip,
+            "billing_address_one": self.viewModel.street,  // Use same as service for now
+            "billing_address_two": self.viewModel.aptNumber,
+            "billing_city": self.viewModel.city,
+            "billing_state": self.viewModel.state,
+            "billing_zip": self.viewModel.zip,
+            "notify_bill_via_text": "Y",
+            "notify_bill_via_email": "Y"
+          ]
+          
+          // Add password if available
+          if !self.viewModel.password.isEmpty {
+            customerInfo["password"] = self.viewModel.password
+          }
+          
+          // Add alternate phone number if available
+          if !self.viewModel.phoneNumber.isEmpty {
+            customerInfo["alternate_phone_number"] = self.viewModel.phoneNumber
+          }
+          
+          // Add port-in information if activation type is PORTIN
+          if activationType == "PORTIN" {
+            customerInfo["port_current_carrier"] = self.viewModel.portInCurrentCarrier
+            customerInfo["port_account_number"] = self.viewModel.portInAccountNumber
+            customerInfo["port_account_password"] = self.viewModel.portInPin
+            customerInfo["port_number"] = self.viewModel.selectedPhoneNumber
+            
+            // Port-in name (split if available)
+            let portName = self.viewModel.portInAccountHolderName
+            let portNameParts = portName.split(separator: " ", maxSplits: 1)
+            if portNameParts.count >= 2 {
+              customerInfo["port_first_name"] = String(portNameParts[0])
+              customerInfo["port_last_name"] = String(portNameParts[1])
+            } else if portNameParts.count == 1 {
+              customerInfo["port_first_name"] = String(portNameParts[0])
+              customerInfo["port_last_name"] = ""
+            }
+            
+            // Use service address for port-in address (as per typical flow)
+            customerInfo["port_address_one"] = self.viewModel.street
+            customerInfo["port_address_two"] = self.viewModel.aptNumber
+            customerInfo["port_city"] = self.viewModel.city
+            customerInfo["port_state"] = self.viewModel.state
+            customerInfo["port_zip_code"] = self.viewModel.zip
+          }
+          
+          // Call create_customer_prepaid_multiline API
+          print("🔄 Calling create_customer_prepaid_multiline API...")
+          // Generate unique transaction ID for this API call
+          let transactionId = VCareAPIManager.generateTransactionId(orderId: orderId, action: "CREATE")
+          VCareAPIManager.shared.createCustomerPrepaidMultiline(
+            enrollmentId: enrollmentId,
+            orderId: paymentOrderId,
+            planId: planId,
+            customerInfo: customerInfo,
+            agentId: "Sushil",  // TODO: Get from user settings or configuration
+            source: "WEBSITE",
+            externalTransactionId: transactionId
+          ) { result in
+            DispatchQueue.main.async {
+              self.isSaving = false
+              
+              switch result {
+              case .success(let response):
+                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                print("✅ CUSTOMER CREATED SUCCESSFULLY")
+                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                print("📋 API Response Details:")
+                print("   Message: \(response.msg)")
+                print("   Message Code: \(response.msg_code)")
+                if let externalTxnId = response.external_transaction_id {
+                  print("   External Transaction ID: \(externalTxnId)")
+                }
+                print("   Token: \(response.token.prefix(50))...")
+                
+                // Log line details
+                if let lines = response.data, !lines.isEmpty {
+                  print("   Number of Lines: \(lines.count)")
+                  
+                  for (index, lineResponse) in lines.enumerated() {
+                    print("   ──────────────────────────────────────")
+                    print("   Line \(index + 1):")
+                    print("      Message: \(lineResponse.msg)")
+                    print("      Message Code: \(lineResponse.msg_code)")
+                    
+                    if let lineData = lineResponse.data {
+                      if let custId = lineData.cust_id {
+                        print("      Customer ID: \(custId)")
+                      }
+                      if let customerId = lineData.customer_id {
+                        print("      Customer ID (alt): \(customerId)")
+                      }
+                      if let enrollmentId = lineData.enrollment_id {
+                        print("      Enrollment ID: \(enrollmentId)")
+                      }
+                      if let enrollmentType = lineData.enrollment_type {
+                        print("      Enrollment Type: \(enrollmentType)")
+                      }
+                      if let mdn = lineData.mdn, !mdn.isEmpty {
+                        print("      MDN (Phone Number): \(mdn)")
+                      }
+                      if let msid = lineData.msid, !msid.isEmpty {
+                        print("      MSID: \(msid)")
+                      }
+                      if let msl = lineData.msl, !msl.isEmpty {
+                        print("      MSL: \(msl)")
+                      }
+                      if let invoiceNumber = lineData.invoice_number, !invoiceNumber.isEmpty {
+                        print("      Invoice Number: \(invoiceNumber)")
+                      }
+                    } else {
+                      print("      ⚠️ No line data in response")
+                    }
+                  }
+                } else {
+                  print("   ⚠️ No lines data in response")
+                }
+                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                
+                // Log to DebugLogger
+                var logMessage = "Customer created successfully: \(response.msg) (Code: \(response.msg_code))"
+                if let lines = response.data, let firstLine = lines.first, let lineData = firstLine.data {
+                  if let custId = lineData.cust_id {
+                    logMessage += " | Customer ID: \(custId)"
+                  }
+                  if let mdn = lineData.mdn, !mdn.isEmpty {
+                    logMessage += " | MDN: \(mdn)"
+                  }
+                }
+                DebugLogger.shared.log(logMessage, category: "BillingInfo")
+                
+                // Save customer ID and other response data to order if needed
+                if let lines = response.data, let firstLine = lines.first, let lineData = firstLine.data {
+                  var updateData: [String: Any] = [:]
+                  
+                  if let custId = lineData.cust_id {
+                    updateData["cust_id"] = custId
+                    print("💾 Saving cust_id: \(custId) to order")
+                  }
+                  if let customerId = lineData.customer_id {
+                    updateData["customer_id"] = customerId
+                    print("💾 Saving customer_id: \(customerId) to order")
+                  }
+                  if let mdn = lineData.mdn, !mdn.isEmpty {
+                    updateData["mdn"] = mdn
+                    print("💾 Saving MDN: \(mdn) to order")
+                  }
+                  if let enrollmentId = lineData.enrollment_id {
+                    updateData["enrollment_id"] = enrollmentId
+                    print("💾 Saving enrollment_id: \(enrollmentId) to order")
+                  }
+                  
+                  if !updateData.isEmpty {
+                    FirebaseOrderManager.shared.saveStepProgress(
+                      userId: userId,
+                      orderId: orderId,
+                      step: 5,
+                      data: updateData
+                    )
+                    print("✅ Successfully saved customer data to order")
+                  }
+                }
+                
+                // Continue to next step
+                self.onNext()
+                
+              case .failure(let error):
+                print("❌ Failed to create customer: \(error.localizedDescription)")
+                DebugLogger.shared.log("Failed to create customer: \(error.localizedDescription)", category: "BillingInfo")
+                
+                // Show error but continue to next step (order is saved locally)
+                // You may want to show an alert to the user here
+                self.onNext()
+              }
+            }
+          }
+          
+        case .failure(let error):
+          print("❌ Failed to fetch order document: \(error.localizedDescription)")
+          DebugLogger.shared.log("Failed to fetch order document: \(error.localizedDescription)", category: "BillingInfo")
+          self.isSaving = false
+          // Continue to next step even if order fetch fails
+          self.onNext()
+        }
       }
     }
   }

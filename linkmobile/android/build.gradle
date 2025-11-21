@@ -1,0 +1,106 @@
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new RuntimeException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    
+    // Make Flutter extension available to plugin subprojects before evaluation
+    // This is needed for plugins that try to access flutter.compileSdkVersion during evaluation
+    // Only create it for plugin projects, not for the app project
+    if (project.name != 'app') {
+        project.beforeEvaluate {
+            // Create a Flutter extension object if it doesn't exist
+            // This will be replaced by the actual Flutter extension when the Flutter plugin is applied
+            if (!project.extensions.findByName('flutter')) {
+                project.extensions.add('flutter', new FlutterExtension())
+            }
+        }
+    }
+    
+    // Ensure Flutter plugin projects have compileSdkVersion set
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin('com.android.library') || project.plugins.hasPlugin('com.android.application')) {
+            // Set compileSdkVersion if not already set
+            if (!project.android.hasProperty('compileSdkVersion') || project.android.compileSdkVersion == null) {
+                project.android {
+                    // Force compileSdkVersion to 35 for all Android projects (required by geocoding_android)
+                    compileSdkVersion 35
+                }
+            }
+            
+            // Set minSdkVersion if not already set
+            if (project.android.defaultConfig.minSdkVersion == null) {
+                project.android.defaultConfig.minSdkVersion = 23
+            }
+            
+            // Set Java version for all subprojects
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+            
+            // Add Java toolchain configuration to fix JDK compatibility
+            project.tasks.withType(JavaCompile).configureEach {
+                options.release = 17
+            }
+            
+            // Force Kotlin JVM target to 17 for all subprojects to fix compatibility
+            project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                kotlinOptions {
+                    jvmTarget = "17"
+                }
+            }
+        }
+    }
+}
+
+// Flutter extension class to provide values to plugins before Flutter plugin is applied
+class FlutterExtension {
+    def getCompileSdkVersion() {
+        return 35
+    }
+    
+    def getMinSdkVersion() {
+        return 23
+    }
+    
+    def getTargetSdkVersion() {
+        return 35
+    }
+    
+    def getVersionCode() {
+        return 1
+    }
+    
+    def getVersionName() {
+        return "1.0.0"
+    }
+    
+    def getNdkVersion() {
+        return null
+    }
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

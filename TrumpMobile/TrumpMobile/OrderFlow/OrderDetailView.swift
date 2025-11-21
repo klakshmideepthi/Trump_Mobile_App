@@ -253,6 +253,8 @@ struct OrderDetailView: View {
       return .orange
     case "cancelled":
       return .red
+    case "draft":
+      return .gray
     case "processing":
       return .blue
     default:

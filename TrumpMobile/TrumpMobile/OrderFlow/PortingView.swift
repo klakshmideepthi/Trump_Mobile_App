@@ -81,76 +81,79 @@ struct PortingView: View {
             .fontWeight(.medium)
             .foregroundColor(Color.adaptiveText)
 
-          Button(action: {
-            showCarrierDropdown.toggle()
-          }) {
-            HStack {
-              Text(
-                viewModel.portInCurrentCarrier.isEmpty
-                  ? "Verizon, AT&T, T-Mobile, etc." : viewModel.portInCurrentCarrier
+          ZStack(alignment: .top) {
+            Button(action: {
+              showCarrierDropdown.toggle()
+            }) {
+              HStack {
+                Text(
+                  viewModel.portInCurrentCarrier.isEmpty
+                    ? "Verizon, AT&T, T-Mobile, etc." : viewModel.portInCurrentCarrier
+                )
+                .foregroundColor(
+                  viewModel.portInCurrentCarrier.isEmpty
+                    ? Color.adaptiveSecondaryText : Color.adaptiveText)
+                Spacer()
+                Image(systemName: "chevron.down")
+                  .foregroundColor(Color.adaptiveSecondaryText)
+                  .rotationEffect(.degrees(showCarrierDropdown ? 180 : 0))
+                  .animation(.easeInOut(duration: 0.2), value: showCarrierDropdown)
+              }
+              .padding(.horizontal, 12)
+              .padding(.vertical, 10)
+              .background(Color.adaptiveSecondaryBackground)
+              .cornerRadius(8)
+              .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                  .stroke(Color.adaptiveBorder, lineWidth: 1)
               )
-              .foregroundColor(
-                viewModel.portInCurrentCarrier.isEmpty
-                  ? Color.adaptiveSecondaryText : Color.adaptiveText)
-              Spacer()
-              Image(systemName: "chevron.down")
-                .foregroundColor(Color.adaptiveSecondaryText)
-                .rotationEffect(.degrees(showCarrierDropdown ? 180 : 0))
-                .animation(.easeInOut(duration: 0.2), value: showCarrierDropdown)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color.adaptiveSecondaryBackground)
-            .cornerRadius(8)
-            .overlay(
-              RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.adaptiveBorder, lineWidth: 1)
-            )
-          }
-          .buttonStyle(PlainButtonStyle())
+            .buttonStyle(PlainButtonStyle())
 
-          if showCarrierDropdown {
-            VStack(spacing: 0) {
-              ForEach(carrierOptions, id: \.self) { carrier in
-                Button(action: {
-                  viewModel.portInCurrentCarrier = carrier
-                  showCarrierDropdown = false
-                }) {
-                  HStack {
-                    Text(carrier)
-                      .foregroundColor(Color.adaptiveText)
-                    Spacer()
-                    if viewModel.portInCurrentCarrier == carrier {
-                      Image(systemName: "checkmark")
-                        .foregroundColor(Color.accentGold)
+            if showCarrierDropdown {
+              VStack(spacing: 0) {
+                ForEach(carrierOptions, id: \.self) { carrier in
+                  Button(action: {
+                    viewModel.portInCurrentCarrier = carrier
+                    showCarrierDropdown = false
+                  }) {
+                    HStack {
+                      Text(carrier)
+                        .foregroundColor(Color.adaptiveText)
+                      Spacer()
+                      if viewModel.portInCurrentCarrier == carrier {
+                        Image(systemName: "checkmark")
+                          .foregroundColor(Color.accentGold)
+                      }
                     }
-                  }
-                  .padding(.horizontal, 12)
-                  .padding(.vertical, 10)
-                  .background(
-                    viewModel.portInCurrentCarrier == carrier
-                      ? Color.accentGold.opacity(0.1) : Color.clear
-                  )
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                if carrier != carrierOptions.last {
-                  Divider()
-                    .background(Color.adaptiveBorder)
                     .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                      viewModel.portInCurrentCarrier == carrier
+                        ? Color.accentGold.opacity(0.1) : Color.clear
+                    )
+                  }
+                  .buttonStyle(PlainButtonStyle())
+
+                  if carrier != carrierOptions.last {
+                    Divider()
+                      .background(Color.adaptiveBorder)
+                      .padding(.horizontal, 12)
+                  }
                 }
               }
+              .background(Color.adaptiveBackground)
+              .cornerRadius(8)
+              .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                  .stroke(Color.adaptiveBorder, lineWidth: 1)
+              )
+              .shadow(color: Color.adaptiveText.opacity(0.1), radius: 5, x: 0, y: 2)
+              .padding(.top, 44)
+              .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
+              .animation(.easeInOut(duration: 0.2), value: showCarrierDropdown)
+              .zIndex(1000)
             }
-            .background(Color.adaptiveBackground)
-            .cornerRadius(8)
-            .overlay(
-              RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.adaptiveBorder, lineWidth: 1)
-            )
-            .shadow(color: Color.adaptiveText.opacity(0.1), radius: 5, x: 0, y: 2)
-            .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
-            .animation(.easeInOut(duration: 0.2), value: showCarrierDropdown)
-            .zIndex(2)
           }
         }
 

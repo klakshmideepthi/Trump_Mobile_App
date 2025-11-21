@@ -202,12 +202,12 @@ struct OrderFlowView: View {
     print("DEBUG: handleCancelOrder accessing navigationState object")
 
     if let orderId = currentOrder?.id ?? viewModel.orderId {
-      print("DEBUG: Deleting order with ID: \(orderId)")
-      orderManager.deleteOrder(orderId: orderId) { success in
+      print("DEBUG: Cancelling order with ID: \(orderId)")
+      orderManager.cancelOrder(orderId: orderId) { success in
         if success {
-          print("DEBUG: Order successfully deleted from Firebase")
+          print("DEBUG: Order successfully cancelled (status set to draft)")
         } else {
-          print("DEBUG: Failed to delete order from Firebase")
+          print("DEBUG: Failed to cancel order")
         }
         DispatchQueue.main.async {
           print("DEBUG: Inside DispatchQueue.main.async before navigation")

@@ -230,15 +230,8 @@ struct DeviceCompatibilityView: View {
       // Set device as compatible for the demo
       viewModel.deviceIsCompatible = true
 
-      // Smart defaults: on iOS, prefer Apple brand and first model if none selected
-      if selectedBrand == nil {
-        if let appleBrand = PhoneBrand.allCases.first(where: { $0.rawValue == "Apple" }) {
-          selectedBrand = appleBrand.rawValue
-          if let firstModel = PhoneCatalog.shared.models(for: appleBrand).first?.name {
-            selectedModel = firstModel
-          }
-        }
-      }
+      // REMOVED: Auto-selection of device brand/model
+      // Users can skip this step entirely if they want
     }
 
     // Return either wrapped in navigation container or just the content
@@ -248,14 +241,7 @@ struct DeviceCompatibilityView: View {
           currentStep: 2,
           totalSteps: 6,
           nextButtonText: "Next Step",
-          nextButtonDisabled: {
-            let brandSelected =
-              (selectedBrand != nil && selectedBrand != "")
-              && (selectedModel != nil && selectedModel != "")
-            let imeiValid = (!imeiNumber.isEmpty && imeiCompatible == true)
-            // Next is disabled only if neither is valid
-            return !(brandSelected || imeiValid)
-          }(),
+          nextButtonDisabled: false,  // Always allow proceeding - this step is optional
           nextButtonAction: {
             // Commit selections to the viewModel when proceeding
             if let brand = selectedBrand {
@@ -278,9 +264,10 @@ struct DeviceCompatibilityView: View {
         .sheet(isPresented: $showIMEICheck) {
           IMEICheckView(
             isPresented: $showIMEICheck,
-            onSubmitIMEI: { imei in
+            viewModel: viewModel,
+            onSubmitIMEI: { imei, isCompatible in
               imeiNumber = imei
-              imeiCompatible = imei.count > 4
+              imeiCompatible = isCompatible  // Store the result (true, false, or nil)
             }
           )
           .presentationDetents([.large])

@@ -250,6 +250,36 @@ class FirebaseOrderManager {
       }
   }
 
+  /// Cancel an order by setting its status to "draft"
+  func cancelOrder(orderId: String, completion: @escaping (Bool) -> Void) {
+    print("DEBUG: FirebaseOrderManager.cancelOrder called with orderId: \(orderId)")
+
+    guard let userId = Auth.auth().currentUser?.uid else {
+      print("DEBUG: Error in FirebaseOrderManager - No authenticated user")
+      completion(false)
+      return
+    }
+
+    print("DEBUG: Found userId: \(userId), proceeding with order cancellation")
+
+    let data: [String: Any] = [
+      "status": "draft",
+      "updatedAt": FieldValue.serverTimestamp(),
+    ]
+
+    db.collection("users").document(userId)
+      .collection("orders").document(orderId)
+      .setData(data, merge: true) { error in
+        if let error = error {
+          print("DEBUG: FirebaseOrderManager - Failed to cancel order: \(error.localizedDescription)")
+          completion(false)
+        } else {
+          print("DEBUG: FirebaseOrderManager - Successfully cancelled order \(orderId)")
+          completion(true)
+        }
+      }
+  }
+
   func deleteOrder(orderId: String, completion: @escaping (Bool) -> Void) {
     print("DEBUG: FirebaseOrderManager.deleteOrder called with orderId: \(orderId)")
 

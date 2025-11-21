@@ -154,6 +154,8 @@ class UserRegistrationViewModel: ObservableObject {
   @Published var address: String = ""
   @Published var country: String = "USA"
   @Published var deviceIsCompatible: Bool = false
+  @Published var supportsESIM: Bool = true  // Default to true if unknown
+  @Published var supportsPhysicalSIM: Bool = true  // Default to true if unknown
 
   @Published var userId: String? = nil
   @Published var orderId: String? = nil  // Added order ID property
@@ -169,6 +171,8 @@ class UserRegistrationViewModel: ObservableObject {
     deviceModel = ""
     imei = ""
     deviceIsCompatible = false
+    supportsESIM = true  // Reset to default
+    supportsPhysicalSIM = true  // Reset to default
 
     // Reset SIM and number selection
     simType = ""
@@ -208,6 +212,8 @@ class UserRegistrationViewModel: ObservableObject {
     deviceModel = ""
     imei = ""
     deviceIsCompatible = false
+    supportsESIM = true  // Reset to default
+    supportsPhysicalSIM = true  // Reset to default
 
     // Reset SIM and number selection (including numberType)
     simType = ""
@@ -256,6 +262,8 @@ class UserRegistrationViewModel: ObservableObject {
     self.deviceModel = data["deviceModel"] as? String ?? self.deviceModel
     self.imei = data["imei"] as? String ?? self.imei
     self.deviceIsCompatible = data["deviceIsCompatible"] as? Bool ?? self.deviceIsCompatible
+    self.supportsESIM = data["supportsESIM"] as? Bool ?? self.supportsESIM
+    self.supportsPhysicalSIM = data["supportsPhysicalSIM"] as? Bool ?? self.supportsPhysicalSIM
 
     // SIM & numbers
     self.simType = data["simType"] as? String ?? self.simType
@@ -748,6 +756,8 @@ class UserRegistrationViewModel: ObservableObject {
       "deviceModel": deviceModel,
       "imei": imei,
       "deviceIsCompatible": deviceIsCompatible,
+      "supportsESIM": supportsESIM,
+      "supportsPhysicalSIM": supportsPhysicalSIM,
       "updatedAt": FieldValue.serverTimestamp(),
     ]
 

@@ -19,6 +19,11 @@ struct ContactInfoView: View {
   @State private var useLocation = false
   @State private var isAutofillingLocation = false
   @State private var autofillTimeoutTask: DispatchWorkItem? = nil
+  @State private var showAddressSuggestion = false
+  @State private var suggestedAddress: VCareAPIManager.USPSAddressData? = nil
+  @State private var isValidatingAddress = false
+  @State private var showAddressValidationError = false
+  @State private var addressValidationErrorMessage = ""
 
   var body: some View {
     ZStack {
@@ -26,7 +31,7 @@ struct ContactInfoView: View {
         currentStep: 1,
         nextButtonText: "Next Step",
         nextButtonDisabled: viewModel.firstName.isEmpty || viewModel.lastName.isEmpty
-          || viewModel.phoneNumber.count != 10 || isLoading,
+          || viewModel.phoneNumber.count != 10 || isLoading || isValidatingAddress,
         nextButtonAction: {
           print("📲 Next button tapped in ContactInfoView")
 
@@ -52,15 +57,62 @@ struct ContactInfoView: View {
             // Save contact info before continuing
             viewModel.saveContactInfo { success in
               if success {
-                print("✅ Contact info saved successfully, calling onNext")
+                print("✅ Contact info saved successfully")
                 DebugLogger.shared.log(
                   "Contact info saved successfully for user \(viewModel.firstName) \(viewModel.lastName)",
                   category: "ContactInfo")
                 if let orderId = viewModel.orderId {
                   FirebaseOrderManager.shared.saveStepProgress(
                     userId: userId, orderId: orderId, step: 1)
+                  
+                  // Validate zip code before making API call
+                  let zipCode = viewModel.zip
+                  guard !zipCode.isEmpty, zipCode.count == 5, zipCode.allSatisfy({ $0.isNumber }) else {
+                    print("⚠️ Invalid zip code")
+                    errorMessage = "Please enter a valid 5-digit ZIP code."
+                    return
+                  }
+                  
+                  // Check if enrollment_id already exists in order
+                  FirebaseOrderManager.shared.fetchOrderDocument(orderId: orderId) { result in
+                    DispatchQueue.main.async {
+                      switch result {
+                      case .success(let orderData):
+                        let existingEnrollmentId = orderData["enrollment_id"] as? String
+                        
+                        if let enrollmentId = existingEnrollmentId, !enrollmentId.isEmpty {
+                          // Enrollment ID exists, reuse it and validate address
+                          print("✅ Found existing enrollment_id: \(enrollmentId)")
+                          self.validateAddressAndProceed(
+                            userId: userId,
+                            orderId: orderId,
+                            enrollmentId: enrollmentId
+                          )
+                        } else {
+                          // No enrollment ID, create one first
+                          print("🔄 No existing enrollment_id, creating new one...")
+                          self.createEnrollmentAndValidate(
+                            userId: userId,
+                            orderId: orderId,
+                            zipCode: zipCode
+                          )
+                        }
+                        
+                      case .failure(let error):
+                        print("❌ Failed to fetch order document: \(error.localizedDescription)")
+                        // Try to create enrollment anyway
+                        self.createEnrollmentAndValidate(
+                          userId: userId,
+                          orderId: orderId,
+                          zipCode: zipCode
+                        )
+                      }
+                    }
+                  }
+                } else {
+                  print("⚠️ No order ID available")
+                  errorMessage = "Order ID not available. Please try again."
                 }
-                onNext()
               } else {
                 print("❌ Failed to save contact info: \(viewModel.errorMessage ?? "Unknown error")")
                 DebugLogger.shared.log(
@@ -82,11 +134,17 @@ struct ContactInfoView: View {
         disableCancelButton: false
       ) {
         VStack(alignment: .center, spacing: 12) {
-          if isLoading {
+          if isLoading || isValidatingAddress {
             ProgressView()
               .progressViewStyle(CircularProgressViewStyle())
               .scaleEffect(1.5)
               .padding(.top, 8)
+            if isValidatingAddress {
+              Text("Validating address...")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.top, 4)
+            }
           }
 
           // Always show status message if available
@@ -314,12 +372,12 @@ struct ContactInfoView: View {
       NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
     ) { _ in
       // Refresh status when returning from settings
-      locationManager.authorizationStatus = CLLocationManager.authorizationStatus()
+      locationManager.refreshAuthorizationStatus()
     }
-    .onChange(of: locationManager.userLocation) { location in
+    .onChange(of: locationManager.userLocation) { oldValue, newValue in
       autofillTimeoutTask?.cancel()
       isAutofillingLocation = false
-      guard let location = location else { return }
+      guard let location = newValue else { return }
       let geocoder = CLGeocoder()
       geocoder.reverseGeocodeLocation(location) { placemarks, error in
         if let placemark = placemarks?.first {
@@ -333,8 +391,8 @@ struct ContactInfoView: View {
         }
       }
     }
-    .onChange(of: showLocationAlert) { show in
-      if show {
+    .onChange(of: showLocationAlert) { oldValue, newValue in
+      if newValue {
         // When user agrees to autofill, start loading and timeout
         isAutofillingLocation = true
         autofillTimeoutTask?.cancel()
@@ -349,9 +407,9 @@ struct ContactInfoView: View {
         autofillTimeoutTask?.cancel()
       }
     }
-    .onChange(of: locationManager.authorizationStatus) { status in
+    .onChange(of: locationManager.authorizationStatus) { oldValue, newValue in
       if useLocation && isAutofillingLocation
-        && (status == .authorizedWhenInUse || status == .authorizedAlways)
+        && (newValue == .authorizedWhenInUse || newValue == .authorizedAlways)
       {
         // Start loading and timeout again
         isAutofillingLocation = true
@@ -369,6 +427,60 @@ struct ContactInfoView: View {
       Button("OK") { locationError = nil }
     } message: {
       Text(locationError ?? "")
+    }
+    .alert("Address Suggestion", isPresented: $showAddressSuggestion) {
+      Button("Use Suggested Address") {
+        if let suggested = suggestedAddress {
+          viewModel.street = suggested.Address1 ?? viewModel.street
+          viewModel.aptNumber = suggested.Address2 ?? viewModel.aptNumber
+          viewModel.city = suggested.City ?? viewModel.city
+          viewModel.state = suggested.State ?? viewModel.state
+          if let zip5 = suggested.Zip5 {
+            viewModel.zip = zip5
+          }
+          suggestedAddress = nil
+          // Save the updated address and proceed
+          viewModel.saveContactInfo { success in
+            if success {
+              onNext()
+            } else {
+              errorMessage = "Failed to save address. Please try again."
+            }
+          }
+        }
+      }
+      Button("Keep My Address", role: .cancel) {
+        suggestedAddress = nil
+        // Proceed with original address (already validated)
+        onNext()
+      }
+    } message: {
+      if let suggested = suggestedAddress {
+        let address1 = suggested.Address1 ?? ""
+        let address2 = suggested.Address2 ?? ""
+        let city = suggested.City ?? ""
+        let state = suggested.State ?? ""
+        let zip = suggested.Zip5 ?? ""
+        let zip4 = suggested.Zip4 ?? ""
+        let fullZip = zip4.isEmpty ? zip : "\(zip)-\(zip4)"
+        
+        Text("USPS suggests this address:\n\n\(address1)\(address2.isEmpty ? "" : " \(address2)")" +
+             "\n\(city), \(state) \(fullZip)")
+      }
+    }
+    .alert("Address Validation", isPresented: $showAddressValidationError) {
+      Button("Keep My Address") {
+        showAddressValidationError = false
+        addressValidationErrorMessage = ""
+        // Proceed with the original address even though validation failed
+        onNext()
+      }
+      Button("Cancel", role: .cancel) {
+        showAddressValidationError = false
+        addressValidationErrorMessage = ""
+      }
+    } message: {
+      Text(addressValidationErrorMessage)
     }
   }
 
@@ -479,6 +591,126 @@ struct ContactInfoView: View {
           if self.viewModel.lastName.isEmpty, nameParts.count > 1 {
             self.viewModel.lastName = nameParts.dropFirst().joined(separator: " ")
           }
+        }
+      }
+    }
+  }
+  
+  // MARK: - Helper Methods
+  
+  private func createEnrollmentAndValidate(userId: String, orderId: String, zipCode: String) {
+    print("🔄 Checking service availability for zip code: \(zipCode)")
+    isValidatingAddress = true
+    errorMessage = nil
+    
+    // Generate unique transaction ID for this API call
+    let transactionId = VCareAPIManager.generateTransactionId(orderId: orderId, action: "CHECK")
+    VCareAPIManager.shared.checkServiceAvailability(
+      zipCode: zipCode,
+      enrollmentType: "NON_LIFELINE",
+      isEnrollment: "Y",
+      agentId: "Sushil", // TODO: Get from user settings or configuration
+      source: "WEBSITE",
+      externalTransactionId: transactionId
+    ) { result in
+      DispatchQueue.main.async {
+        self.isValidatingAddress = false
+        
+        switch result {
+        case .success(let availabilityData):
+          // Save enrollment_id to Firestore
+          if let enrollmentId = availabilityData.enrollment_id {
+            print("✅ Received enrollment_id: \(enrollmentId)")
+            FirebaseManager.shared.saveEnrollmentId(
+              userId: userId,
+              orderId: orderId,
+              enrollmentId: enrollmentId
+            ) { success, error in
+              if success {
+                print("✅ Enrollment ID saved to Firestore")
+                // Now validate address
+                self.validateAddressAndProceed(
+                  userId: userId,
+                  orderId: orderId,
+                  enrollmentId: enrollmentId
+                )
+              } else if let error = error {
+                print("⚠️ Failed to save enrollment_id: \(error.localizedDescription)")
+                self.errorMessage = "Failed to save enrollment. Please try again."
+              }
+            }
+          } else {
+            print("⚠️ No enrollment_id in response")
+            self.errorMessage = "Failed to create enrollment. Please try again."
+          }
+          
+        case .failure(let error):
+          print("❌ Service availability check failed: \(error.localizedDescription)")
+          self.errorMessage = "Service availability check failed: \(error.localizedDescription)"
+        }
+      }
+    }
+  }
+  
+  private func validateAddressAndProceed(userId: String, orderId: String, enrollmentId: String) {
+    print("🔄 Validating address with USPS...")
+    isValidatingAddress = true
+    errorMessage = nil
+    
+    VCareAPIManager.shared.validateAddressUSPS(
+      enrollmentId: enrollmentId,
+      addressOne: viewModel.street,
+      addressTwo: viewModel.aptNumber,
+      city: viewModel.city,
+      state: viewModel.state,
+      zipCode: viewModel.zip,
+      agentId: "Sushil", // TODO: Get from user settings or configuration
+      source: "WEBSITE"
+    ) { result in
+      DispatchQueue.main.async {
+        self.isValidatingAddress = false
+        
+        switch result {
+        case .success(let validatedAddress):
+          print("✅ Address validated successfully")
+          
+          // Check if address was modified/suggested
+          let originalAddress = self.viewModel.street.uppercased().trimmingCharacters(in: .whitespaces)
+          let validatedAddress1 = (validatedAddress.Address1 ?? "").uppercased().trimmingCharacters(in: .whitespaces)
+          
+          let originalCity = self.viewModel.city.uppercased().trimmingCharacters(in: .whitespaces)
+          let validatedCity = (validatedAddress.City ?? "").uppercased().trimmingCharacters(in: .whitespaces)
+          
+          let originalState = self.viewModel.state.uppercased().trimmingCharacters(in: .whitespaces)
+          let validatedState = (validatedAddress.State ?? "").uppercased().trimmingCharacters(in: .whitespaces)
+          
+          let originalZip = self.viewModel.zip.trimmingCharacters(in: .whitespaces)
+          let validatedZip = validatedAddress.Zip5 ?? ""
+          
+          // Check if address differs from user input
+          if originalAddress != validatedAddress1 ||
+             originalCity != validatedCity ||
+             originalState != validatedState ||
+             originalZip != validatedZip {
+            // Show suggestion alert
+            self.suggestedAddress = validatedAddress
+            self.showAddressSuggestion = true
+          } else {
+            // Address matches, proceed to next step
+            self.onNext()
+          }
+          
+        case .failure(let error):
+          print("❌ Address validation failed: \(error.localizedDescription)")
+          // Use the error message directly (it already contains detailed information from the API)
+          // Format the message to explain the issue and offer the option to proceed
+          let errorMsg = error.localizedDescription
+          if errorMsg.contains("Multiple addresses") || errorMsg.contains("not available") || errorMsg.contains("not found") {
+            self.addressValidationErrorMessage = "\(errorMsg)\n\nThe address could not be validated. You can still proceed with your address, or you may want to provide more specific address details."
+          } else {
+            self.addressValidationErrorMessage = "\(errorMsg)\n\nThe address could not be validated. You can still proceed with your address, or you may want to check and correct your address information."
+          }
+          self.showAddressValidationError = true
         }
       }
     }
