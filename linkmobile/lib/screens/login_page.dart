@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../widgets/app_header.dart';
 import '../providers/user_registration_view_model.dart';
 import '../services/firebase_order_manager.dart';
+import '../services/notification_service.dart';
 import '../utils/theme.dart';
 import 'content_view.dart';
 
@@ -78,6 +79,19 @@ class _LoginPageState extends State<LoginPage> {
         // Load user data
         await viewModel.loadUserData();
         
+        // Check if FCM token exists in Firestore
+        final notificationService = NotificationService();
+        final hasToken = await notificationService.hasTokenInFirestore();
+        
+        // If no token, request native OS permission prompt (will show system dialog)
+        if (!hasToken) {
+          final permissionGranted = await notificationService.requestNotificationPermissions();
+          if (permissionGranted) {
+            // If permission granted, save the token
+            await notificationService.saveFCMToken();
+          }
+        }
+        
         // Check if new or existing user based on orders
         final orders = await FirebaseOrderManager().fetchUserOrders(userId);
         final isNewAccount = orders.isEmpty;
@@ -114,6 +128,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     }
   }
+
 
   Future<void> _signInWithEmail() async {
     try {

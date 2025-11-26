@@ -33,14 +33,21 @@ class FirebaseOrderManager {
     });
   }
 
+  Future<void> markOrderPendingPortIn(String userId, String orderId) async {
+    await _firebaseManager.updateOrder(userId, orderId, {
+      'status': 'pending_port_in',
+      'currentStep': 5,
+    });
+  }
+
   Future<Map<String, String>?> fetchLatestIncompleteOrder(String userId) async {
     try {
-      // Fetch all pending orders and sort in memory to avoid requiring a composite index
+      // Fetch all pending and pending_port_in orders and sort in memory to avoid requiring a composite index
       final querySnapshot = await _firestore
           .collection('users')
           .doc(userId)
           .collection('orders')
-          .where('status', isEqualTo: 'pending')
+          .where('status', whereIn: ['pending', 'pending_port_in'])
           .get();
 
       if (querySnapshot.docs.isEmpty) {

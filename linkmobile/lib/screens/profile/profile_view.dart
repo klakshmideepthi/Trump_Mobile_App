@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_registration_view_model.dart';
+import '../../services/notification_service.dart';
 import '../../utils/theme.dart';
 
 class ProfileView extends StatefulWidget {
@@ -13,11 +14,90 @@ class ProfileView extends StatefulWidget {
 
 class _ProfileViewState extends State<ProfileView> {
   bool _isLoading = true;
+  bool _notificationsEnabled = false;
+  bool _isUpdatingNotifications = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _checkNotificationStatus();
+  }
+
+  Future<void> _checkNotificationStatus() async {
+    final notificationService = NotificationService();
+    final enabled = await notificationService.areNotificationsEnabled();
+    if (mounted) {
+      setState(() {
+        _notificationsEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    if (_isUpdatingNotifications) return;
+
+    setState(() {
+      _isUpdatingNotifications = true;
+    });
+
+    try {
+      final notificationService = NotificationService();
+      
+      if (value) {
+        // Enable notifications
+        final success = await notificationService.enableNotifications();
+        if (mounted) {
+          setState(() {
+            _notificationsEnabled = success;
+          });
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Notifications enabled'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to enable notifications'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else {
+        // Disable notifications
+        await notificationService.disableNotifications();
+        if (mounted) {
+          setState(() {
+            _notificationsEnabled = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Notifications disabled'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingNotifications = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -80,6 +160,49 @@ class _ProfileViewState extends State<ProfileView> {
                               _buildInfoRow('Last Name', viewModel.lastName.isNotEmpty ? viewModel.lastName : 'N/A'),
                               _buildInfoRow('Mobile Number', viewModel.phoneNumber.isNotEmpty ? viewModel.phoneNumber : 'N/A'),
                               _buildInfoRow('Email', user?.email ?? 'N/A'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Card(
+                        elevation: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Notification Settings',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'Enable Notifications',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  _isUpdatingNotifications
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : Switch(
+                                          value: _notificationsEnabled,
+                                          onChanged: _toggleNotifications,
+                                        ),
+                                ],
+                              ),
                             ],
                           ),
                         ),

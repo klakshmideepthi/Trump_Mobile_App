@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import '../models/plan_model.dart';
 
@@ -514,6 +515,268 @@ class PortInValidationData {
   }
 }
 
+/// Port-In List Response Models
+class PortInListRecord {
+  final int? accountNumber;
+  final String? addressOne;
+  final String? addressTwo;
+  final String? attemptCount;
+  final String? businessName;
+  final String? carrier;
+  final String? carrierResponse;
+  final String? city;
+  final int? customerId;
+  final String? enrollmentId;
+  final String? firstName;
+  final String? lastName;
+  final String? middleName;
+  final int? newEsn;
+  final int? numberToPort;
+  final int? oldEsn;
+  final String? oldMdn;
+  final int? password;
+  final int? portId;
+  final int? portSubscriberId;
+  final String? portinCompany;
+  final String? portinStatus;
+  final String? requestDatetime;
+  final String? resolutionDescription;
+  final String? responseDatetime;
+  final String? returnUrl;
+  final String? source;
+  final String? ssn;
+  final String? state;
+  final String? status;
+  final String? streetDirection;
+  final String? streetName;
+  final String? streetNumber;
+  final String? uiccid;
+  final int? zipcode;
+
+  PortInListRecord({
+    this.accountNumber,
+    this.addressOne,
+    this.addressTwo,
+    this.attemptCount,
+    this.businessName,
+    this.carrier,
+    this.carrierResponse,
+    this.city,
+    this.customerId,
+    this.enrollmentId,
+    this.firstName,
+    this.lastName,
+    this.middleName,
+    this.newEsn,
+    this.numberToPort,
+    this.oldEsn,
+    this.oldMdn,
+    this.password,
+    this.portId,
+    this.portSubscriberId,
+    this.portinCompany,
+    this.portinStatus,
+    this.requestDatetime,
+    this.resolutionDescription,
+    this.responseDatetime,
+    this.returnUrl,
+    this.source,
+    this.ssn,
+    this.state,
+    this.status,
+    this.streetDirection,
+    this.streetName,
+    this.streetNumber,
+    this.uiccid,
+    this.zipcode,
+  });
+
+  factory PortInListRecord.fromJson(Map<String, dynamic> json) {
+    return PortInListRecord(
+      accountNumber: json['account_number'] is int
+          ? json['account_number'] as int?
+          : json['account_number'] is String
+              ? int.tryParse(json['account_number'] as String)
+              : null,
+      addressOne: json['address_one']?.toString(),
+      addressTwo: json['address_two']?.toString(),
+      attemptCount: json['attempt_count']?.toString(),
+      businessName: json['business_name']?.toString(),
+      carrier: json['carrier']?.toString(),
+      carrierResponse: json['carrier_response']?.toString(),
+      city: json['city']?.toString(),
+      customerId: json['customer_id'] is int
+          ? json['customer_id'] as int?
+          : json['customer_id'] is String
+              ? int.tryParse(json['customer_id'] as String)
+              : null,
+      enrollmentId: json['enrollment_id']?.toString(),
+      firstName: json['first_name']?.toString(),
+      lastName: json['last_name']?.toString(),
+      middleName: json['middle_name']?.toString(),
+      newEsn: json['new_esn'] is int
+          ? json['new_esn'] as int?
+          : json['new_esn'] is String
+              ? int.tryParse(json['new_esn'] as String)
+              : null,
+      numberToPort: json['number_to_port'] is int
+          ? json['number_to_port'] as int?
+          : json['number_to_port'] is String
+              ? int.tryParse(json['number_to_port'] as String)
+              : null,
+      oldEsn: json['old_esn'] is int
+          ? json['old_esn'] as int?
+          : json['old_esn'] is String
+              ? int.tryParse(json['old_esn'] as String)
+              : null,
+      oldMdn: json['old_mdn']?.toString(),
+      password: json['password'] is int
+          ? json['password'] as int?
+          : json['password'] is String
+              ? int.tryParse(json['password'] as String)
+              : null,
+      portId: json['port_id'] is int
+          ? json['port_id'] as int?
+          : json['port_id'] is String
+              ? int.tryParse(json['port_id'] as String)
+              : null,
+      portSubscriberId: json['port_subscriber_id'] is int
+          ? json['port_subscriber_id'] as int?
+          : json['port_subscriber_id'] is String
+              ? int.tryParse(json['port_subscriber_id'] as String)
+              : null,
+      portinCompany: json['portin_company']?.toString(),
+      portinStatus: json['portin_status']?.toString(),
+      requestDatetime: json['request_datetime']?.toString(),
+      resolutionDescription: json['resolution_description']?.toString(),
+      responseDatetime: json['response_datetime']?.toString(),
+      returnUrl: json['return_url']?.toString(),
+      source: json['source']?.toString(),
+      ssn: json['ssn']?.toString(),
+      state: json['state']?.toString(),
+      status: json['status']?.toString(),
+      streetDirection: json['street_direction']?.toString(),
+      streetName: json['street_name']?.toString(),
+      streetNumber: json['street_number']?.toString(),
+      uiccid: json['uiccid']?.toString(),
+      zipcode: json['zipcode'] is int
+          ? json['zipcode'] as int?
+          : json['zipcode'] is String
+              ? int.tryParse(json['zipcode'] as String)
+              : null,
+    );
+  }
+}
+
+class PortInListResponse {
+  final List<PortInListRecord> records;
+  final String msg;
+  final String msgCode;
+  final String token;
+
+  PortInListResponse({
+    required this.records,
+    required this.msg,
+    required this.msgCode,
+    required this.token,
+  });
+
+  factory PortInListResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] as Map<String, dynamic>?;
+    final recordsList = data?['records'] as List<dynamic>?;
+    
+    return PortInListResponse(
+      records: recordsList != null
+          ? recordsList
+              .map((item) => PortInListRecord.fromJson(item as Map<String, dynamic>))
+              .toList()
+          : [],
+      msg: json['msg'] as String? ?? '',
+      msgCode: json['msg_code'] as String? ?? '',
+      token: json['token'] as String? ?? '',
+    );
+  }
+}
+
+/// Port-In Query Response Models
+class PortInQueryRecord {
+  final String? portinStatus;
+  final String? carrierResponse;
+  final String? resolutionDescription;
+  final String? requestDatetime;
+  final String? responseDatetime;
+  final String? status;
+
+  PortInQueryRecord({
+    this.portinStatus,
+    this.carrierResponse,
+    this.resolutionDescription,
+    this.requestDatetime,
+    this.responseDatetime,
+    this.status,
+  });
+
+  factory PortInQueryRecord.fromJson(Map<String, dynamic> json) {
+    return PortInQueryRecord(
+      portinStatus: json['portin_status']?.toString(),
+      carrierResponse: json['carrier_response']?.toString(),
+      resolutionDescription: json['resolution_description']?.toString(),
+      requestDatetime: json['request_datetime']?.toString(),
+      responseDatetime: json['response_datetime']?.toString(),
+      status: json['status']?.toString(),
+    );
+  }
+}
+
+class PortInQueryResponse {
+  final PortInQueryRecord? record;
+  final String msg;
+  final String msgCode;
+  final String token;
+
+  PortInQueryResponse({
+    this.record,
+    required this.msg,
+    required this.msgCode,
+    required this.token,
+  });
+
+  factory PortInQueryResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] as Map<String, dynamic>?;
+    final recordsList = data?['records'] as List<dynamic>?;
+    
+    return PortInQueryResponse(
+      record: recordsList != null && recordsList.isNotEmpty
+          ? PortInQueryRecord.fromJson(recordsList.first as Map<String, dynamic>)
+          : null,
+      msg: json['msg'] as String? ?? '',
+      msgCode: json['msg_code'] as String? ?? '',
+      token: json['token'] as String? ?? '',
+    );
+  }
+}
+
+/// Port-In Submit Response Models
+class PortInSubmitResponse {
+  final String data;
+  final String msg;
+  final String msgCode;
+
+  PortInSubmitResponse({
+    required this.data,
+    required this.msg,
+    required this.msgCode,
+  });
+
+  factory PortInSubmitResponse.fromJson(Map<String, dynamic> json) {
+    return PortInSubmitResponse(
+      data: json['data']?.toString() ?? '',
+      msg: json['msg'] as String? ?? '',
+      msgCode: json['msg_code'] as String? ?? '',
+    );
+  }
+}
+
 /// Service Availability Models
 class ServiceAvailabilityData {
   final String? enrollmentId;
@@ -698,6 +961,22 @@ class VCareAPIManager {
   static String generateTransactionId(String orderId, String action) {
     final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     return '${orderId}${action}$timestamp';
+  }
+
+  /// Generate a random unique transaction ID
+  /// Format: alphanumeric characters and numbers only (as required by API)
+  static String generateRandomTransactionId() {
+    final random = Random();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    
+    // Generate random alphanumeric string (10 characters)
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final randomString = String.fromCharCodes(
+      Iterable.generate(10, (_) => chars.codeUnitAt(random.nextInt(chars.length)))
+    );
+    
+    // Combine random string with timestamp for uniqueness
+    return '${randomString}$timestamp';
   }
 
   /// Authenticate and get access token
@@ -1850,6 +2129,351 @@ class VCareAPIManager {
       throw Exception(errorMessage);
     } catch (e) {
       print('❌ Failed to validate address: $e');
+      rethrow;
+    }
+  }
+
+  /// Get list of port-in orders for an enrollment
+  /// This API is used to fetch the port_subscriber_id needed for submit_portin
+  Future<PortInListResponse> getPortInList({
+    required String enrollId,
+    String agentId = 'Sushil',
+    String source = 'WEBSITE',
+    String? externalTransactionId,
+    String getChildList = 'N',
+  }) async {
+    print('🔍 ========================================');
+    print('🔍 GET PORT-IN LIST API CALL');
+    print('🔍 ========================================');
+
+    // Prepare parameters
+    final parameters = <String, dynamic>{
+      'action': 'get_list',
+      'enroll_id': enrollId,
+      'source': source,
+      'agent_id': agentId,
+    };
+
+    if (externalTransactionId != null) {
+      parameters['external_transaction_id'] = externalTransactionId;
+    }
+
+    if (getChildList.isNotEmpty) {
+      parameters['get_child_list'] = getChildList;
+    }
+
+    print('📤 Request Parameters:');
+    parameters.forEach((key, value) {
+      print('   $key: $value');
+    });
+    print('🔍 ========================================');
+
+    try {
+      // Make authenticated request
+      final response = await post(
+        endpoint: '/port',
+        parameters: parameters,
+      );
+
+      // Print raw API response
+      final responseString = response.body;
+      print('📡 Get Port-In List API Raw Response:');
+      print(responseString);
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      // Parse response
+      final json = jsonDecode(responseString) as Map<String, dynamic>;
+      final listResponse = PortInListResponse.fromJson(json);
+
+      print('✅ Get Port-In List API Response:');
+      print('   msg_code: ${listResponse.msgCode}');
+      print('   msg: ${listResponse.msg}');
+      print('   records count: ${listResponse.records.length}');
+
+      if (listResponse.msgCode == 'RESTAPI000') {
+        if (listResponse.records.isNotEmpty) {
+          final record = listResponse.records.first;
+          print('   First record:');
+          print('      enrollment_id: ${record.enrollmentId ?? "nil"}');
+          print('      port_subscriber_id: ${record.portSubscriberId ?? "nil"}');
+          print('      portin_status: ${record.portinStatus ?? "nil"}');
+        } else {
+          print('   ⚠️ No records found');
+        }
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        return listResponse;
+      } else {
+        print('❌ Get Port-In List API Error: ${listResponse.msg}');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        throw Exception(listResponse.msg);
+      }
+    } catch (e) {
+      print('❌ Failed to get port-in list: $e');
+      rethrow;
+    }
+  }
+
+  /// Submit port-in request
+  /// This API is called after creating a customer with PORTIN activation_type
+  Future<PortInSubmitResponse> submitPortIn({
+    required String enrollmentId,
+    required int portinEnrollmentId,
+    required String firstName,
+    required String lastName,
+    required String zipCode,
+    required String city,
+    required String state,
+    required String addressOne,
+    required String accountNumber,
+    required String passwordPin,
+    String? addressTwo,
+    String? portCurrentCarrier,
+    String agentId = 'Sushil',
+    String source = 'WEBSITE',
+    String? externalTransactionId,
+  }) async {
+    print('🔍 ========================================');
+    print('🔍 SUBMIT PORT-IN API CALL');
+    print('🔍 ========================================');
+
+    // Prepare parameters
+    final parameters = <String, dynamic>{
+      'enrollment_id': enrollmentId,
+      'portin_enrollment_id': portinEnrollmentId.toString(),
+      'action': 'submit_portin',
+      'agent_id': agentId,
+      'source': source,
+      'first_name': firstName,
+      'last_name': lastName,
+      'zip_code': zipCode,
+      'city': city,
+      'state': state,
+      'address_one': addressOne,
+      'account_number': accountNumber,
+      'password_pin': passwordPin,
+      'request_name': 'port',
+    };
+
+    if (addressTwo != null && addressTwo.isNotEmpty) {
+      parameters['address_two'] = addressTwo;
+    }
+
+    if (portCurrentCarrier != null && portCurrentCarrier.isNotEmpty) {
+      parameters['port_current_carrier'] = portCurrentCarrier;
+    }
+
+    if (externalTransactionId != null) {
+      parameters['external_transaction_id'] = externalTransactionId;
+    }
+
+    print('📤 Request Parameters:');
+    parameters.forEach((key, value) {
+      print('   $key: $value');
+    });
+    print('🔍 ========================================');
+
+    try {
+      // Make authenticated request
+      final response = await post(
+        endpoint: '/port',
+        parameters: parameters,
+      );
+
+      // Print raw API response
+      final responseString = response.body;
+      print('📡 Submit Port-In API Raw Response:');
+      print(responseString);
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      // Parse response
+      final json = jsonDecode(responseString) as Map<String, dynamic>;
+      final submitResponse = PortInSubmitResponse.fromJson(json);
+
+      print('✅ Submit Port-In API Response:');
+      print('   msg_code: ${submitResponse.msgCode}');
+      print('   msg: ${submitResponse.msg}');
+      print('   data: ${submitResponse.data}');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      if (submitResponse.msgCode == 'RESTAPI000') {
+        return submitResponse;
+      } else {
+        print('❌ Submit Port-In API Error: ${submitResponse.msg}');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        throw Exception(submitResponse.msg);
+      }
+    } catch (e) {
+      print('❌ Failed to submit port-in: $e');
+      rethrow;
+    }
+  }
+
+  /// Query port-in status
+  /// This API is used to check the status of a port-in request
+  Future<PortInQueryResponse> queryPortIn({
+    required String enrollmentId,
+    String agentId = 'Sushil',
+    String source = 'WEBSITE',
+    String? externalTransactionId,
+  }) async {
+    print('🔍 ========================================');
+    print('🔍 QUERY PORT-IN API CALL');
+    print('🔍 ========================================');
+
+    // Prepare parameters
+    final parameters = <String, dynamic>{
+      'action': 'query_portin',
+      'enroll_id': enrollmentId,
+      'source': source,
+      'agent_id': agentId,
+    };
+
+    if (externalTransactionId != null) {
+      parameters['external_transaction_id'] = externalTransactionId;
+    }
+
+    print('📤 Request Parameters:');
+    parameters.forEach((key, value) {
+      print('   $key: $value');
+    });
+    print('🔍 ========================================');
+
+    try {
+      // Make authenticated request
+      final response = await post(
+        endpoint: '/port',
+        parameters: parameters,
+      );
+
+      // Print raw API response
+      final responseString = response.body;
+      print('📡 Query Port-In API Raw Response:');
+      print(responseString);
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      // Parse response
+      final json = jsonDecode(responseString) as Map<String, dynamic>;
+      final queryResponse = PortInQueryResponse.fromJson(json);
+
+      print('✅ Query Port-In API Response:');
+      print('   msg_code: ${queryResponse.msgCode}');
+      print('   msg: ${queryResponse.msg}');
+      
+      if (queryResponse.record != null) {
+        print('   Port-In Status:');
+        print('      portin_status: ${queryResponse.record!.portinStatus ?? "nil"}');
+        print('      carrier_response: ${queryResponse.record!.carrierResponse ?? "nil"}');
+        print('      status: ${queryResponse.record!.status ?? "nil"}');
+        print('      resolution_description: ${queryResponse.record!.resolutionDescription ?? "nil"}');
+      } else {
+        print('   ⚠️ No port-in record found');
+      }
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      if (queryResponse.msgCode == 'RESTAPI000') {
+        return queryResponse;
+      } else {
+        print('❌ Query Port-In API Error: ${queryResponse.msg}');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        throw Exception(queryResponse.msg);
+      }
+    } catch (e) {
+      print('❌ Failed to query port-in: $e');
+      rethrow;
+    }
+  }
+
+  /// Update port-in information
+  /// This API is used to update and resubmit port-in information when there are errors
+  Future<PortInSubmitResponse> updatePortIn({
+    required String enrollmentId,
+    required int portinEnrollmentId,
+    required String firstName,
+    required String lastName,
+    required String zipCode,
+    required String city,
+    required String state,
+    required String addressOne,
+    required String accountNumber,
+    required String passwordPin,
+    String? addressTwo,
+    String? portCurrentCarrier,
+    String agentId = 'Sushil',
+    String source = 'WEBSITE',
+    String? externalTransactionId,
+  }) async {
+    print('🔍 ========================================');
+    print('🔍 UPDATE PORT-IN API CALL');
+    print('🔍 ========================================');
+
+    // Prepare parameters (same as submit_portin but with action: 'update_portin')
+    final parameters = <String, dynamic>{
+      'enrollment_id': enrollmentId,
+      'portin_enrollment_id': portinEnrollmentId.toString(),
+      'action': 'update_portin',
+      'agent_id': agentId,
+      'source': source,
+      'first_name': firstName,
+      'last_name': lastName,
+      'zip_code': zipCode,
+      'city': city,
+      'state': state,
+      'address_one': addressOne,
+      'account_number': accountNumber,
+      'password_pin': passwordPin,
+      'request_name': 'port',
+    };
+
+    if (addressTwo != null && addressTwo.isNotEmpty) {
+      parameters['address_two'] = addressTwo;
+    }
+
+    if (portCurrentCarrier != null && portCurrentCarrier.isNotEmpty) {
+      parameters['port_current_carrier'] = portCurrentCarrier;
+    }
+
+    if (externalTransactionId != null) {
+      parameters['external_transaction_id'] = externalTransactionId;
+    }
+
+    print('📤 Request Parameters:');
+    parameters.forEach((key, value) {
+      print('   $key: $value');
+    });
+    print('🔍 ========================================');
+
+    try {
+      // Make authenticated request
+      final response = await post(
+        endpoint: '/port',
+        parameters: parameters,
+      );
+
+      // Print raw API response
+      final responseString = response.body;
+      print('📡 Update Port-In API Raw Response:');
+      print(responseString);
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      // Parse response
+      final json = jsonDecode(responseString) as Map<String, dynamic>;
+      final updateResponse = PortInSubmitResponse.fromJson(json);
+
+      print('✅ Update Port-In API Response:');
+      print('   msg_code: ${updateResponse.msgCode}');
+      print('   msg: ${updateResponse.msg}');
+      print('   data: ${updateResponse.data}');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      if (updateResponse.msgCode == 'RESTAPI000') {
+        return updateResponse;
+      } else {
+        print('❌ Update Port-In API Error: ${updateResponse.msg}');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        throw Exception(updateResponse.msg);
+      }
+    } catch (e) {
+      print('❌ Failed to update port-in: $e');
       rethrow;
     }
   }

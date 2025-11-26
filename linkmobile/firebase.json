@@ -1,1 +1,34 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"linkmobile-494b0","appId":"1:804860067099:android:9211a21e7c70a53235a7be","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"linkmobile-494b0","appId":"1:804860067099:ios:4f84028f7cd94c5c35a7be","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"linkmobile-494b0","configurations":{"android":"1:804860067099:android:9211a21e7c70a53235a7be","ios":"1:804860067099:ios:4f84028f7cd94c5c35a7be"}}}}}}
+{
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "linkmobile-494b0",
+          "appId": "1:804860067099:android:9211a21e7c70a53235a7be",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "linkmobile-494b0",
+          "appId": "1:804860067099:ios:4f84028f7cd94c5c35a7be",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "linkmobile-494b0",
+          "configurations": {
+            "android": "1:804860067099:android:9211a21e7c70a53235a7be",
+            "ios": "1:804860067099:ios:4f84028f7cd94c5c35a7be"
+          }
+        }
+      }
+    }
+  }
+}

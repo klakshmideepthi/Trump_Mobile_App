@@ -6,6 +6,7 @@ import '../../utils/validators.dart';
 import '../../utils/theme.dart';
 import '../../widgets/order_step_header.dart';
 import '../../utils/formatters.dart';
+import '../../services/firebase_order_manager.dart';
 
 class PortingView extends StatefulWidget {
   final VoidCallback onPortingComplete;
@@ -83,9 +84,9 @@ class _PortingViewState extends State<PortingView> {
     widget.onFormValidityChanged?.call(isValid);
   }
 
-  Future<void> _handleSave() async {
+  Future<bool> _handleSave() async {
     if (!_formKey.currentState!.validate()) {
-      return;
+      return false;
     }
 
     if (_selectedCarrier == null || _selectedCarrier!.isEmpty) {
@@ -95,7 +96,7 @@ class _PortingViewState extends State<PortingView> {
           backgroundColor: Colors.red,
         ),
       );
-      return;
+      return false;
     }
 
     setState(() {
@@ -110,22 +111,32 @@ class _PortingViewState extends State<PortingView> {
     viewModel.portInAccountHolderName = _accountHolderController.text.trim();
     viewModel.portInSkipped = false;
 
-    final success = await viewModel.saveNumberSelection();
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    print('💾 VALIDATING PORT-IN INFORMATION');
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    print('   Phone Number: ${viewModel.selectedPhoneNumber}');
+    print('   Account Number: ${viewModel.portInAccountNumber}');
+    print('   PIN: ${viewModel.portInPin}');
+    print('   Carrier: ${viewModel.portInCurrentCarrier}');
+    print('   Account Holder: ${viewModel.portInAccountHolderName}');
+    print('   Port-In Skipped: ${viewModel.portInSkipped}');
+    print('   Number Type: ${viewModel.numberType}');
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // For port-in orders, don't save to Firebase yet - wait for APIs to succeed
+    // Just validate and save to viewModel (already done above)
+    // Parent will handle Firebase save and navigation after APIs succeed
     
     setState(() {
       _isSaving = false;
     });
 
-    if (success && mounted) {
-      widget.onPortingComplete();
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(viewModel.errorMessage ?? 'Failed to save porting info'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (mounted) {
+      print('✅ Port-in information validated successfully');
+      // Don't call onPortingComplete here - parent will call after APIs succeed
+      return true;
     }
+    return false;
   }
 
   Future<void> _handleSkip() async {
@@ -137,6 +148,12 @@ class _PortingViewState extends State<PortingView> {
     viewModel.portInSkipped = true;
 
     final success = await viewModel.saveNumberSelection();
+    
+    // Mark order as pending port-in when user skips
+    if (success && viewModel.userId != null && viewModel.orderId != null) {
+      final orderManager = FirebaseOrderManager();
+      await orderManager.markOrderPendingPortIn(viewModel.userId!, viewModel.orderId!);
+    }
     
     setState(() {
       _isSaving = false;
@@ -171,19 +188,24 @@ class _PortingViewState extends State<PortingView> {
   }
 
   // Method to validate and save (called from parent)
-  Future<void> validateAndSave() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      if (_selectedCarrier == null || _selectedCarrier!.isEmpty) {
+  // Returns true if validation and save succeeded, false otherwise
+  Future<bool> validateAndSave() async {
+    // Call _handleSave which does all validation and saving
+    final success = await _handleSave();
+    if (!success) {
+      // Form validation failed - show message if not already shown
+      if (_formKey.currentState?.validate() ?? true) {
+        // Validation passed but save failed, error already shown
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please select a carrier'),
+            content: Text('Please fill in all required fields correctly'),
             backgroundColor: Colors.red,
           ),
         );
-        return;
       }
-      await _handleSave();
     }
+    return success;
   }
 
   @override
@@ -314,40 +336,9 @@ class _PortingViewState extends State<PortingView> {
               ),
               SizedBox(height: AppTheme.spacingSection),
               
-              // Continue/Save button
-              SizedBox(
-                width: double.infinity,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: (_isSaving || !_isFormValid) ? null : AppTheme.blueGradient,
-                    color: (_isSaving || !_isFormValid) ? AppTheme.disabledBackground : null,
-                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusInput),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: (_isSaving || !_isFormValid) ? null : _handleSave,
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppTheme.paddingButtonHorizontal,
-                        vertical: AppTheme.paddingButtonVertical,
-                      ),
-                      backgroundColor: Colors.transparent,
-                      disabledBackgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.borderRadiusInput),
-                      ),
-                    ),
-                    child: Text(
-                      'Continue',
-                      style: TextStyle(
-                        fontSize: AppTheme.fontSizeBodySmall,
-                        fontWeight: FontWeight.w600,
-                        color: (_isSaving || !_isFormValid) ? AppTheme.textSecondary : Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              // Note: Continue button is handled by parent NumberPortingView
+              // The parent shows "Continue to SIM Setup" button which validates and saves
+              
               SizedBox(height: AppTheme.spacingItem),
               
               // Skip for Now button (matching Trump Mobile styling)

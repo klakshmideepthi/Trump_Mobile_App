@@ -509,6 +509,12 @@ class _BillingInfoViewState extends State<BillingInfoView> {
       
       // After payment is completed, call create_customer_prepaid_multiline API
       await _createCustomerOrder(viewModel.userId!, viewModel.orderId!, viewModel);
+      
+      // If this is a porting order, mark as pending port-in instead of completed
+      final isPortingOrder = viewModel.numberType == 'Existing';
+      if (isPortingOrder) {
+        await orderManager.markOrderPendingPortIn(viewModel.userId!, viewModel.orderId!);
+      }
     }
     
     setState(() {
@@ -715,6 +721,9 @@ class _BillingInfoViewState extends State<BillingInfoView> {
       print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // Save customer ID and other response data to order if needed
+      // Also track the enrollment_id from response for port-in submission
+      String? finalEnrollmentId = enrollmentId; // Default to original
+      
       if (response.data != null && response.data!.isNotEmpty) {
         final firstLine = response.data!.first;
         if (firstLine.data != null) {
@@ -735,7 +744,10 @@ class _BillingInfoViewState extends State<BillingInfoView> {
           }
           if (lineData.enrollmentId != null) {
             updateData['enrollment_id'] = lineData.enrollmentId;
+            // Use enrollment_id from response if available (important for port-in)
+            finalEnrollmentId = lineData.enrollmentId;
             print('💾 Saving enrollment_id: ${lineData.enrollmentId} to order');
+            print('📋 Using enrollment_id from create customer response: $finalEnrollmentId');
           }
 
           if (updateData.isNotEmpty) {
@@ -749,8 +761,15 @@ class _BillingInfoViewState extends State<BillingInfoView> {
           }
         }
       }
-    } catch (e) {
+
+      // Note: Port-in APIs (get_list, submit_portin, query_portin) are NOT called here
+      // because port-in details are collected in step 6 (porting view), not step 5 (billing)
+      // The port-in APIs will be called in number_porting_view.dart after user fills port-in details
+      // Customer is created with activation_type: 'PORTIN' if numberType is 'Existing',
+      // but the actual port-in submission happens later when port-in details are available
+    } catch (e, stackTrace) {
       print('❌ Failed to create customer: $e');
+      print('   Stack trace: $stackTrace');
       // Continue to next step even if customer creation fails (order is saved locally)
       // You may want to show an alert to the user here
     }

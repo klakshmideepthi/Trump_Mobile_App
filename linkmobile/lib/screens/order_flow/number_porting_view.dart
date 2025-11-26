@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_registration_view_model.dart';
 import '../../services/firebase_order_manager.dart';
+import '../../services/vcare_api_manager.dart';
 import '../../widgets/step_navigation_container.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/theme.dart';
@@ -166,18 +167,297 @@ class _NumberPortingViewState extends State<NumberPortingView> {
 
   Future<void> _handlePortingContinue() async {
     // This is called when user clicks "Continue to SIM Setup" button
-    // Trigger validation and save in PortingView
-    // Access the state through the GlobalKey's currentState and use dynamic call
+    // Validate, save port-in data, submit port-in APIs, and move to SIM setup
+    print('🔄 Continue to SIM Setup button clicked');
+    
+    setState(() {
+      _isCompleting = true;
+    });
+    
+    try {
+      final viewModel = Provider.of<UserRegistrationViewModel>(context, listen: false);
+      
+      // Access the PortingView state through the GlobalKey
     final state = _portingViewKey.currentState;
     if (state != null) {
-      // Use dynamic invocation to call validateAndSave on private state class
-      try {
+        // Call validateAndSave which returns true on success
         final dynamic portingState = state;
-        await portingState.validateAndSave();
-      } catch (e) {
-        // If method doesn't exist or fails, handle error
-        print('Error calling validateAndSave: $e');
+        final success = await portingState.validateAndSave();
+        
+        if (success) {
+          print('✅ Port-in data validated successfully');
+          
+          // Now submit port-in APIs if this is a port-in order
+          bool portInApiSuccess = true;
+          if (viewModel.numberType == 'Existing' && !viewModel.portInSkipped) {
+            portInApiSuccess = await _submitPortInAPIs(viewModel);
+          }
+          
+          // Only save to Firebase and navigate if APIs succeeded (or if not a port-in order)
+          if (portInApiSuccess) {
+            // Save to Firebase now that APIs succeeded
+            print('💾 Saving port-in information to Firebase...');
+            final saveSuccess = await viewModel.saveNumberSelection();
+            
+            if (saveSuccess) {
+              print('✅ Port-in information saved to Firebase successfully');
+              // Now navigate to next page
+              _onPortingComplete();
+              print('✅ Moving to SIM setup');
+            } else {
+              print('❌ Failed to save port-in information to Firebase');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(viewModel.errorMessage ?? 'Failed to save port-in information'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              }
+            }
+          } else {
+            print('❌ Port-in APIs failed - preventing save and navigation');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to submit port-in request. Please check your information and try again.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            }
+          }
+        } else {
+          print('❌ Port-in validation failed');
+          // Error message is already shown in validateAndSave
+        }
+      } else {
+        print('❌ PortingView state is null - cannot validate and save');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to validate port-in information. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
+    } catch (e, stackTrace) {
+      print('❌ Error calling validateAndSave: $e');
+      print('   Stack trace: $stackTrace');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save port-in information: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isCompleting = false;
+      });
+    }
+  }
+
+  /// Submit port-in APIs after port-in details are validated
+  /// Follows the API flow: get_list → submit_portin → query_portin
+  /// Returns true if all APIs succeed, false otherwise
+  Future<bool> _submitPortInAPIs(UserRegistrationViewModel viewModel) async {
+    try {
+      // Get enrollment_id from order document (saved after customer creation in billing)
+      if (viewModel.userId == null || viewModel.orderId == null) {
+        print('❌ Cannot submit port-in APIs: userId or orderId is null');
+        return false;
+      }
+
+      final orderManager = FirebaseOrderManager();
+      final orderData = await orderManager.fetchOrderDocument(viewModel.userId!, viewModel.orderId!);
+      
+      if (orderData == null) {
+        print('❌ Cannot submit port-in APIs: Order document not found');
+        return false;
+      }
+
+      // Get enrollment_id from order (saved after customer creation)
+      String? enrollmentId = orderData['enrollment_id'] as String?;
+      
+      // If enrollment_id is not in order, try to get it from the response data
+      if (enrollmentId == null || enrollmentId.isEmpty) {
+        // Check if it's in nested response data
+        final responseData = orderData['response_data'];
+        if (responseData is Map && responseData['enrollment_id'] != null) {
+          enrollmentId = responseData['enrollment_id'].toString();
+        }
+      }
+
+      if (enrollmentId == null || enrollmentId.isEmpty) {
+        print('❌ Cannot submit port-in APIs: enrollment_id not found in order');
+        print('   Order data keys: ${orderData.keys.toList()}');
+        return false;
+      }
+
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      print('🔄 STARTING PORT-IN SUBMISSION FLOW');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      print('📋 Port-In Details:');
+      print('   Enrollment ID: $enrollmentId');
+      print('   Account Number: ${viewModel.portInAccountNumber}');
+      print('   Account Holder: ${viewModel.portInAccountHolderName}');
+      print('   Current Carrier: ${viewModel.portInCurrentCarrier}');
+      print('   Phone Number: ${viewModel.selectedPhoneNumber}');
+      print('   Address: ${viewModel.street}, ${viewModel.city}, ${viewModel.state} ${viewModel.zip}');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      final apiManager = VCareAPIManager();
+
+      // Step 1: Get port-in list to retrieve port_subscriber_id
+      print('📋 Step 1: Getting port-in list...');
+      final transactionId = VCareAPIManager.generateRandomTransactionId();
+      final listResponse = await apiManager.getPortInList(
+        enrollId: enrollmentId,
+        agentId: 'Sushil',
+        source: 'WEBSITE',
+        externalTransactionId: transactionId,
+      );
+
+      // Check if get_list API succeeded
+      if (listResponse.msgCode != 'RESTAPI000') {
+        print('❌ Get port-in list API failed:');
+        print('   Message: ${listResponse.msg}');
+        print('   Message Code: ${listResponse.msgCode}');
+        return false;
+      }
+
+      if (listResponse.records.isEmpty) {
+        print('❌ No port-in records found. Cannot submit port-in request.');
+        print('   This might mean the customer was not created with PORTIN activation_type.');
+        print('   Enrollment ID used: $enrollmentId');
+        return false;
+      }
+
+      final portRecord = listResponse.records.first;
+      final portSubscriberId = portRecord.portSubscriberId;
+
+      if (portSubscriberId == null) {
+        print('❌ port_subscriber_id is null. Cannot submit port-in request.');
+        print('   Port record details:');
+        print('   - Enrollment ID: ${portRecord.enrollmentId}');
+        print('   - Port Status: ${portRecord.portinStatus}');
+        return false;
+      }
+
+      print('✅ Retrieved port_subscriber_id: $portSubscriberId');
+
+      // Step 2: Submit port-in request
+      print('📋 Step 2: Submitting port-in request...');
+      
+      // Split port-in account holder name into first and last name
+      final portName = viewModel.portInAccountHolderName;
+      final portNameParts = portName.split(' ');
+      final portFirstName = portNameParts.isNotEmpty ? portNameParts[0] : '';
+      final portLastName = portNameParts.length > 1 
+          ? portNameParts.sublist(1).join(' ') 
+          : '';
+
+      print('📋 Port-In Name Split:');
+      print('   Full Name: $portName');
+      print('   First Name: $portFirstName');
+      print('   Last Name: $portLastName');
+
+      final submitTransactionId = VCareAPIManager.generateRandomTransactionId();
+      final submitResponse = await apiManager.submitPortIn(
+        enrollmentId: enrollmentId,
+        portinEnrollmentId: portSubscriberId,
+        firstName: portFirstName,
+        lastName: portLastName,
+        zipCode: viewModel.zip,
+        city: viewModel.city,
+        state: viewModel.state,
+        addressOne: viewModel.street,
+        addressTwo: viewModel.aptNumber,
+        accountNumber: viewModel.portInAccountNumber,
+        passwordPin: viewModel.portInPin,
+        portCurrentCarrier: viewModel.portInCurrentCarrier,
+        agentId: 'Sushil',
+        source: 'WEBSITE',
+        externalTransactionId: submitTransactionId,
+      );
+
+      // Check if submit_portin API succeeded
+      if (submitResponse.msgCode != 'RESTAPI000') {
+        print('❌ Submit port-in API failed:');
+        print('   Message: ${submitResponse.msg}');
+        print('   Message Code: ${submitResponse.msgCode}');
+        return false;
+      }
+
+      print('✅ Port-in request submitted successfully');
+      print('   Message: ${submitResponse.msg}');
+      print('   Message Code: ${submitResponse.msgCode}');
+
+      // Step 3: Wait 10 seconds (as per API documentation recommendation)
+      print('⏳ Waiting 10 seconds before querying port-in status...');
+      await Future.delayed(const Duration(seconds: 10));
+
+      // Step 4: Query port-in status
+      print('📋 Step 3: Querying port-in status...');
+      final queryTransactionId = VCareAPIManager.generateRandomTransactionId();
+      final queryResponse = await apiManager.queryPortIn(
+        enrollmentId: enrollmentId,
+        agentId: 'Sushil',
+        source: 'WEBSITE',
+        externalTransactionId: queryTransactionId,
+      );
+
+      // Check if query_portin API succeeded
+      if (queryResponse.msgCode != 'RESTAPI000') {
+        print('❌ Query port-in API failed:');
+        print('   Message: ${queryResponse.msg}');
+        print('   Message Code: ${queryResponse.msgCode}');
+        return false;
+      }
+
+      if (queryResponse.record != null) {
+        final record = queryResponse.record!;
+        print('✅ Port-in status retrieved:');
+        print('   Port-in Status: ${record.portinStatus ?? "nil"}');
+        print('   Carrier Response: ${record.carrierResponse ?? "nil"}');
+        print('   Status: ${record.status ?? "nil"}');
+        
+        if (record.resolutionDescription != null && record.resolutionDescription!.isNotEmpty) {
+          print('   Resolution Description: ${record.resolutionDescription}');
+          print('   ⚠️ Port-in may require resolution. User may need to update port-in information.');
+        }
+
+        // Save port-in status to order
+        await orderManager.saveStepProgress(
+          userId: viewModel.userId!,
+          orderId: viewModel.orderId!,
+          step: 6,
+          data: {
+            'portInStatus': record.portinStatus,
+            'portInCarrierResponse': record.carrierResponse,
+            'portInResolutionDescription': record.resolutionDescription,
+          },
+        );
+
+        // If port-in status is completed, mark order as completed
+        if (record.portinStatus?.toLowerCase() == 'completed') {
+          print('🎉 Port-in completed successfully! Marking order as completed.');
+          await orderManager.markOrderCompleted(viewModel.userId!, viewModel.orderId!);
+        }
+      } else {
+        print('⚠️ No port-in record found in query response');
+        // This is not necessarily a failure - the port-in might still be processing
+        // But we'll consider it a success if the API call itself succeeded
+      }
+
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      print('✅ PORT-IN SUBMISSION FLOW COMPLETED SUCCESSFULLY');
+      print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      return true; // All APIs succeeded
+    } catch (e, stackTrace) {
+      print('❌ Failed to submit port-in APIs: $e');
+      print('   Stack trace: $stackTrace');
+      return false; // Return false on any error
     }
   }
 
@@ -268,7 +548,7 @@ class _NumberPortingViewState extends State<NumberPortingView> {
 
     final viewModel = Provider.of<UserRegistrationViewModel>(context, listen: false);
     
-    // Check if billing is completed and port-in is pending
+    // Check if billing is completed and port-in status
     if (viewModel.userId != null && viewModel.orderId != null) {
       final orderManager = FirebaseOrderManager();
       final orderData = await orderManager.fetchOrderDocument(viewModel.userId!, viewModel.orderId!);
@@ -276,9 +556,23 @@ class _NumberPortingViewState extends State<NumberPortingView> {
       final isPortInOrder = viewModel.numberType == 'Existing';
       final portInSkipped = viewModel.portInSkipped;
       
-      // If billing complete, port-in order, and port-in NOT skipped, mark as completed
-      if (billingCompleted && isPortInOrder && !portInSkipped) {
-        // Auto-complete the order by calling markOrderCompleted directly
+      if (billingCompleted && isPortInOrder) {
+        if (portInSkipped) {
+          // User skipped port-in, mark as pending port-in
+          await orderManager.markOrderPendingPortIn(viewModel.userId!, viewModel.orderId!);
+        } else {
+          // Check if port-in status is completed from API
+          final portInStatus = orderData?['portInStatus']?.toString().toLowerCase();
+          if (portInStatus == 'completed') {
+            // Port-in is completed, mark order as completed
+            await orderManager.markOrderCompleted(viewModel.userId!, viewModel.orderId!);
+          } else {
+            // Port-in is still pending, keep status as pending_port_in
+            await orderManager.markOrderPendingPortIn(viewModel.userId!, viewModel.orderId!);
+          }
+        }
+      } else if (billingCompleted && !isPortInOrder) {
+        // Not a port-in order, mark as completed
         await orderManager.markOrderCompleted(viewModel.userId!, viewModel.orderId!);
       }
     }

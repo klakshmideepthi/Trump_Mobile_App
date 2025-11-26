@@ -72,6 +72,19 @@ class HamburgerMenuView extends StatelessWidget {
                     },
                   ),
                   ListTile(
+                    leading: const Icon(Icons.notifications),
+                    title: const Text('Notifications'),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.of(context).pop(); // Close menu first
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileView(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
                     leading: const Icon(Icons.history),
                     title: const Text('Previous Orders'),
                     trailing: const Icon(Icons.arrow_forward_ios),

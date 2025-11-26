@@ -189,7 +189,14 @@ class _DeviceCompatibilityViewState extends State<DeviceCompatibilityView> {
       if (Platform.isAndroid) {
         final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
         manufacturer = androidInfo.manufacturer;
-        deviceName = androidInfo.model;
+        deviceName = androidInfo.model; // This is the model code (e.g., "SM-F766U", "G4QUR")
+        
+        print('=== ANDROID DEVICE DETECTION DEBUG ===');
+        print('Manufacturer: $manufacturer');
+        print('Model Code: $deviceName');
+        print('Device: ${androidInfo.device}');
+        print('Product: ${androidInfo.product}');
+        print('Brand: ${androidInfo.brand}');
         
         // Map manufacturer to PhoneBrand
         final manufacturerLower = manufacturer.toLowerCase();
@@ -200,6 +207,58 @@ class _DeviceCompatibilityViewState extends State<DeviceCompatibilityView> {
         } else if (manufacturerLower.contains('oneplus')) {
           detectedBrand = PhoneBrand.oneplus;
         }
+        
+        // Map model code to marketing name
+        final marketingName = PhoneCatalog.getMarketingNameFromModelCode(deviceName);
+        print('Marketing Name from Model Code: $marketingName');
+        
+        if (marketingName != null && detectedBrand != null) {
+          // Try to find the model in catalog using marketing name
+          final models = catalog.modelsForBrand(detectedBrand);
+          print('Available models for ${detectedBrand.displayName}: ${models.map((m) => m.name).toList()}');
+          
+          // Try exact match first
+          try {
+            detectedModel = models.firstWhere(
+              (model) => model.name.toLowerCase() == marketingName.toLowerCase(),
+            );
+            print('Exact match found: ${detectedModel.name}');
+          } catch (e) {
+            // Try partial match
+            try {
+              detectedModel = models.firstWhere(
+                (model) {
+                  final modelNameLower = model.name.toLowerCase();
+                  final marketingNameLower = marketingName.toLowerCase();
+                  return modelNameLower.contains(marketingNameLower) ||
+                         marketingNameLower.contains(modelNameLower);
+                },
+              );
+              print('Partial match found: ${detectedModel.name}');
+            } catch (e2) {
+              print('No match found for marketing name: $marketingName');
+              detectedModel = null;
+            }
+          }
+        } else {
+          print('Could not map model code "$deviceName" to marketing name');
+          // Fall back to original matching logic
+          if (detectedBrand != null) {
+            final models = catalog.modelsForBrand(detectedBrand);
+            for (var model in models) {
+              final modelNameNormalized = model.name.toLowerCase().replaceAll(' ', '').replaceAll('-', '');
+              final deviceNameNormalized = deviceName.toLowerCase().replaceAll(' ', '').replaceAll('-', '');
+              
+              if (deviceNameNormalized.contains(modelNameNormalized) ||
+                  modelNameNormalized.contains(deviceNameNormalized)) {
+                detectedModel = model;
+                break;
+              }
+            }
+          }
+        }
+        
+        print('=== END ANDROID DEBUG ===');
       } else if (Platform.isIOS) {
         final IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
         deviceName = iosInfo.model;
@@ -472,7 +531,7 @@ class _DeviceCompatibilityViewState extends State<DeviceCompatibilityView> {
         navigationState.currentOrderId = null;
         widget.onStepChanged(0);
       },
-      nextButtonDisabled: false,
+      nextButtonDisabled: !((_selectedBrand != null && _selectedModel != null) || (_imeiNumber.isNotEmpty && _imeiCompatible == true)),
       isLoading: _isSaving,
       child: Form(
         key: _formKey,
@@ -568,80 +627,177 @@ class _DeviceCompatibilityViewState extends State<DeviceCompatibilityView> {
                     },
             ),
             if (_selectedModel != null && _selectedModel!.name.isNotEmpty) ...[
-              SizedBox(height: AppTheme.spacingSection),
-              Container(
-                padding: EdgeInsets.all(AppTheme.paddingCard),
-                decoration: BoxDecoration(
-                  color: _deviceIsCompatible
-                      ? AppTheme.successBackground
-                      : AppTheme.errorBackground,
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusCard),
-                  border: Border.all(
-                    color: _deviceIsCompatible
-                        ? AppTheme.successColor
-                        : AppTheme.errorColor,
-                    width: AppTheme.borderWidthDefault,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Results for ${_selectedModel!.name}',
-                      style: AppTheme.sectionTitleStyle,
-                    ),
-                    SizedBox(height: AppTheme.spacingMedium),
-                    if (_deviceIsCompatible) ...[
-                      Row(
-                        children: [
-                          Icon(Icons.check_circle, color: AppTheme.successColor, size: AppTheme.iconSizeSmall),
-                          SizedBox(width: AppTheme.spacingSmall),
-                          Expanded(
-                            child: Text('Device is compatible with our network.', style: AppTheme.bodyStyle),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: AppTheme.spacingSmall),
-                      Row(
-                        children: [
-                          Icon(Icons.check_circle, color: AppTheme.successColor, size: AppTheme.iconSizeSmall),
-                          SizedBox(width: AppTheme.spacingSmall),
-                          Expanded(
-                            child: Text('You can use an eSIM with your device.', style: AppTheme.bodyStyle),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: AppTheme.spacingSmall),
-                      Row(
-                        children: [
-                          Icon(Icons.check_circle, color: AppTheme.successColor, size: AppTheme.iconSizeSmall),
-                          SizedBox(width: AppTheme.spacingSmall),
-                          Expanded(
-                            child: Text('You can use a SIM card with your device.', style: AppTheme.bodyStyle),
-                          ),
-                        ],
-                      ),
-                    ] else ...[
-                      Row(
-                        children: [
-                          Icon(Icons.cancel, color: AppTheme.errorColor, size: AppTheme.iconSizeSmall),
-                          SizedBox(width: AppTheme.spacingSmall),
-                          Expanded(
-                            child: Text(
-                              'Device model not found in our catalog. Your device may not be compatible with our network.',
-                              style: AppTheme.bodyStyle,
+              Builder(
+                builder: (context) {
+                  final simCompatibility = PhoneCatalog.getSimCompatibilityForModel(_selectedModel!.name);
+                  final supportsESIM = simCompatibility['supportsESIM'] ?? false;
+                  final supportsPhysicalSIM = simCompatibility['supportsPhysicalSIM'] ?? false;
+                  
+                  return Column(
+                    children: [
+                      SizedBox(height: AppTheme.spacingSection),
+                      Container(
+                          padding: EdgeInsets.all(AppTheme.paddingCard),
+                          decoration: BoxDecoration(
+                            color: _deviceIsCompatible
+                                ? AppTheme.successBackground
+                                : AppTheme.errorBackground,
+                            borderRadius: BorderRadius.circular(AppTheme.borderRadiusCard),
+                            border: Border.all(
+                              color: _deviceIsCompatible
+                                  ? AppTheme.successColor
+                                  : AppTheme.errorColor,
+                              width: AppTheme.borderWidthDefault,
                             ),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: AppTheme.spacingSmall),
-                      Text(
-                        'Please contact support or try checking your IMEI for compatibility verification.',
-                        style: AppTheme.bodySmallStyle,
-                      ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Results for ${_selectedModel!.name}',
+                                style: AppTheme.sectionTitleStyle,
+                              ),
+                              SizedBox(height: AppTheme.spacingMedium),
+                              if (_deviceIsCompatible) ...[
+                                Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: AppTheme.successColor, size: AppTheme.iconSizeSmall),
+                                    SizedBox(width: AppTheme.spacingSmall),
+                                    Expanded(
+                                      child: Text('Device is compatible with our network.', style: AppTheme.bodyStyle),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: AppTheme.spacingSmall),
+                                // eSIM compatibility
+                                Row(
+                                  children: [
+                                    Icon(
+                                      supportsESIM ? Icons.check_circle : Icons.cancel,
+                                      color: supportsESIM ? AppTheme.successColor : AppTheme.errorColor,
+                                      size: AppTheme.iconSizeSmall,
+                                    ),
+                                    SizedBox(width: AppTheme.spacingSmall),
+                                    Expanded(
+                                      child: Text(
+                                        supportsESIM
+                                            ? 'Your device supports eSIM.'
+                                            : 'Your device does not support eSIM.',
+                                        style: AppTheme.bodyStyle,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: AppTheme.spacingSmall),
+                                // Physical SIM compatibility
+                                Row(
+                                  children: [
+                                    Icon(
+                                      supportsPhysicalSIM ? Icons.check_circle : Icons.cancel,
+                                      color: supportsPhysicalSIM ? AppTheme.successColor : AppTheme.errorColor,
+                                      size: AppTheme.iconSizeSmall,
+                                    ),
+                                    SizedBox(width: AppTheme.spacingSmall),
+                                    Expanded(
+                                      child: Text(
+                                        supportsPhysicalSIM
+                                            ? 'Your device supports physical SIM card.'
+                                            : 'Your device does not support physical SIM card.',
+                                        style: AppTheme.bodyStyle,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // Summary
+                                if (supportsESIM && supportsPhysicalSIM) ...[
+                                  SizedBox(height: AppTheme.spacingSmall),
+                                  Container(
+                                    padding: EdgeInsets.all(AppTheme.spacingSmall),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentGold.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusCard / 2),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.info_outline, color: AppTheme.accentGold, size: AppTheme.iconSizeSmall),
+                                        SizedBox(width: AppTheme.spacingSmall),
+                                        Expanded(
+                                          child: Text(
+                                            'Your device supports both eSIM and physical SIM cards.',
+                                            style: AppTheme.bodySmallStyle.copyWith(color: AppTheme.accentGold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ] else if (supportsESIM && !supportsPhysicalSIM) ...[
+                                  SizedBox(height: AppTheme.spacingSmall),
+                                  Container(
+                                    padding: EdgeInsets.all(AppTheme.spacingSmall),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentGold.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusCard / 2),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.info_outline, color: AppTheme.accentGold, size: AppTheme.iconSizeSmall),
+                                        SizedBox(width: AppTheme.spacingSmall),
+                                        Expanded(
+                                          child: Text(
+                                            'Your device only supports eSIM (no physical SIM slot).',
+                                            style: AppTheme.bodySmallStyle.copyWith(color: AppTheme.accentGold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ] else if (!supportsESIM && supportsPhysicalSIM) ...[
+                                  SizedBox(height: AppTheme.spacingSmall),
+                                  Container(
+                                    padding: EdgeInsets.all(AppTheme.spacingSmall),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentGold.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusCard / 2),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.info_outline, color: AppTheme.accentGold, size: AppTheme.iconSizeSmall),
+                                        SizedBox(width: AppTheme.spacingSmall),
+                                        Expanded(
+                                          child: Text(
+                                            'Your device only supports physical SIM cards (no eSIM).',
+                                            style: AppTheme.bodySmallStyle.copyWith(color: AppTheme.accentGold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ] else ...[
+                                Row(
+                                  children: [
+                                    Icon(Icons.cancel, color: AppTheme.errorColor, size: AppTheme.iconSizeSmall),
+                                    SizedBox(width: AppTheme.spacingSmall),
+                                    Expanded(
+                                      child: Text(
+                                        'Device model not found in our catalog. Your device may not be compatible with our network.',
+                                        style: AppTheme.bodyStyle,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: AppTheme.spacingSmall),
+                                Text(
+                                  'Please contact support or try checking your IMEI for compatibility verification.',
+                                  style: AppTheme.bodySmallStyle,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                     ],
-                  ],
-                ),
+                  );
+                },
               ),
             ] else if (_deviceNotInCatalog && _selectedBrand != null && _selectedModel == null) ...[
               SizedBox(height: AppTheme.spacingSection),

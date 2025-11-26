@@ -42,8 +42,8 @@ class NotificationService {
     }
 
     try {
-      // Request notification permissions
-      await _requestPermissions();
+      // DON'T request permissions here - wait until after user logs in
+      // Permissions will be requested only when user opts in after login
 
       // Initialize local notifications
       await _initializeLocalNotifications();
@@ -51,25 +51,30 @@ class NotificationService {
       // Set up FCM message handlers
       await _setupMessageHandlers();
 
-      // Get and save FCM token
-      await _saveFCMToken();
+      // DON'T save FCM token here - wait until user logs in and opts in
+      // Token will be saved only after user grants permission after login
 
       // Listen for token refresh
       _firebaseMessaging.onTokenRefresh.listen((newToken) {
         print('🔄 FCM token refreshed: $newToken');
-        _saveTokenToFirestore(newToken);
+        final User? user = _auth.currentUser;
+        if (user != null) {
+          // Only save if user is logged in
+          _saveTokenToFirestore(newToken);
+        }
       });
 
       _initialized = true;
-      print('✅ NotificationService initialized successfully');
+      print('✅ NotificationService initialized successfully (permissions deferred until after login)');
     } catch (e) {
       print('❌ Error initializing NotificationService: $e');
-      rethrow;
+      // Don't rethrow - allow app to continue even if notifications fail
     }
   }
 
-  /// Request notification permissions
-  Future<void> _requestPermissions() async {
+  /// Request notification permissions (public method - shows native OS permission prompt)
+  /// Returns true if permission granted, false otherwise
+  Future<bool> requestNotificationPermissions() async {
     print('🔐 Requesting notification permissions...');
 
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
@@ -86,11 +91,19 @@ class NotificationService {
     
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       print('✅ Notification permission granted');
+      return true;
     } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
       print('⚠️ Notification permission granted provisionally');
+      return true;
     } else {
       print('❌ Notification permission denied');
+      return false;
     }
+  }
+
+  /// Request notification permissions (private method - kept for backward compatibility)
+  Future<void> _requestPermissions() async {
+    await requestNotificationPermissions();
   }
 
   /// Initialize local notifications plugin
@@ -99,12 +112,12 @@ class NotificationService {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // iOS initialization settings (for future use)
+    // iOS initialization settings - DON'T request permission here, wait until after login
     const DarwinInitializationSettings iosSettings =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,  // Changed from true to false - permission requested after login
+      requestBadgePermission: false,  // Changed from true to false - permission requested after login
+      requestSoundPermission: false,  // Changed from true to false - permission requested after login
     );
 
     const InitializationSettings initSettings = InitializationSettings(
@@ -280,25 +293,31 @@ class NotificationService {
       final List<dynamic> existingTokens = 
           (currentData['fcmTokens'] as List<dynamic>?) ?? [];
 
+      // Track if token was newly added
+      final wasNewToken = !existingTokens.contains(token);
+      
       // Add token if it doesn't exist
-      if (!existingTokens.contains(token)) {
+      if (wasNewToken) {
         existingTokens.add(token);
-        
-        // Also save notification settings if they don't exist
-        await userRef.set({
-          'fcmTokens': existingTokens,
-          'notificationSettings': {
-            'orderUpdates': true,
-            'promotions': true,
-            'reminders': true,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          ...currentData,
-        }, SetOptions(merge: true));
+      }
+      
+      // Always update notification settings to ensure enabled is set to true when token exists
+      await userRef.set({
+        'fcmTokens': existingTokens,
+        'notificationSettings': {
+          'enabled': true,
+          'orderUpdates': true,
+          'promotions': true,
+          'reminders': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        ...currentData,
+      }, SetOptions(merge: true));
 
+      if (wasNewToken) {
         print('✅ FCM token saved to Firestore');
       } else {
-        print('ℹ️ FCM token already exists in Firestore');
+        print('ℹ️ FCM token already exists in Firestore, updated settings');
       }
     } catch (e) {
       print('❌ Error saving FCM token to Firestore: $e');
@@ -347,6 +366,142 @@ class NotificationService {
   Future<void> unsubscribeFromTopic(String topic) async {
     await _firebaseMessaging.unsubscribeFromTopic(topic);
     print('✅ Unsubscribed from topic: $topic');
+  }
+
+  /// Check if user has FCM token in Firestore
+  Future<bool> hasTokenInFirestore() async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user == null) {
+        return false;
+      }
+
+      final userRef = _firestore.collection('users').doc(user.uid);
+      final userDoc = await userRef.get();
+      
+      if (!userDoc.exists) {
+        return false;
+      }
+
+      final data = userDoc.data();
+      final fcmTokens = data?['fcmTokens'] as List<dynamic>?;
+      
+      return fcmTokens != null && fcmTokens.isNotEmpty;
+    } catch (e) {
+      print('❌ Error checking FCM token in Firestore: $e');
+      return false;
+    }
+  }
+
+  /// Public method to save FCM token (can be called after login)
+  /// Note: Permission should already be requested before calling this method
+  Future<bool> saveFCMToken() async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user == null) {
+        print('⚠️ No user logged in, skipping FCM token save');
+        return false;
+      }
+
+      // Don't request permission here - it should already be requested before calling this
+      // Permission is requested in login_page.dart _navigateAfterLogin() method
+      // Just get the token and save it
+      _currentToken = await _firebaseMessaging.getToken();
+      
+      if (_currentToken != null) {
+        print('🔑 FCM Token: $_currentToken');
+        await _saveTokenToFirestore(_currentToken!);
+        return true;
+      } else {
+        print('⚠️ Failed to get FCM token');
+        return false;
+      }
+    } catch (e) {
+      // Handle iOS-specific errors gracefully when APNS isn't configured
+      if (Platform.isIOS) {
+        final errorString = e.toString();
+        if (errorString.contains('apns-token-not-set') || 
+            errorString.contains('aps-environment') ||
+            errorString.contains('APNS token has not been received')) {
+          print('⚠️ iOS detected but APNS not configured yet.');
+          print('ℹ️ This is expected if you don\'t have an Apple Developer account yet.');
+          print('ℹ️ Notifications will work on Android. iOS support will be enabled once APNS is configured.');
+          return false;
+        }
+      }
+      // For other errors, log them but don't block the app
+      print('❌ Error saving FCM token: $e');
+      if (Platform.isAndroid) {
+        print('⚠️ Failed to get FCM token on Android. Check Firebase configuration.');
+      }
+      return false;
+    }
+  }
+
+  /// Remove all FCM tokens for current user (when notifications are disabled)
+  Future<void> removeAllTokens() async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user == null) {
+        print('⚠️ No user logged in, cannot remove FCM tokens');
+        return;
+      }
+
+      final userRef = _firestore.collection('users').doc(user.uid);
+      
+      await userRef.update({
+        'fcmTokens': [],
+        'notificationSettings': {
+          'enabled': false,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      });
+
+      _currentToken = null;
+      print('✅ All FCM tokens removed from Firestore');
+    } catch (e) {
+      print('❌ Error removing FCM tokens: $e');
+    }
+  }
+
+  /// Check if notifications are enabled for user
+  Future<bool> areNotificationsEnabled() async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user == null) {
+        return false;
+      }
+
+      final userRef = _firestore.collection('users').doc(user.uid);
+      final userDoc = await userRef.get();
+      
+      if (!userDoc.exists) {
+        return false;
+      }
+
+      final data = userDoc.data();
+      final notificationSettings = data?['notificationSettings'] as Map<String, dynamic>?;
+      final enabled = notificationSettings?['enabled'] ?? true; // Default to true for backward compatibility
+      
+      // Also check if there are tokens
+      final fcmTokens = data?['fcmTokens'] as List<dynamic>?;
+      final hasTokens = fcmTokens != null && fcmTokens.isNotEmpty;
+      
+      return enabled && hasTokens;
+    } catch (e) {
+      print('❌ Error checking notification status: $e');
+      return false;
+    }
+  }
+
+  /// Enable notifications and save token
+  Future<bool> enableNotifications() async {
+    return await saveFCMToken();
+  }
+
+  /// Disable notifications and remove tokens
+  Future<void> disableNotifications() async {
+    await removeAllTokens();
   }
 }
 
